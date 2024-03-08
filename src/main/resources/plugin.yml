@@ -1,0 +1,6 @@
+name: Bingo
+main: tc.oc.bingo.Bingo
+version: ${project.version} (git-${git.commit.id.abbrev})
+depend: [PGM]
+softdepend: [Dispense]
+author: Pugzy

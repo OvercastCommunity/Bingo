@@ -1,0 +1,25 @@
+# Bounty Hunter Config
+
+# if bounties are enabled
+enable: true
+
+# if fake raindrops are needed
+debug: false
+
+# Criteria for selecting a target
+selection:
+  min-killstreak: 3
+  starts-after: 1m
+  allow-duplicate: false
+
+bounty:
+  # How long the bounty is active for
+  max-duration: 2m
+  # If the player has particle effects
+  particles: true
+
+rewards:
+  # Reward given to user who kills the target
+  kill-reward: 50
+  # Reward given to target for getting a kill
+  survival-reward: 10
