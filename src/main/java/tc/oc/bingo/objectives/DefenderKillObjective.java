@@ -49,6 +49,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
+    if (!event.isChallengeKill()) return;
 
     ParticipantState killer = event.getKiller();
     if (killer == null) return;

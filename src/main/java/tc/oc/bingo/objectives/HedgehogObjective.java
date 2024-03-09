@@ -12,11 +12,11 @@ public class HedgehogObjective extends ObjectiveTracker {
 
   public static final int MIN_ARROWS = 25;
 
+  public HashMap<UUID, Integer> arrows = new HashMap<>();
+
   public HedgehogObjective(Objective objective) {
     super(objective);
   }
-
-  public HashMap<UUID, Integer> arrows = new HashMap<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerSpawn(PlayerSpawnEvent event) {

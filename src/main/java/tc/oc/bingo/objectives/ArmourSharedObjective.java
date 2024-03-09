@@ -1,5 +1,6 @@
 package tc.oc.bingo.objectives;
 
+import java.util.HashMap;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
@@ -10,8 +11,6 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.MatchPlayerState;
-
-import java.util.HashMap;
 
 public class ArmourSharedObjective extends ObjectiveTracker {
 

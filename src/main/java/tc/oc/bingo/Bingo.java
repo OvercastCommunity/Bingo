@@ -5,7 +5,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import org.bukkit.plugin.java.JavaPlugin;
+import tc.oc.bingo.config.Config;
+import tc.oc.bingo.objectives.AnvilKillerObjective;
 import tc.oc.bingo.objectives.ArmourSharedObjective;
+import tc.oc.bingo.objectives.BigFallObjective;
+import tc.oc.bingo.objectives.CactusKillerObjective;
 import tc.oc.bingo.objectives.CleanMatchObjective;
 import tc.oc.bingo.objectives.CobwebKillerObjective;
 import tc.oc.bingo.objectives.DefenderKillObjective;
@@ -22,12 +26,12 @@ import tc.oc.bingo.objectives.PlayerCraftObjective;
 import tc.oc.bingo.objectives.PlayerShiftingObjective;
 import tc.oc.bingo.objectives.PotionConsumeObjective;
 import tc.oc.bingo.objectives.QuickKillsObjective;
-import tc.oc.bingo.config.Config;
+import tc.oc.bingo.objectives.SpleeferObjective;
+import tc.oc.bingo.objectives.WaterDropperObjective;
 
 public class Bingo extends JavaPlugin {
 
   private static Bingo plugin;
-  private Manager manager;
 
   private BukkitCommandManager commands;
 
@@ -66,9 +70,14 @@ public class Bingo extends JavaPlugin {
                 new Objective("PotionConsume", "PotionConsume", "PotionConsume")),
             new QuickKillsObjective(new Objective("QuickKills", "QuickKills", "QuickKills")),
             new HedgehogObjective(new Objective("Hedgehog", "Hedgehog", "Hedgehog")),
-            new ArmourSharedObjective(new Objective("ArmourShared", "ArmourShared", "ArmourShared")))
-
-
-            );
+            new ArmourSharedObjective(
+                new Objective("ArmourShared", "ArmourShared", "ArmourShared")),
+            new AnvilKillerObjective(new Objective("AnvilKiller", "AnvilKiller", "AnvilKiller")),
+            new BigFallObjective(new Objective("BigFall", "BigFall", "BigFall")),
+            new CactusKillerObjective(
+                new Objective("CactusKiller", "CactusKiller", "CactusKiller")),
+            new SpleeferObjective(new Objective("Spleefer", "Spleefer", "Spleefer")),
+            new WaterDropperObjective(
+                new Objective("WaterDropper", "WaterDropper", "WaterDropper"))));
   }
 }
