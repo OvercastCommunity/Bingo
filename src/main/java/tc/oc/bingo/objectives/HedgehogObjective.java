@@ -8,6 +8,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import tc.oc.pgm.spawns.events.PlayerSpawnEvent;
 
+@Tracker("hedgehog")
 public class HedgehogObjective extends ObjectiveTracker {
 
   public static final int MIN_ARROWS = 25;

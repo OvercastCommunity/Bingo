@@ -7,6 +7,7 @@ import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.killreward.KillRewardMatchModule;
 
+@Tracker("kill-streak")
 public class KillStreakObjective extends ObjectiveTracker {
 
   public static final int REQUIRED_STREAK = 10;

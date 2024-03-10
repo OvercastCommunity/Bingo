@@ -18,6 +18,7 @@ import tc.oc.pgm.tracker.info.GenericFallInfo;
 import tc.oc.pgm.util.event.player.PlayerOnGroundEvent;
 import tc.oc.pgm.util.material.Materials;
 
+@Tracker("water-dropper")
 public class WaterDropperObjective extends ObjectiveTracker {
 
   public HashMap<UUID, Vector> placedWater = new HashMap<>();

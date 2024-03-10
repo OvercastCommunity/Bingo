@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.pgm.api.match.Match;
 
+@Tracker("flower-pot")
 public class FlowerPotObjective extends ObjectiveTracker {
 
   public FlowerPotObjective(Objective objective) {

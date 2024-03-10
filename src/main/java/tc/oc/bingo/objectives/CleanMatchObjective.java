@@ -12,6 +12,7 @@ import tc.oc.pgm.goals.GoalMatchModule;
 import tc.oc.pgm.goals.events.GoalCompleteEvent;
 import tc.oc.pgm.goals.events.GoalTouchEvent;
 
+@Tracker("clean-match")
 public class CleanMatchObjective extends ObjectiveTracker {
 
   public CleanMatchObjective(Objective objective) {

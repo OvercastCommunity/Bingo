@@ -11,6 +11,7 @@ import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.goals.GoalMatchModule;
 
+@Tracker("defender-kill")
 public class DefenderKillObjective extends ObjectiveTracker {
 
   public DefenderKillObjective(Objective objective) {

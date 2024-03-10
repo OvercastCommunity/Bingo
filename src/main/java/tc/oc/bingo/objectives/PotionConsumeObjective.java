@@ -6,6 +6,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.meta.PotionMeta;
 
+@Tracker("potion-consume")
 public class PotionConsumeObjective extends ObjectiveTracker {
 
   public PotionConsumeObjective(Objective objective) {

@@ -1,5 +1,6 @@
 package tc.oc.bingo.objectives;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -8,12 +9,18 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.api.tracker.info.FallInfo;
 import tc.oc.pgm.tracker.Trackers;
 
+@Tracker("big-fall")
 public class BigFallObjective extends ObjectiveTracker {
 
-  private static final int MIN_FALL_HEIGHT = 100;
+  private int minFallHeight = 100;
 
   public BigFallObjective(Objective objective) {
     super(objective);
+  }
+
+  @Override
+  public void setConfig(ConfigurationSection config) {
+    minFallHeight = config.getInt("min-fall-height", 100);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -34,7 +41,7 @@ public class BigFallObjective extends ObjectiveTracker {
             Trackers.distanceFromRanged(fallInfo, event.getVictim().getBukkit().getLocation());
 
         if (!Double.isNaN(distance)) {
-          if (distance >= MIN_FALL_HEIGHT) {
+          if (distance >= minFallHeight) {
             reward(player.getBukkit());
           }
         }

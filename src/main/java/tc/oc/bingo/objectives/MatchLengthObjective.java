@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 
+@Tracker("match-length")
 public class MatchLengthObjective extends ObjectiveTracker {
 
   public static final int REQUIRED_MINS = 60;

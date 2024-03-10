@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerFishEvent;
 
+@Tracker("fisher")
 public class FisherthemObjective extends ObjectiveTracker {
 
   public FisherthemObjective(Objective objective) {

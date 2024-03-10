@@ -8,6 +8,7 @@ import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.tracker.info.BlockInfo;
 
+@Tracker("cactus-killer")
 public class CactusKillerObjective extends ObjectiveTracker {
 
   public CactusKillerObjective(Objective objective) {

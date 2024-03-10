@@ -12,6 +12,7 @@ import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.MatchPlayerState;
 
+@Tracker("armour-shared")
 public class ArmourSharedObjective extends ObjectiveTracker {
 
   public HashMap<Integer, MatchPlayerState> itemThrowers = new HashMap<>();

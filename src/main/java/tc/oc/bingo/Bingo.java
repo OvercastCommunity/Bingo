@@ -1,83 +1,64 @@
 package tc.oc.bingo;
 
 import co.aikar.commands.BukkitCommandManager;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import lombok.SneakyThrows;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import tc.oc.bingo.config.Config;
-import tc.oc.bingo.objectives.AnvilKillerObjective;
-import tc.oc.bingo.objectives.ArmourSharedObjective;
-import tc.oc.bingo.objectives.BigFallObjective;
-import tc.oc.bingo.objectives.CactusKillerObjective;
-import tc.oc.bingo.objectives.CleanMatchObjective;
-import tc.oc.bingo.objectives.CobwebKillerObjective;
-import tc.oc.bingo.objectives.DefenderKillObjective;
-import tc.oc.bingo.objectives.EatingObjective;
-import tc.oc.bingo.objectives.EnchantItemObjective;
-import tc.oc.bingo.objectives.FisherthemObjective;
-import tc.oc.bingo.objectives.FlowerPotObjective;
-import tc.oc.bingo.objectives.HedgehogObjective;
-import tc.oc.bingo.objectives.KillStreakObjective;
-import tc.oc.bingo.objectives.MatchLengthObjective;
 import tc.oc.bingo.objectives.Objective;
 import tc.oc.bingo.objectives.ObjectiveTracker;
-import tc.oc.bingo.objectives.PlayerCraftObjective;
-import tc.oc.bingo.objectives.PlayerShiftingObjective;
-import tc.oc.bingo.objectives.PotionConsumeObjective;
-import tc.oc.bingo.objectives.QuickKillsObjective;
-import tc.oc.bingo.objectives.SpleeferObjective;
-import tc.oc.bingo.objectives.WaterDropperObjective;
+import tc.oc.bingo.objectives.Tracker;
+import tc.oc.bingo.util.Reflections;
+
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Bingo extends JavaPlugin {
 
-  private static Bingo plugin;
+  private static Bingo INSTANCE;
 
   private BukkitCommandManager commands;
+  private List<ObjectiveTracker> trackers;
+
+  public Bingo() {
+    INSTANCE = this;
+  }
+
+  public static Bingo get() {
+    return INSTANCE;
+  }
 
   @Override
   public void onEnable() {
-    plugin = this;
-
     saveDefaultConfig();
     Config.create(getConfig());
 
-    getObjectives()
-        .forEach(
-            objectiveTracker -> {
-              getServer().getPluginManager().registerEvents(objectiveTracker, this);
-            });
+    trackers = Reflections.findClasses(Objective.class.getPackage().getName(), ObjectiveTracker.class, Tracker.class)
+            .stream()
+            .map(this::buildTracker)
+            .collect(Collectors.toList());
+
+    FileConfiguration config = getConfig();
+    trackers.forEach(tracker ->
+            tracker.setConfig(config.getConfigurationSection(tracker.getObjective().getSlug())));
+
+    PluginManager plMan = getServer().getPluginManager();
+    getTrackersOfType(Listener.class).forEach(listener -> plMan.registerEvents(listener, this));
   }
 
-  public Collection<ObjectiveTracker> getObjectives() {
-    return Collections.unmodifiableList(
-        Arrays.asList(
-            new CleanMatchObjective(new Objective("CleanMatch", "CleanMatch", "CleanMatch")),
-            new CobwebKillerObjective(
-                new Objective("CobwebKiller", "CobwebKiller", "CobwebKiller")),
-            new DefenderKillObjective(
-                new Objective("DefenderKill", "DefenderKill", "DefenderKill")),
-            new EatingObjective(new Objective("Eating", "Eating", "Eating")),
-            new EnchantItemObjective(new Objective("EnchantItem", "EnchantItem", "EnchantItem")),
-            new FisherthemObjective(new Objective("Fisherthem", "Fisherthem", "Fisherthem")),
-            new FlowerPotObjective(new Objective("FlowerPot", "FlowerPot", "FlowerPot")),
-            new KillStreakObjective(new Objective("KillStreak", "KillStreak", "KillStreak")),
-            new MatchLengthObjective(new Objective("MatchLength", "MatchLength", "MatchLength")),
-            new PlayerCraftObjective(new Objective("PlayerCraft", "PlayerCraft", "PlayerCraft")),
-            new PlayerShiftingObjective(
-                new Objective("PlayerShifting", "PlayerShifting", "PlayerShifting")),
-            new PotionConsumeObjective(
-                new Objective("PotionConsume", "PotionConsume", "PotionConsume")),
-            new QuickKillsObjective(new Objective("QuickKills", "QuickKills", "QuickKills")),
-            new HedgehogObjective(new Objective("Hedgehog", "Hedgehog", "Hedgehog")),
-            new ArmourSharedObjective(
-                new Objective("ArmourShared", "ArmourShared", "ArmourShared")),
-            new AnvilKillerObjective(new Objective("AnvilKiller", "AnvilKiller", "AnvilKiller")),
-            new BigFallObjective(new Objective("BigFall", "BigFall", "BigFall")),
-            new CactusKillerObjective(
-                new Objective("CactusKiller", "CactusKiller", "CactusKiller")),
-            new SpleeferObjective(new Objective("Spleefer", "Spleefer", "Spleefer")),
-            new WaterDropperObjective(
-                new Objective("WaterDropper", "WaterDropper", "WaterDropper"))));
+  private <T> Stream<T> getTrackersOfType(Class<T> type) {
+    return trackers.stream().filter(type::isInstance).map(type::cast);
   }
+
+  @SneakyThrows
+  private <T extends ObjectiveTracker> T buildTracker(Class<T> trackerCls) {
+    Tracker tracker = trackerCls.getDeclaredAnnotation(Tracker.class);
+    // TODO: load definitions from a resource file
+    Objective obj = new Objective(tracker.value(), tracker.value(), tracker.value());
+    return trackerCls.getConstructor(Objective.class).newInstance(obj);
+  }
+
 }

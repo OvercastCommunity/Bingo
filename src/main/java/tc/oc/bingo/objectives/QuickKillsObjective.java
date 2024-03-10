@@ -12,6 +12,7 @@ import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
+@Tracker("quick-kills")
 public class QuickKillsObjective extends ObjectiveTracker {
 
   public final int KILLS_THRESHOLD = 3;

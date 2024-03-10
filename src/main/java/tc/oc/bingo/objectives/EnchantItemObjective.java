@@ -4,6 +4,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 
+@Tracker("enchant")
 public class EnchantItemObjective extends ObjectiveTracker {
 
   public EnchantItemObjective(Objective objective) {

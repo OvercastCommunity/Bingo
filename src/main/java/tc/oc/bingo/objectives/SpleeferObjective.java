@@ -8,6 +8,7 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.api.tracker.info.FallInfo;
 import tc.oc.pgm.tracker.info.SpleefInfo;
 
+@Tracker("spleefer")
 public class SpleeferObjective extends ObjectiveTracker {
 
   public SpleeferObjective(Objective objective) {

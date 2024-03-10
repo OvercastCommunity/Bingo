@@ -9,6 +9,7 @@ import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
+@Tracker("cobweb-killer")
 public class CobwebKillerObjective extends ObjectiveTracker {
 
   public CobwebKillerObjective(Objective objective) {

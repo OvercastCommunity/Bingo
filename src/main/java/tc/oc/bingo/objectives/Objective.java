@@ -1,36 +1,13 @@
 package tc.oc.bingo.objectives;
 
+import lombok.Data;
 import tc.oc.pgm.api.player.MatchPlayer;
 
+@Data
 public class Objective {
-
-  public String name;
-  public String description;
-  public String slug;
-
-  public boolean completed;
-
-  public Objective(String name, String description, String slug) {
-    this.name = name;
-    this.description = description;
-    this.slug = slug;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public String getSlug() {
-    return slug;
-  }
-
-  public boolean isCompleted() {
-    return completed;
-  }
+  public final String slug;
+  public final String name;
+  public final String description;
 
   public void reward(MatchPlayer player) {}
 }

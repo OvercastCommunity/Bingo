@@ -10,6 +10,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 
+@Tracker("eating")
 public class EatingObjective extends ObjectiveTracker {
 
   public EatingObjective(Objective objective) {

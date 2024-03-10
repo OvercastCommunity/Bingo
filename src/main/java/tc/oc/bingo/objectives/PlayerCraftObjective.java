@@ -5,6 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.CraftItemEvent;
 
+@Tracker("player-craft")
 public class PlayerCraftObjective extends ObjectiveTracker {
 
   public PlayerCraftObjective(Objective objective) {
