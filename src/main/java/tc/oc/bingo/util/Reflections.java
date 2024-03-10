@@ -24,12 +24,16 @@ public class Reflections {
             return StreamUtils.toStream(jar.entries())
                     .map(ZipEntry::getName)
                     .filter(name -> name.startsWith(basePath) && name.endsWith(".class"))
-                    .map(path -> path.replace('/', '.').replace(".class", ""))
-                    .map(Class::forName)
+                    .map(Reflections::classFromPath)
                     .filter(cls -> type.isAssignableFrom(cls) && cls.isAnnotationPresent(matcher))
                     .map(cls -> (Class<T>) cls)
                     .collect(Collectors.toList());
         }
+    }
+
+    @SneakyThrows
+    public static Class<?> classFromPath(String path) {
+        return Class.forName(path.replace('/', '.').replace(".class", ""));
     }
 
     public static File getJarFile() throws IllegalStateException {
