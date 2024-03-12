@@ -3,8 +3,10 @@ package tc.oc.bingo.config;
 import static tc.oc.pgm.util.text.TextParser.parseDuration;
 
 import java.time.Duration;
+import lombok.Getter;
 import org.bukkit.configuration.Configuration;
 
+@Getter
 public class Config {
 
   private static Config config;
@@ -12,7 +14,7 @@ public class Config {
   private boolean debug;
 
   // Selection
-  private int minKillstreak;
+  private int gridWidth;
   private Duration startsAfter;
   private boolean allowDuplicate;
 
@@ -40,7 +42,7 @@ public class Config {
     this.enabled = config.getBoolean("enabled", true);
     this.debug = config.getBoolean("debug", false);
 
-    this.minKillstreak = config.getInt("selection.min-killstreak", 3);
+    this.gridWidth = config.getInt("grid-width", 5);
     this.startsAfter = parseDuration(config.getString("selection.starts-after", "1m"));
     this.allowDuplicate = config.getBoolean("selection.allow-duplicate", false);
 
@@ -60,7 +62,7 @@ public class Config {
   }
 
   public int getMinKillstreak() {
-    return minKillstreak;
+    return gridWidth;
   }
 
   public Duration getStartsAfter() {

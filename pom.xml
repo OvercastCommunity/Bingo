@@ -50,6 +50,19 @@
       <version>1.18.30</version>
       <scope>provided</scope>
     </dependency>
+    <!-- Database API -->
+    <dependency>
+      <groupId>tc.oc.occ</groupId>
+      <artifactId>Database</artifactId>
+      <version>1.2.0-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <!-- GUI API -->
+    <dependency>
+      <groupId>fr.minuskube.inv</groupId>
+      <artifactId>smart-invs</artifactId>
+      <version>1.2.7</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

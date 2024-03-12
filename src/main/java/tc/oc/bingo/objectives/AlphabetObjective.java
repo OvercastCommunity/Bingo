@@ -8,6 +8,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayerState;
 
+@Tracker("alphabet-killer")
 public class AlphabetObjective extends ObjectiveTracker {
 
   // TODO: collect all letters of the alphabet from kills

@@ -9,6 +9,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
+import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.MatchPlayerState;
 
@@ -47,6 +48,17 @@ public class ArmourSharedObjective extends ObjectiveTracker {
 
     MatchPlayerState thrower = itemThrowers.getOrDefault(event.getItem().getEntityId(), null);
     if (thrower == null) return;
+    itemThrowers.remove(event.getItem().getEntityId());
+
+    Match match = getMatch(event.getWorld());
+    if (match == null) return;
+
+    MatchPlayer picker = match.getPlayer(event.getPlayer());
+    if (picker == null) return;
+
+    // Same team check
+    Competitor competitor = picker.getCompetitor();
+    if (competitor == null || competitor.equals(thrower.getParty())) return;
 
     equippedPieces.put(thrower, event.getItem().getItemStack().getType());
 

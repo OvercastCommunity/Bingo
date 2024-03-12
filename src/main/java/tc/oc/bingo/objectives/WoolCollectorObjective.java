@@ -17,14 +17,14 @@ import tc.oc.pgm.tracker.info.GenericFallInfo;
 import tc.oc.pgm.util.event.player.PlayerOnGroundEvent;
 import tc.oc.pgm.util.material.Materials;
 
-@Tracker("water-dropper")
-public class WaterDropperObjective extends ObjectiveTracker {
+@Tracker("wool-collector")
+public class WoolCollectorObjective extends ObjectiveTracker {
 
   public HashMap<UUID, Vector> placedWater = new HashMap<>();
 
   private static final int MIN_FALL_HEIGHT = 100;
 
-  public WaterDropperObjective(Objective objective) {
+  public WoolCollectorObjective(Objective objective) {
     super(objective);
   }
 
