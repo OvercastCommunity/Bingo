@@ -15,10 +15,6 @@ import tc.oc.pgm.goals.events.GoalTouchEvent;
 @Tracker("clean-match")
 public class CleanMatchObjective extends ObjectiveTracker {
 
-  public CleanMatchObjective(Objective objective) {
-    super(objective);
-  }
-
   public GoalMatchModule goals = null;
   public Set<Competitor> objectivesTouched = new HashSet<>();
 

@@ -11,10 +11,6 @@ import tc.oc.pgm.tracker.info.BlockInfo;
 @Tracker("anvil-killer")
 public class AnvilKillerObjective extends ObjectiveTracker {
 
-  public AnvilKillerObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;

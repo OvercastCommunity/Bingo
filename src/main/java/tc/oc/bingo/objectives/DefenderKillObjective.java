@@ -14,10 +14,6 @@ import tc.oc.pgm.goals.GoalMatchModule;
 @Tracker("defender-kill")
 public class DefenderKillObjective extends ObjectiveTracker {
 
-  public DefenderKillObjective(Objective objective) {
-    super(objective);
-  }
-
   public GoalMatchModule goals = null;
   public HashMap<Competitor, Set<Vector>> objectiveLocations = new HashMap<>();
 

@@ -14,10 +14,6 @@ public class BigFallObjective extends ObjectiveTracker {
 
   private int minFallHeight = 100;
 
-  public BigFallObjective(Objective objective) {
-    super(objective);
-  }
-
   @Override
   public void setConfig(ConfigurationSection config) {
     minFallHeight = config.getInt("min-fall-height", 100);

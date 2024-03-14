@@ -15,10 +15,6 @@ public class HedgehogObjective extends ObjectiveTracker {
 
   public HashMap<UUID, Integer> arrows = new HashMap<>();
 
-  public HedgehogObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerSpawn(PlayerSpawnEvent event) {
     arrows.remove(event.getPlayer().getId());
@@ -26,15 +22,11 @@ public class HedgehogObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onEntityDamage(EntityDamageByEntityEvent event) {
-    if (!(event.getDamager() instanceof Player)) return;
-    if (!(event.getActor() instanceof Player)) return;
-
-    Player player = (Player) event.getActor();
-    UUID playerUUID = player.getUniqueId();
-
-    int arrowsCount = arrows.getOrDefault(playerUUID, 0);
-    arrows.put(playerUUID, arrowsCount + 1);
-
-    if (arrowsCount + 1 >= MIN_ARROWS) reward(player);
+    if (event.getEntity() instanceof Player) {
+      Player actor = (Player) event.getEntity();
+      if (actor.getArrowsStuck() + 1 >= MIN_ARROWS) {
+        reward(actor);
+      }
+    }
   }
 }

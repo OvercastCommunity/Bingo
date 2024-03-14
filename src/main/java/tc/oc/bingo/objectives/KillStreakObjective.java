@@ -12,10 +12,6 @@ public class KillStreakObjective extends ObjectiveTracker {
 
   public static final int REQUIRED_STREAK = 10;
 
-  public KillStreakObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerKill(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;

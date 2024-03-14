@@ -18,7 +18,7 @@ public class Reflections {
   @SuppressWarnings("unchecked")
   public static <T> List<Class<T>> findClasses(
       String basePackage, Class<T> type, Class<? extends Annotation> matcher) {
-    String basePath = basePackage.replace(".", File.separator);
+    String basePath = basePackage.replace(".", "/");
     try (JarFile jar = new JarFile(getJarFile())) {
       return StreamUtils.toStream(jar.entries())
           .map(ZipEntry::getName)

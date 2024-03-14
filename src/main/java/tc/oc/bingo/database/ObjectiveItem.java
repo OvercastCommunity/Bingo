@@ -1,6 +1,7 @@
 package tc.oc.bingo.database;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.Data;
 import lombok.ToString;
@@ -17,7 +18,7 @@ public class ObjectiveItem {
   private String clue;
   private int hintLevel;
   private @Nullable LocalDateTime nextClueUnlock;
-  private String discoveryUUID;
+  private UUID discoveryUUID;
   private @Nullable LocalDateTime discoveryTime;
 
   public ObjectiveItem(
@@ -28,7 +29,7 @@ public class ObjectiveItem {
       String clue,
       int hintLevel,
       @Nullable LocalDateTime nextClueUnlock,
-      String discoveryUUID,
+      UUID discoveryUUID,
       @Nullable LocalDateTime discoveryTime) {
     this.slug = slug;
     this.name = name;
@@ -39,6 +40,17 @@ public class ObjectiveItem {
     this.nextClueUnlock = nextClueUnlock;
     this.discoveryUUID = discoveryUUID;
     this.discoveryTime = discoveryTime;
+  }
+
+  public boolean shouldShowName() {
+    return this.getHintLevel() > 0 || hasNextCluePassed();
+  }
+
+  public boolean hasNextCluePassed() {
+    if (this.nextClueUnlock == null) return false;
+
+    LocalDateTime now = LocalDateTime.now();
+    return now.isAfter(this.nextClueUnlock);
   }
 
   public int getX() {

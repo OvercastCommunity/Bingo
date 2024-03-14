@@ -14,10 +14,6 @@ public class PickyVoterObjective extends ObjectiveTracker {
 
   private static final int MIN_FALL_HEIGHT = 100;
 
-  public PickyVoterObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerOnGroundChanged(final PlayerOnGroundEvent event) {
 

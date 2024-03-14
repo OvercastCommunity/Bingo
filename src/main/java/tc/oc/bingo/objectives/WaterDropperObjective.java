@@ -24,10 +24,6 @@ public class WaterDropperObjective extends ObjectiveTracker {
 
   private static final int MIN_FALL_HEIGHT = 100;
 
-  public WaterDropperObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBucketEmpty(PlayerBucketEmptyEvent event) {
     Location location = event.getBlockClicked().getRelative(event.getBlockFace()).getLocation();

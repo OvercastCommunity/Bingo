@@ -9,10 +9,6 @@ import org.bukkit.event.player.PlayerFishEvent;
 @Tracker("fisher")
 public class FisherthemObjective extends ObjectiveTracker {
 
-  public FisherthemObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerFish(PlayerFishEvent event) {
     if (event.getCaught() instanceof Item) {

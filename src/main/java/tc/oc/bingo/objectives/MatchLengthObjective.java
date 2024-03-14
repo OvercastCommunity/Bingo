@@ -11,9 +11,7 @@ public class MatchLengthObjective extends ObjectiveTracker {
 
   public static final int REQUIRED_MINS = 60;
 
-  public MatchLengthObjective(Objective objective) {
-    super(objective);
-  }
+  // TODO: make it so they have to be in a short and long match? duality of defender?
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchFinish(MatchFinishEvent event) {

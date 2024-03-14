@@ -1,7 +1,9 @@
 package tc.oc.bingo.objectives;
 
+import com.google.common.primitives.Booleans;
 import java.util.HashMap;
-import org.bukkit.Material;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,12 +18,8 @@ import tc.oc.pgm.api.player.MatchPlayerState;
 @Tracker("armour-shared")
 public class ArmourSharedObjective extends ObjectiveTracker {
 
-  public HashMap<Integer, MatchPlayerState> itemThrowers = new HashMap<>();
-  public HashMap<MatchPlayerState, Material> equippedPieces = new HashMap<>();
-
-  public ArmourSharedObjective(Objective objective) {
-    super(objective);
-  }
+  public Map<Integer, MatchPlayerState> itemThrowers = new HashMap<>();
+  public Map<UUID, boolean[]> equippedPieces = new HashMap<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {
@@ -54,29 +52,39 @@ public class ArmourSharedObjective extends ObjectiveTracker {
     if (match == null) return;
 
     MatchPlayer picker = match.getPlayer(event.getPlayer());
-    if (picker == null) return;
+    if (picker == null || picker.getId().equals(thrower.getId())) return;
 
     // Same team check
     Competitor competitor = picker.getCompetitor();
-    if (competitor == null || competitor.equals(thrower.getParty())) return;
+    if (competitor == null || !competitor.equals(thrower.getParty())) return;
 
-    equippedPieces.put(thrower, event.getItem().getItemStack().getType());
+    boolean[] equipment = equippedPieces.computeIfAbsent(thrower.getId(), uuid -> new boolean[4]);
+    equipment[getIronArmorIndex(event.getItem())] = true;
 
     MatchPlayer matchPlayer = thrower.getPlayer().orElse(null);
     if (matchPlayer == null) return;
 
-    if (equippedPieces.size() >= 4) reward(matchPlayer.getBukkit());
+    if (!Booleans.contains(equipment, false)) {
+      reward(matchPlayer.getBukkit());
+    }
   }
 
   public boolean isIronArmor(Item item) {
+    return getIronArmorIndex(item) != -1;
+  }
+
+  public int getIronArmorIndex(Item item) {
     switch (item.getItemStack().getType()) {
       case IRON_HELMET:
+        return 0;
       case IRON_CHESTPLATE:
+        return 1;
       case IRON_LEGGINGS:
+        return 2;
       case IRON_BOOTS:
-        return true;
+        return 3;
       default:
-        return false;
+        return -1;
     }
   }
 }

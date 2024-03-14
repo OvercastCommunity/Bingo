@@ -11,10 +11,6 @@ import tc.oc.pgm.tracker.info.SpleefInfo;
 @Tracker("spleefer")
 public class SpleeferObjective extends ObjectiveTracker {
 
-  public SpleeferObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;

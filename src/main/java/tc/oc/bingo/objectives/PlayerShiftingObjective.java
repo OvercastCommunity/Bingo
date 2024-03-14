@@ -21,10 +21,6 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
   public static final int SAME_TEAM_COUNT = 1;
   public static final int DIFF_TEAM_COUNT = 2;
 
-  public PlayerShiftingObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
     if (!event.isSneaking()) return;

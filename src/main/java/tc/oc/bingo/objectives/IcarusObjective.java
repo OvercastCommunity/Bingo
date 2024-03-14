@@ -23,10 +23,6 @@ public class IcarusObjective extends ObjectiveTracker {
 
   private static final int MIN_RISE_HEIGHT = 100;
 
-  public IcarusObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerOnGroundChanged(final PlayerOnGroundEvent event) {
     if (!event.getOnGround()) return;

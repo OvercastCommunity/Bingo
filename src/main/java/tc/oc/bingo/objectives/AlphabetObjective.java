@@ -17,10 +17,6 @@ public class AlphabetObjective extends ObjectiveTracker {
   public HashMap<Integer, MatchPlayerState> itemThrowers = new HashMap<>();
   public HashMap<MatchPlayerState, Material> equippedPieces = new HashMap<>();
 
-  public AlphabetObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {}
 

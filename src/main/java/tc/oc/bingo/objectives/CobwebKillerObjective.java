@@ -12,10 +12,6 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 @Tracker("cobweb-killer")
 public class CobwebKillerObjective extends ObjectiveTracker {
 
-  public CobwebKillerObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerKill(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;

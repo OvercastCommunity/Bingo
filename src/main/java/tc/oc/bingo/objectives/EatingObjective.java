@@ -13,10 +13,6 @@ import tc.oc.pgm.api.match.event.MatchLoadEvent;
 @Tracker("eating")
 public class EatingObjective extends ObjectiveTracker {
 
-  public EatingObjective(Objective objective) {
-    super(objective);
-  }
-
   public static final int MIN_ITEMS = 3;
 
   public HashMap<UUID, Set<Integer>> consumedIds = new HashMap<>();

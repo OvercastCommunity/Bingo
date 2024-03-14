@@ -1,11 +1,9 @@
 package tc.oc.bingo.database;
 
 import java.util.UUID;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.Data;
 
-@Getter
-@ToString
+@Data
 public class ProgressItem {
 
   private UUID playerUUID;
@@ -25,5 +23,9 @@ public class ProgressItem {
     this.completed = completed;
     this.placedPosition = placedPosition;
     this.data = data;
+  }
+
+  public void setComplete() {
+    this.completed = true;
   }
 }

@@ -20,10 +20,6 @@ public class QuickKillsObjective extends ObjectiveTracker {
 
   private final Map<UUID, Set<Long>> lastKillTimes = new HashMap<>();
 
-  public QuickKillsObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {
     lastKillTimes.clear();

@@ -14,11 +14,13 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
+import tc.oc.pgm.api.PGM;
 
 public class BingoCardMenu implements InventoryProvider {
 
@@ -26,8 +28,8 @@ public class BingoCardMenu implements InventoryProvider {
       SmartInventory.builder()
           .id("bingoCard")
           .provider(new BingoCardMenu())
-          .size(6, 9)
-          .title("Bingo Objectives")
+          .size(5, 9)
+          .title("Bingo Card")
           .manager(Bingo.get().getInventoryManager())
           .build();
 
@@ -46,6 +48,8 @@ public class BingoCardMenu implements InventoryProvider {
     BingoPlayerCard playerCard = bingo.getCards().getOrDefault(player.getUniqueId(), null);
     if (playerCard == null) return;
 
+    contents.set(0, 0, ClickableItem.empty(getInfoItem()));
+
     bingoCard
         .getObjectives()
         .forEach(
@@ -57,31 +61,82 @@ public class BingoCardMenu implements InventoryProvider {
             });
   }
 
+  private ItemStack getInfoItem() {
+    ItemStack itemStack = new ItemStack(Material.REDSTONE_TORCH_ON, 1);
+    ItemMeta itemMeta = itemStack.getItemMeta();
+
+    itemMeta.setDisplayName(
+        ChatColor.YELLOW
+            + "What is "
+            + ChatColor.GOLD
+            + ChatColor.BOLD
+            + "Bingo"
+            + ChatColor.RESET
+            + ChatColor.YELLOW
+            + "?");
+
+    itemMeta.setLore(
+        Arrays.asList(
+            ChatColor.GRAY + "Complete mystery objectives on",
+            ChatColor.GRAY
+                + "the Bingo Card to earn "
+                + ChatColor.AQUA
+                + "raindrops"
+                + ChatColor.GRAY
+                + ".",
+            ChatColor.GRAY + "",
+            ChatColor.GRAY + "Get bonuses for a full-house and",
+            ChatColor.GRAY
+                + "lines. "
+                + ChatColor.DARK_PURPLE
+                + "Clues"
+                + ChatColor.GRAY
+                + " will be revealed over",
+            ChatColor.GRAY + "time to help you out.",
+            ChatColor.GRAY + "",
+            ChatColor.GRAY + "Join the Discord to share your",
+            ChatColor.GOLD
+                + "#bingo"
+                + ChatColor.GRAY
+                + " discoveries: "
+                + ChatColor.BLUE
+                + "oc.tc/discord"));
+
+    itemStack.setItemMeta(itemMeta);
+    return itemStack;
+  }
+
   private ItemStack makeIconFor(ObjectiveItem objectiveItem, BingoPlayerCard playerCard) {
 
     ProgressItem progressItem = playerCard.getProgressList().get(objectiveItem.getSlug());
 
-    short itemDamage = (short) (progressItem.isCompleted() ? 10 : 8);
+    // TODO: use ChatColor.RESET + "" + ChatColor.GREEN + "✓" somewhere to show completed
+
+    boolean completed = progressItem != null && progressItem.isCompleted();
+    short itemDamage = (short) (completed ? 10 : 8);
 
     ItemStack itemStack = new ItemStack(Material.INK_SACK, 1, itemDamage);
     ItemMeta itemMeta = itemStack.getItemMeta();
     String objectiveItemName =
-        objectiveItem.getHintLevel() == -1 || objectiveItem.getHintLevel() >= 1
-            ? objectiveItem.getName()
-            : "?????";
-    itemMeta.setDisplayName(
-        "" + ChatColor.RESET + ChatColor.BOLD + ChatColor.AQUA + objectiveItemName);
+        objectiveItem.getHintLevel() > 0 ? objectiveItem.getName() : ChatColor.MAGIC + "NiceTry";
+
+    itemMeta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + objectiveItemName);
 
     String[] displayedHints;
     String[] splitHints = objectiveItem.getDescription().split(";");
-    boolean shouldDisplayHints = objectiveItem.getHintLevel() > 0;
-    if (shouldDisplayHints) {
-      displayedHints = Arrays.copyOfRange(splitHints, 0, objectiveItem.getHintLevel());
+    if (objectiveItem.getHintLevel() > 1) {
+      displayedHints = Arrays.copyOfRange(splitHints, 0, objectiveItem.getHintLevel() - 1);
     } else {
-      displayedHints = splitHints;
+      displayedHints =
+          new String[] {ChatColor.GRAY + "" + ChatColor.ITALIC + "No hints revealed yet."};
     }
 
     List<String> loreList = new ArrayList<>();
+
+    if (completed) {
+      loreList.add(ChatColor.GREEN + "Objective Complete" + ChatColor.DARK_GREEN + " ✔");
+    }
+
     for (String displayedHint : displayedHints) {
       loreList.add(ChatColor.GRAY + displayedHint);
       loreList.add("");
@@ -91,9 +146,7 @@ public class BingoCardMenu implements InventoryProvider {
     // splitHints
     // The 5 hours should come from the objectiveItem.getNextClueUnlock() which is a LocalDateTime
     LocalDateTime nextClueUnlock = objectiveItem.getNextClueUnlock();
-    if (shouldDisplayHints
-        && nextClueUnlock != null
-        && objectiveItem.getHintLevel() < splitHints.length) {
+    if (nextClueUnlock != null && objectiveItem.getHintLevel() <= splitHints.length) {
       LocalDateTime now = LocalDateTime.now();
       long hoursUntilUnlock = Duration.between(now, nextClueUnlock).toHours();
       loreList.add(
@@ -106,22 +159,24 @@ public class BingoCardMenu implements InventoryProvider {
       loreList.add("");
     }
 
-    // Add lore lines depending on the conditions
-    if (objectiveItem.getDiscoveryUUID() != null) {
-      loreList.add(
-          ChatColor.GRAY
-              + "Discovered by: "
-              + ChatColor.GOLD
-              + objectiveItem.getDiscoveryUUID()); // Assuming playerName is accessible
-    }
-
-    if (progressItem.getPlacedPosition() != null) {
+    if (progressItem != null && progressItem.getPlacedPosition() != null) {
       loreList.add(
           ChatColor.GRAY
               + "Your position: "
               + ChatColor.GOLD
               + "#"
               + progressItem.getPlacedPosition());
+    }
+
+    // Add lore lines depending on the conditions
+
+    if (objectiveItem.getDiscoveryUUID() != null) {
+      @Nullable
+      String username =
+          PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
+      if (username != null) {
+        loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + username);
+      }
     }
 
     itemMeta.setLore(loreList);

@@ -13,10 +13,6 @@ import tc.oc.pgm.api.match.Match;
 @Tracker("flower-pot")
 public class FlowerPotObjective extends ObjectiveTracker {
 
-  public FlowerPotObjective(Objective objective) {
-    super(objective);
-  }
-
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
     if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;

@@ -1,20 +1,20 @@
 package tc.oc.bingo.database;
 
-import java.util.HashMap;
+import java.util.Map;
 
 public class BingoPlayerCard {
 
-  HashMap<String, ProgressItem> progressList = new HashMap<>();
+  Map<String, ProgressItem> progressList;
 
-  public BingoPlayerCard(HashMap<String, ProgressItem> progressList) {
+  public BingoPlayerCard(Map<String, ProgressItem> progressList) {
     this.progressList = progressList;
   }
 
-  public HashMap<String, ProgressItem> getProgressList() {
+  public Map<String, ProgressItem> getProgressList() {
     return progressList;
   }
 
-  public void setProgressList(HashMap<String, ProgressItem> progressList) {
+  public void setProgressList(Map<String, ProgressItem> progressList) {
     this.progressList = progressList;
   }
 }
