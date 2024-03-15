@@ -2,9 +2,13 @@ package tc.oc.bingo.objectives;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
+import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("match-length")
 public class MatchLengthObjective extends ObjectiveTracker {
@@ -20,12 +24,11 @@ public class MatchLengthObjective extends ObjectiveTracker {
 
     if (duration.minus(REQUIRED_MINS, ChronoUnit.MINUTES).isNegative()) return;
 
-    event
-        .getMatch()
-        .getParticipants()
-        .forEach(
-            player -> {
-              reward(player.getBukkit());
-            });
+    List<Player> players =
+        event.getMatch().getParticipants().stream()
+            .map(MatchPlayer::getBukkit)
+            .collect(Collectors.toList());
+
+    reward(players);
   }
 }

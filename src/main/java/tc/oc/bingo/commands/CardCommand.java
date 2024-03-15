@@ -26,6 +26,7 @@ public class CardCommand extends BaseCommand {
       }
 
       Bingo.get()
+          // TODO: dont do this
           .loadBingoCard(player.getUniqueId())
           .whenComplete(
               (bingoPlayerCard, throwable) -> {

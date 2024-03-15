@@ -1,6 +1,7 @@
 package tc.oc.bingo.objectives;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -47,14 +48,18 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
             .filter(p -> p.getCompetitor() != null)
             .collect(Collectors.groupingBy(MatchPlayer::getCompetitor, Collectors.counting()));
 
-    players.forEach(
-        mp -> {
-          Competitor playerTeam = mp.getCompetitor();
-          long sameTeamCount = teamCounts.getOrDefault(playerTeam, 0L) - 1;
-          long differentTeamCount = players.size() - sameTeamCount - 1;
-          if (sameTeamCount >= SAME_TEAM_COUNT && differentTeamCount >= DIFF_TEAM_COUNT) {
-            reward(mp.getBukkit());
-          }
-        });
+    List<Player> shiftingPlayers =
+        players.stream()
+            .filter(
+                mp -> {
+                  Competitor playerTeam = mp.getCompetitor();
+                  long sameTeamCount = teamCounts.getOrDefault(playerTeam, 0L) - 1;
+                  long differentTeamCount = players.size() - sameTeamCount - 1;
+                  return sameTeamCount >= SAME_TEAM_COUNT && differentTeamCount >= DIFF_TEAM_COUNT;
+                })
+            .map(MatchPlayer::getBukkit)
+            .collect(Collectors.toList());
+
+    reward(shiftingPlayers);
   }
 }

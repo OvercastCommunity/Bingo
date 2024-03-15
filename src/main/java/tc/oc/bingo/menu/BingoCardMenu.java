@@ -20,6 +20,7 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
+import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.api.PGM;
 
 public class BingoCardMenu implements InventoryProvider {
@@ -85,9 +86,9 @@ public class BingoCardMenu implements InventoryProvider {
                 + ChatColor.GRAY
                 + ".",
             ChatColor.GRAY + "",
-            ChatColor.GRAY + "Get bonuses for a full-house and",
+            ChatColor.GRAY + "Get bonuses for lines and a full",
             ChatColor.GRAY
-                + "lines. "
+                + "house. "
                 + ChatColor.DARK_PURPLE
                 + "Clues"
                 + ChatColor.GRAY
@@ -117,49 +118,68 @@ public class BingoCardMenu implements InventoryProvider {
 
     ItemStack itemStack = new ItemStack(Material.INK_SACK, 1, itemDamage);
     ItemMeta itemMeta = itemStack.getItemMeta();
+    int hintLevel = objectiveItem.getHintLevel();
+
+    // When the next clue timestamp passes bump the hint level by 1
+    if (objectiveItem.hasNextCluePassed()) {
+      hintLevel++;
+    }
+
     String objectiveItemName =
-        objectiveItem.getHintLevel() > 0 ? objectiveItem.getName() : ChatColor.MAGIC + "NiceTry";
+        hintLevel > 0 ? objectiveItem.getName() : ChatColor.MAGIC + "NiceTry";
 
     itemMeta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + objectiveItemName);
 
     String[] displayedHints;
     String[] splitHints = objectiveItem.getDescription().split(";");
-    if (objectiveItem.getHintLevel() > 1) {
-      displayedHints = Arrays.copyOfRange(splitHints, 0, objectiveItem.getHintLevel() - 1);
+    if (hintLevel > 1) {
+      displayedHints =
+          Arrays.copyOfRange(splitHints, 0, Math.min(hintLevel - 1, splitHints.length));
     } else {
       displayedHints =
           new String[] {ChatColor.GRAY + "" + ChatColor.ITALIC + "No hints revealed yet."};
+      // TODO: remove extra line that gets added this scenario
     }
 
     List<String> loreList = new ArrayList<>();
 
     if (completed) {
       loreList.add(ChatColor.GREEN + "Objective Complete" + ChatColor.DARK_GREEN + " ✔");
+      loreList.add("");
     }
 
+    int i = 0;
     for (String displayedHint : displayedHints) {
+      if (i != 0) loreList.add("");
       loreList.add(ChatColor.GRAY + displayedHint);
-      loreList.add("");
+      i++;
     }
 
     // Add a "Clue revealed in 5 hours." line if the hint level is less than the total number of
     // splitHints
     // The 5 hours should come from the objectiveItem.getNextClueUnlock() which is a LocalDateTime
     LocalDateTime nextClueUnlock = objectiveItem.getNextClueUnlock();
-    if (nextClueUnlock != null && objectiveItem.getHintLevel() <= splitHints.length) {
+    if (nextClueUnlock != null && hintLevel <= splitHints.length) {
       LocalDateTime now = LocalDateTime.now();
-      long hoursUntilUnlock = Duration.between(now, nextClueUnlock).toHours();
-      loreList.add(
-          ChatColor.ITALIC
-              + ""
-              + ChatColor.DARK_PURPLE
-              + "Clue revealed in "
-              + hoursUntilUnlock
-              + " hours.");
-      loreList.add("");
+
+      Duration remaining = Duration.between(now, nextClueUnlock);
+      String durationRemaining = Messages.getDurationRemaining(remaining);
+
+      if (durationRemaining != null) {
+        loreList.add("");
+        loreList.add(
+            ChatColor.ITALIC
+                + ""
+                + ChatColor.DARK_PURPLE
+                + "Clue revealed in "
+                + durationRemaining
+                + ".");
+      }
     }
 
-    if (progressItem != null && progressItem.getPlacedPosition() != null) {
+    boolean selfDiscovered = progressItem != null && progressItem.isCompleted() && progressItem.getPlacedPosition() != null;
+    if (selfDiscovered) {
+      loreList.add("");
       loreList.add(
           ChatColor.GRAY
               + "Your position: "
@@ -175,6 +195,7 @@ public class BingoCardMenu implements InventoryProvider {
       String username =
           PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
       if (username != null) {
+        if (!selfDiscovered) loreList.add("");
         loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + username);
       }
     }

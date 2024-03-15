@@ -1,73 +1,86 @@
 package tc.oc.bingo.objectives;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
-import org.bukkit.Location;
-import org.bukkit.block.Block;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerBucketEmptyEvent;
-import org.bukkit.util.Vector;
-import tc.oc.pgm.api.match.Match;
-import tc.oc.pgm.api.tracker.info.DamageInfo;
-import tc.oc.pgm.tracker.TrackerMatchModule;
-import tc.oc.pgm.tracker.Trackers;
-import tc.oc.pgm.tracker.info.GenericFallInfo;
-import tc.oc.pgm.util.event.player.PlayerOnGroundEvent;
-import tc.oc.pgm.util.material.Materials;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
+import org.bukkit.inventory.ItemStack;
+import tc.oc.bingo.database.ProgressItem;
 
 @Tracker("wool-collector")
 public class WoolCollectorObjective extends ObjectiveTracker {
 
-  public HashMap<UUID, Vector> placedWater = new HashMap<>();
+  public HashMap<UUID, List<Integer>> woolsCollected = new HashMap<>();
 
-  private static final int MIN_FALL_HEIGHT = 100;
+  private int minWoolCount = 5;
+
+  //  @Override
+  //  public void setConfig(ConfigurationSection config) {
+  //    minWoolCount = config.getInt("min-wool-count", 5);
+  //  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onBucketEmpty(PlayerBucketEmptyEvent event) {
-    Location location = event.getBlockClicked().getRelative(event.getBlockFace()).getLocation();
+  public void onPlayerOnGroundChanged(final PlayerPickupItemEvent event) {
 
-    // TODO: check the water not water?
+    Integer woolId = getWoolId(event.getItem().getItemStack());
+    if (woolId == null) return;
 
-    placedWater.put(event.getPlayer().getUniqueId(), location.toVector());
+    UUID playerId = event.getPlayer().getUniqueId();
+    List<Integer> indexes = getCurrentWoolIndexes(playerId);
+
+    if (indexes.contains(woolId)) return;
+
+    indexes.add(woolId);
+    woolsCollected.put(playerId, indexes);
+
+    if (indexes.size() >= minWoolCount) {
+      reward(event.getPlayer());
+    } else {
+      String dataAsString = indexes.stream().map(Object::toString).collect(Collectors.joining(","));
+      storeObjectiveData(event.getPlayer(), dataAsString);
+    }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
-  public void onPlayerOnGroundChanged(final PlayerOnGroundEvent event) {
-    if (!event.getOnGround()) return;
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onItemTransfer(InventoryMoveItemEvent event) {}
 
-    Match match = getMatch(event.getWorld());
-    if (match == null) return;
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onItemCraft(PrepareItemCraftEvent event) {}
 
-    Location location = event.getPlayer().getLocation();
+  public @Nullable Integer getWoolId(ItemStack item) {
+    if (!item.getType().equals(Material.WOOL)) return null;
+    return (int) item.getDurability();
+  }
 
-    Block block = location.getBlock();
+  public List<Integer> getCurrentWoolIndexes(UUID playerId) {
+    // Create or fetch progress item to cache
+    if (!woolsCollected.containsKey(playerId)) {
+      List<Integer> indexes = new ArrayList<>();
+      ProgressItem progressItem = getProgress(playerId);
 
-    if (Materials.isWater(block.getType())) {
-
-      Vector lastWaterVector = placedWater.getOrDefault(event.getPlayer().getUniqueId(), null);
-      if (lastWaterVector == null) return;
-
-      if (lastWaterVector.equals(block.getLocation().toVector())) {
-
-        TrackerMatchModule mm = match.getMatch().getModule(TrackerMatchModule.class);
-        if (mm == null) return;
-
-        DamageInfo damageInfo =
-            mm.resolveDamage(EntityDamageEvent.DamageCause.FALL, event.getPlayer());
-
-        if (damageInfo instanceof GenericFallInfo) {
-
-          GenericFallInfo info = (GenericFallInfo) damageInfo;
-          double distance = Trackers.distanceFromRanged(info, event.getPlayer().getLocation());
-
-          if (!Double.isNaN(distance) && distance >= MIN_FALL_HEIGHT) {
-            event.getPlayer().sendMessage("Distance: " + distance);
-            reward(event.getPlayer());
-          }
-        }
+      if (progressItem != null) {
+        indexes = getDataFromString(progressItem.getData());
       }
+
+      woolsCollected.put(playerId, indexes);
+      return indexes;
     }
+
+    return woolsCollected.get(playerId);
+  }
+
+  public List<Integer> getDataFromString(@Nullable String string) {
+    if (string == null) return new ArrayList<>();
+
+    return Arrays.stream(string.split(",")).map(Integer::parseInt).collect(Collectors.toList());
   }
 }

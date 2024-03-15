@@ -1,5 +1,6 @@
 package tc.oc.bingo.database;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.annotation.Nullable;
@@ -51,6 +52,11 @@ public class ObjectiveItem {
 
     LocalDateTime now = LocalDateTime.now();
     return now.isAfter(this.nextClueUnlock);
+  }
+
+  public void setComplete(@Nullable UUID discoveryUUID) {
+    this.discoveryUUID = discoveryUUID;
+    this.discoveryTime = new Timestamp(System.currentTimeMillis()).toLocalDateTime();
   }
 
   public int getX() {

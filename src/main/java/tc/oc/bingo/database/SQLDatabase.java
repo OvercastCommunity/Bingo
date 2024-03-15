@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
+import javax.annotation.Nullable;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import tc.oc.bingo.util.ExceptionHandlingExecutorService;
@@ -29,10 +30,15 @@ public class SQLDatabase implements BingoDatabase {
   private static final String PROGRESS_COUNT_QUERY =
       "SELECT COUNT(*) FROM bingo_progress WHERE objective_slug = ? AND completed";
 
-  private static final String UPSERT_PROGRESS_SQL =
+  private static final String UPSERT_COMPLETED_SQL =
       "INSERT INTO bingo_progress (player_uuid, objective_slug, completed, completed_at, placed_position) "
           + "VALUES (?, ?, ?, ?, ?) "
           + "ON DUPLICATE KEY UPDATE completed = VALUES(completed), completed_at = VALUES(completed_at), placed_position = VALUES(placed_position)";
+
+  private static final String UPSERT_PROGRESS_SQL =
+      "INSERT INTO bingo_progress (player_uuid, objective_slug, data) "
+          + "VALUES (?, ?, ?) "
+          + "ON DUPLICATE KEY UPDATE data = VALUES(data)";
 
   private static final String UPDATE_OBJECTIVE_DISCOVERY_SQL =
       "UPDATE bingo_objectives SET discovery_uuid = ?, discovery_time = ? WHERE slug = ?";
@@ -81,7 +87,7 @@ public class SQLDatabase implements BingoDatabase {
               + "completed BOOLEAN DEFAULT FALSE,"
               + "completed_at DATETIME,"
               + "placed_position INT,"
-              + "data JSON,"
+              + "data TEXT,"
               + "PRIMARY KEY (player_uuid, objective_slug)"
               + ")";
 
@@ -127,10 +133,7 @@ public class SQLDatabase implements BingoDatabase {
                       : null;
 
               String discoveryString = resultSet.getString("discovery_uuid");
-              UUID discoveryUuid =
-                  resultSet.wasNull()
-                      ? null
-                      : UUID.fromString(discoveryString);
+              UUID discoveryUuid = resultSet.wasNull() ? null : UUID.fromString(discoveryString);
 
               Timestamp discoveryTimestamp = resultSet.getTimestamp("discovery_time");
               LocalDateTime discoveryTime =
@@ -230,13 +233,14 @@ public class SQLDatabase implements BingoDatabase {
               position++;
               storePlayerCompletion(players, objectiveSlug, position);
 
+              if (position == 1) storeGoalDiscoverer(null, objectiveSlug);
+
               return position;
             });
   }
 
   @Override
-  public CompletableFuture<Integer> rewardPlayer(
-      UUID player, String objectiveSlug, ProgressItem progressItem) {
+  public CompletableFuture<Integer> rewardPlayer(UUID player, String objectiveSlug) {
     // See how many other players have completed this task
     return getCompletionCount(objectiveSlug)
         .thenApply(
@@ -257,37 +261,20 @@ public class SQLDatabase implements BingoDatabase {
   }
 
   @Override
-  public void storePlayerProgress(UUID playerId, String objectiveSlug, Object object) {
-    //    try (Connection connection = getConnection()) {
-    //      // Establish connection to the database
-    //
-    //      // Convert the objective object to JSON string
-    //      ObjectMapper objectMapper = new ObjectMapper();
-    //      String objectiveJson = objectMapper.writeValueAsString(object);
-    //
-    //      // Construct SQL for UPSERT operation
-    //      String upsertProgressSQL = "INSERT INTO bingo_progress (player_uuid, objective_slug,
-    // data) " +
-    //              "VALUES (?, ?, ?) " +
-    //              "ON DUPLICATE KEY UPDATE data = VALUES(data)";
-    //
-    //      // Prepare the statement
-    //      PreparedStatement upsertProgressStatement =
-    // connection.prepareStatement(upsertProgressSQL);
-    //      upsertProgressStatement.setString(1, playerId.toString());
-    //      upsertProgressStatement.setString(2, objectiveSlug);
-    //      upsertProgressStatement.setString(3, objectiveJson);
-    //
-    //      // Execute the UPSERT operation
-    //      upsertProgressStatement.executeUpdate();
-    //
-    //      // Close statement and connection
-    //      upsertProgressStatement.close();
-    //      connection.close();
-    //    } catch (SQLException | JsonProcessingException e) {
-    //      e.printStackTrace();
-    //      // Handle SQLException or JsonProcessingException appropriately
-    //    }
+  public CompletableFuture<Void> storePlayerProgress(
+      UUID playerId, String objectiveSlug, String dataAsString) {
+    return CompletableFuture.runAsync(
+        () -> storePlayerProgressImpl(playerId, objectiveSlug, dataAsString), EXECUTOR);
+  }
+
+  @SneakyThrows
+  public void storePlayerProgressImpl(UUID playerId, String objectiveSlug, String dataAsString) {
+    @Cleanup Connection conn = getConnection();
+    @Cleanup PreparedStatement stmt = conn.prepareStatement(UPSERT_PROGRESS_SQL);
+    stmt.setString(1, playerId.toString());
+    stmt.setString(2, objectiveSlug);
+    stmt.setString(3, dataAsString);
+    stmt.executeUpdate();
   }
 
   @Override
@@ -309,7 +296,7 @@ public class SQLDatabase implements BingoDatabase {
   private void storePlayerCompletionsImpl(
       List<UUID> uuids, String objectiveSlug, Integer position) {
     @Cleanup Connection conn = getConnection();
-    @Cleanup PreparedStatement stmt = conn.prepareStatement(UPSERT_PROGRESS_SQL);
+    @Cleanup PreparedStatement stmt = conn.prepareStatement(UPSERT_COMPLETED_SQL);
 
     Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
@@ -330,16 +317,16 @@ public class SQLDatabase implements BingoDatabase {
   }
 
   @Override
-  public CompletableFuture<Void> storeGoalDiscoverer(UUID uuid, String objectiveSlug) {
+  public CompletableFuture<Void> storeGoalDiscoverer(@Nullable UUID uuid, String objectiveSlug) {
     return CompletableFuture.runAsync(() -> storeGoalDiscovererImpl(uuid, objectiveSlug), EXECUTOR);
   }
 
   @SneakyThrows
-  public void storeGoalDiscovererImpl(UUID uuid, String objectiveSlug) {
+  public void storeGoalDiscovererImpl(@Nullable UUID uuid, String objectiveSlug) {
     @Cleanup Connection conn = getConnection();
     @Cleanup PreparedStatement stmt = conn.prepareStatement(UPDATE_OBJECTIVE_DISCOVERY_SQL);
 
-    stmt.setString(1, uuid.toString());
+    stmt.setString(1, (uuid != null) ? uuid.toString() : null);
     stmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
     stmt.setString(3, objectiveSlug);
     stmt.executeUpdate();
