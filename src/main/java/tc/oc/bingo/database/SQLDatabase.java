@@ -22,10 +22,8 @@ import tc.oc.occ.database.Database;
 
 public class SQLDatabase implements BingoDatabase {
 
-  private static final int MAX_THREADS = 2;
-
-  private static final String BINGO_LIFETIME_TABLE = "raindrop_lifetime";
-  private static final String LIFETIME_TABLE = "raindrop_lifetime";
+  private static final String BINGO_OBJECTIVES = "bingo_objectives";
+  private static final String BINGO_PROGRESS = "bingo_progress";
 
   private static final String PROGRESS_COUNT_QUERY =
       "SELECT COUNT(*) FROM bingo_progress WHERE objective_slug = ? AND completed";

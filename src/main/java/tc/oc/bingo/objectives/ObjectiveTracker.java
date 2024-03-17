@@ -33,22 +33,21 @@ public class ObjectiveTracker implements Listener {
     BingoPlayerCard bingoPlayerCard = Bingo.get().getCards().get(playerId);
     if (bingoPlayerCard == null) return null;
 
-    ProgressItem progressItem = bingoPlayerCard.getProgressList().get(objectiveSlug);
-    if (progressItem == null) return null;
-
-    return progressItem;
+    return bingoPlayerCard.getProgressList().get(objectiveSlug);
   }
 
   public void storeObjectiveData(Player player, String dataAsString) {
-    Bingo.get().storeObjectiveData(player.getUniqueId(), getObjectiveSlug(), dataAsString);
+    Bingo.get()
+        .getRewards()
+        .storeObjectiveData(player.getUniqueId(), getObjectiveSlug(), dataAsString);
   }
 
   public void reward(List<Player> players) {
-    Bingo.get().rewardPlayers(objectiveSlug, players);
+    Bingo.get().getRewards().rewardPlayers(objectiveSlug, players);
   }
 
   public void reward(Player player) {
-    Bingo.get().rewardPlayer(objectiveSlug, player);
+    Bingo.get().getRewards().rewardPlayer(objectiveSlug, player);
   }
 
   public @Nullable Match getMatch(World world) {

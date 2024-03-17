@@ -111,8 +111,6 @@ public class BingoCardMenu implements InventoryProvider {
 
     ProgressItem progressItem = playerCard.getProgressList().get(objectiveItem.getSlug());
 
-    // TODO: use ChatColor.RESET + "" + ChatColor.GREEN + "✓" somewhere to show completed
-
     boolean completed = progressItem != null && progressItem.isCompleted();
     short itemDamage = (short) (completed ? 10 : 8);
 
@@ -177,7 +175,10 @@ public class BingoCardMenu implements InventoryProvider {
       }
     }
 
-    boolean selfDiscovered = progressItem != null && progressItem.isCompleted() && progressItem.getPlacedPosition() != null;
+    boolean selfDiscovered =
+        progressItem != null
+            && progressItem.isCompleted()
+            && progressItem.getPlacedPosition() != null;
     if (selfDiscovered) {
       loreList.add("");
       loreList.add(
@@ -189,14 +190,18 @@ public class BingoCardMenu implements InventoryProvider {
     }
 
     // Add lore lines depending on the conditions
+    if (objectiveItem.getDiscoveryTime() != null) {
 
-    if (objectiveItem.getDiscoveryUUID() != null) {
-      @Nullable
-      String username =
-          PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
-      if (username != null) {
-        if (!selfDiscovered) loreList.add("");
-        loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + username);
+      if (objectiveItem.getDiscoveryUUID() != null) {
+        @Nullable
+        String username =
+            PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
+        if (username != null) {
+          if (!selfDiscovered) loreList.add("");
+          loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + username);
+        }
+      } else {
+        loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + "Many Players");
       }
     }
 

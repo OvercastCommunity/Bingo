@@ -17,10 +17,10 @@ import tc.oc.pgm.api.player.MatchPlayer;
 public class PlayerShiftingObjective extends ObjectiveTracker {
 
   public static final int MAX_RANGE = 8;
-  public static final int MIN_SHIFTERS = 4;
+  public static final int MIN_SHIFTERS = 2;
 
-  public static final int SAME_TEAM_COUNT = 1;
-  public static final int DIFF_TEAM_COUNT = 2;
+  public static final int SAME_TEAM_COUNT = 0;
+  public static final int DIFF_TEAM_COUNT = 1;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -35,9 +35,15 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
 
     Collection<MatchPlayer> players =
         nearbyPlayers.stream()
-            .filter(Player::isSneaking)
+            .filter(
+                player1 -> {
+                  return player1.isSneaking() || player1.equals(player);
+                })
             .map(match::getPlayer)
-            .filter(Objects::nonNull)
+            .filter(
+                obj -> {
+                  return Objects.nonNull(obj) && obj.canInteract();
+                })
             .collect(Collectors.toList());
 
     if (players.size() < MIN_SHIFTERS) return;
