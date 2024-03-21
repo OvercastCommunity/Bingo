@@ -8,10 +8,15 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +29,8 @@ import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.api.PGM;
 
 public class BingoCardMenu implements InventoryProvider {
+
+  public static Map<UUID, Integer> PLAYER_OBJECTIVE_INDEX = new HashMap<>();
 
   public static final SmartInventory INVENTORY =
       SmartInventory.builder()
@@ -40,14 +47,22 @@ public class BingoCardMenu implements InventoryProvider {
     bingo = Bingo.get();
   }
 
+  public static void openWithObjective(Player player, Integer objectiveIndex) {
+    PLAYER_OBJECTIVE_INDEX.put(player.getUniqueId(), objectiveIndex);
+    INVENTORY.open(player);
+    PLAYER_OBJECTIVE_INDEX.remove(player.getUniqueId());
+  }
+
   @Override
   public void init(Player player, InventoryContents contents) {
-
     int xOffset = 2;
 
     BingoCard bingoCard = Bingo.get().getBingoCard();
     BingoPlayerCard playerCard = bingo.getCards().getOrDefault(player.getUniqueId(), null);
     if (playerCard == null) return;
+
+    Integer requestedObjectiveIndex =
+        PLAYER_OBJECTIVE_INDEX.getOrDefault(player.getUniqueId(), null);
 
     contents.set(0, 0, ClickableItem.empty(getInfoItem()));
 
@@ -58,7 +73,9 @@ public class BingoCardMenu implements InventoryProvider {
               contents.set(
                   objectiveItem.getY(),
                   objectiveItem.getX() + xOffset,
-                  ClickableItem.of(makeIconFor(objectiveItem, playerCard), event -> {}));
+                  ClickableItem.of(
+                      makeIconFor(objectiveItem, playerCard, requestedObjectiveIndex),
+                      event -> {}));
             });
   }
 
@@ -107,15 +124,26 @@ public class BingoCardMenu implements InventoryProvider {
     return itemStack;
   }
 
-  private ItemStack makeIconFor(ObjectiveItem objectiveItem, BingoPlayerCard playerCard) {
+  private ItemStack makeIconFor(
+      ObjectiveItem objectiveItem,
+      BingoPlayerCard playerCard,
+      @Nullable Integer requestedObjectiveIndex) {
 
     ProgressItem progressItem = playerCard.getProgressList().get(objectiveItem.getSlug());
 
     boolean completed = progressItem != null && progressItem.isCompleted();
     short itemDamage = (short) (completed ? 10 : 8);
+    boolean hightlight =
+        requestedObjectiveIndex != null && (requestedObjectiveIndex == objectiveItem.getIndex());
 
     ItemStack itemStack = new ItemStack(Material.INK_SACK, 1, itemDamage);
     ItemMeta itemMeta = itemStack.getItemMeta();
+
+    if (hightlight) {
+      itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+      itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+    }
+
     int hintLevel = objectiveItem.getHintLevel();
 
     // When the next clue timestamp passes bump the hint level by 1

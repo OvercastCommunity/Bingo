@@ -21,12 +21,15 @@ public class FlowerPotObjective extends ObjectiveTracker {
     Block block = event.getClickedBlock();
     if (block.getType().equals(Material.FLOWER_POT)) {
       ItemStack itemInHand = player.getItemInHand();
-      if (itemInHand.getType().equals(Material.RED_ROSE)
-          || itemInHand.getType().equals(Material.YELLOW_FLOWER)) {
+      if (isFlower(itemInHand.getType())) {
         Match match = getMatch(event.getWorld());
         if (match == null) return;
         reward(event.getPlayer());
       }
     }
+  }
+
+  public boolean isFlower(Material material) {
+    return material.equals(Material.RED_ROSE) || material.equals(Material.YELLOW_FLOWER);
   }
 }

@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bukkit.Material;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
@@ -17,16 +18,17 @@ import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.database.ProgressItem;
 
 @Tracker("wool-collector")
-public class WoolCollectorObjective extends ObjectiveTracker {
+public class WoolCollectorObjective extends ObjectiveTracker
+    implements PersistentStore<List<Integer>> {
 
   public HashMap<UUID, List<Integer>> woolsCollected = new HashMap<>();
 
   private int minWoolCount = 5;
 
-  //  @Override
-  //  public void setConfig(ConfigurationSection config) {
-  //    minWoolCount = config.getInt("min-wool-count", 5);
-  //  }
+  @Override
+  public void setConfig(ConfigurationSection config) {
+    minWoolCount = config.getInt("min-wool-count", 5);
+  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerOnGroundChanged(final PlayerPickupItemEvent event) {
@@ -42,14 +44,14 @@ public class WoolCollectorObjective extends ObjectiveTracker {
     indexes.add(woolId);
     woolsCollected.put(playerId, indexes);
 
+    storeObjectiveData(event.getPlayer(), getStringForStore(indexes));
+
     if (indexes.size() >= minWoolCount) {
       reward(event.getPlayer());
-    } else {
-      String dataAsString = indexes.stream().map(Object::toString).collect(Collectors.joining(","));
-      storeObjectiveData(event.getPlayer(), dataAsString);
     }
   }
 
+  // TODO: test these
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onItemTransfer(InventoryMoveItemEvent event) {}
 
@@ -78,9 +80,15 @@ public class WoolCollectorObjective extends ObjectiveTracker {
     return woolsCollected.get(playerId);
   }
 
+  @Override
   public List<Integer> getDataFromString(@Nullable String string) {
     if (string == null) return new ArrayList<>();
 
     return Arrays.stream(string.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+  }
+
+  @Override
+  public String getStringForStore(List<Integer> indexes) {
+    return indexes.stream().map(Object::toString).collect(Collectors.joining(","));
   }
 }

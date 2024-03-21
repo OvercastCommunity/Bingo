@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginManager;
@@ -69,9 +70,7 @@ public class Bingo extends JavaPlugin {
             .map(this::buildTracker)
             .collect(Collectors.toList());
 
-    FileConfiguration config = getConfig();
-    trackers.forEach(
-        tracker -> tracker.setConfig(config.getConfigurationSection(tracker.getObjectiveSlug())));
+    loadTrackerConfigs(getConfig());
 
     PluginManager plMan = getServer().getPluginManager();
     getTrackersOfType(Listener.class).forEach(listener -> plMan.registerEvents(listener, this));
@@ -87,6 +86,14 @@ public class Bingo extends JavaPlugin {
     inventoryManager.init();
 
     this.cardRefresher = new CardRefresher();
+  }
+
+  public void loadTrackerConfigs(FileConfiguration config) {
+    trackers.forEach(
+        tracker -> {
+          ConfigurationSection section = config.getConfigurationSection(tracker.getObjectiveSlug());
+          if (section != null) tracker.setConfig(section);
+        });
   }
 
   private <T> Stream<T> getTrackersOfType(Class<T> type) {

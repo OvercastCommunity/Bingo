@@ -31,12 +31,13 @@ public class RewardManager implements Listener {
 
   public RewardManager(Bingo bingo) {
     this.bingo = bingo;
-    Bukkit.getServer().getPluginManager().registerEvents(this, Bingo.get());
+    Bukkit.getServer().getPluginManager().registerEvents(this, bingo);
   }
 
   @EventHandler
   public void onRaindropEarn(PlayerEarnCurrencyEvent event) {
     if (!Config.get().isDebug()) return;
+    // TODO: test why not working
     event
         .getPlayer()
         .sendMessage(event.getCustomAmount() + " " + event.getReason() + " " + event.getReason());
@@ -213,13 +214,15 @@ public class RewardManager implements Listener {
       completionMap.put(item.getIndex(), progressItem != null && progressItem.isCompleted());
     }
 
-    int completedX = completedIndex / 5;
-    int completedY = completedIndex % 5;
+    // TODO: check logic with gridWidth added
+    int gridWidth = Config.get().getGridWidth();
+    int completedX = completedIndex / gridWidth;
+    int completedY = completedIndex % gridWidth;
 
     // Check for horizontal line containing the completed item
     boolean horizontalLine = true;
-    for (int j = 0; j < 5; j++) {
-      if (!completionMap.getOrDefault(completedX * 5 + j, false)) {
+    for (int j = 0; j < gridWidth; j++) {
+      if (!completionMap.getOrDefault(completedX * gridWidth + j, false)) {
         horizontalLine = false;
         break;
       }
@@ -227,8 +230,8 @@ public class RewardManager implements Listener {
 
     // Check for vertical line containing the completed item
     boolean verticalLine = true;
-    for (int i = 0; i < 5; i++) {
-      if (!completionMap.getOrDefault(i * 5 + completedY, false)) {
+    for (int i = 0; i < gridWidth; i++) {
+      if (!completionMap.getOrDefault(i * gridWidth + completedY, false)) {
         verticalLine = false;
         break;
       }
@@ -238,11 +241,11 @@ public class RewardManager implements Listener {
     // Check for diagonal lines containing the completed item
     boolean diagonal1Line = true;
     boolean diagonal2Line = true;
-    for (int i = 0; i < 5; i++) {
-      if (!completionMap.getOrDefault(i * 5 + i, false)) {
+    for (int i = 0; i < gridWidth; i++) {
+      if (!completionMap.getOrDefault(i * gridWidth + i, false)) {
         diagonal1Line = false;
       }
-      if (!completionMap.getOrDefault(i * 5 + (4 - i), false)) {
+      if (!completionMap.getOrDefault(i * gridWidth + ((gridWidth - 1) - i), false)) {
         diagonal2Line = false;
       }
     }
@@ -268,7 +271,7 @@ public class RewardManager implements Listener {
       }
     }
 
-    if (lines != 0) {
+    if (lines > 0) {
       return new Reward(RewardType.LINE, lines);
     }
 

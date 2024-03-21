@@ -5,6 +5,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -14,16 +15,16 @@ import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("alphabet-killer")
-public class AlphabetObjective extends ObjectiveTracker {
+public class AlphabetObjective extends ObjectiveTracker implements PersistentStore<Integer> {
 
   private int indexCountRequired = 25;
 
   public Map<UUID, Integer> alphabetProgress = new HashMap<>();
 
-  //  @Override
-  //  public void setConfig(ConfigurationSection config) {
-  //    indexCountRequired = config.getInt("index-count-required", 25);
-  //  }
+  @Override
+  public void setConfig(ConfigurationSection config) {
+    indexCountRequired = config.getInt("index-count-required", 25);
+  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(PlayerQuitEvent event) {
@@ -40,25 +41,29 @@ public class AlphabetObjective extends ObjectiveTracker {
     MatchPlayer player = killer.getPlayer().orElse(null);
     if (player == null) return;
 
-    // Convert killed players name to alphabet index
-    char firstChar = event.getPlayer().getNameLegacy().toUpperCase(Locale.ROOT).charAt(0);
-    if (!Character.isAlphabetic(firstChar)) return;
-    int killIndex = firstChar - 'A' + 1;
-
     UUID playerId = player.getId();
     Integer currentIndex = getCurrentIndex(playerId);
+    int index = 'A' + currentIndex;
 
-    if (currentIndex + 1 != killIndex) return;
+    // Check if current character is in the name
+    Integer finalCurrentIndex = currentIndex;
+    boolean found =
+        event
+            .getPlayer()
+            .getNameLegacy()
+            .toLowerCase(Locale.ROOT)
+            .chars()
+            .anyMatch(c -> c == index);
 
+    if (!found) return;
     Integer newIndex = ++currentIndex;
 
     alphabetProgress.put(playerId, newIndex);
 
     // When they reach the index count required i.e 25 = 'Z'
-    if (newIndex == indexCountRequired) {
+    storeObjectiveData(player.getBukkit(), getStringForStore(newIndex));
+    if (newIndex >= indexCountRequired) {
       reward(player.getBukkit());
-    } else {
-      storeObjectiveData(player.getBukkit(), newIndex.toString());
     }
   }
 
@@ -79,8 +84,14 @@ public class AlphabetObjective extends ObjectiveTracker {
     return alphabetProgress.get(playerId);
   }
 
+  @Override
   public Integer getDataFromString(@Nullable String string) {
     if (string == null) return -1;
     return Integer.parseInt(string);
+  }
+
+  @Override
+  public String getStringForStore(Integer integer) {
+    return integer.toString();
   }
 }

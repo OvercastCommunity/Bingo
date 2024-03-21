@@ -4,8 +4,10 @@ import co.aikar.commands.BaseCommand;
 import co.aikar.commands.annotation.CommandAlias;
 import co.aikar.commands.annotation.CommandPermission;
 import co.aikar.commands.annotation.Default;
+import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
@@ -16,7 +18,7 @@ public class CardCommand extends BaseCommand {
 
   @Default
   @CommandPermission("bingo.card")
-  public void bingoCard(CommandSender sender) {
+  public void bingoCard(CommandSender sender, @Optional Integer index) {
     if (sender instanceof Player) {
       Player player = (Player) sender;
 
@@ -30,7 +32,8 @@ public class CardCommand extends BaseCommand {
           .loadBingoCard(player.getUniqueId())
           .whenComplete(
               (bingoPlayerCard, throwable) -> {
-                BingoCardMenu.INVENTORY.open(player);
+                if (index != null) BingoCardMenu.openWithObjective(player, index);
+                else BingoCardMenu.INVENTORY.open(player);
               });
     }
   }
@@ -47,6 +50,8 @@ public class CardCommand extends BaseCommand {
   public void bingoReload(CommandSender sender) {
     sender.sendMessage("Reloading Bingo config file.");
     Bingo.get().reloadConfig();
-    Config.create(Bingo.get().getConfig());
+    FileConfiguration config = Bingo.get().getConfig();
+    Config.create(config);
+    Bingo.get().loadTrackerConfigs(config);
   }
 }

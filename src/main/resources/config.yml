@@ -4,5 +4,35 @@ enable: true
 grid-width: false
 
 # Objective config options
+alphabet-killer:
+  index-count-required: 25
 big-fall:
   min-fall-height: 100
+defender-kill:
+  objective-range: 10
+eating:
+  foods-required: 3
+hedgehog:
+  min-arrows: 25
+icarus-height:
+  min-rise-height: 100
+kill-streak:
+  required-streak: 10
+match-length:
+  required-mins: 60
+picky-voter:
+  min-map-votes: 4
+  max-map-votes: 4
+player-craft:
+  material-name: "PISTON_BASE"
+player-shifting:
+  min-range: 8
+  same-team-count: 1
+  other-team-count: 2
+quick-kills:
+  kills-required: 3
+  time-threshold-seconds: 5
+water-dropper:
+  min-fall-height: 100
+wool-collector:
+  min-wool-count: 5

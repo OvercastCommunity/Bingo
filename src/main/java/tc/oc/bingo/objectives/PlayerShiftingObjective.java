@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,11 +17,18 @@ import tc.oc.pgm.api.player.MatchPlayer;
 @Tracker("player-shifting")
 public class PlayerShiftingObjective extends ObjectiveTracker {
 
-  public static final int MAX_RANGE = 8;
-  public static final int MIN_SHIFTERS = 2;
+  public int minRange = 8;
+  public int minShifters = 4;
+  public int sameTeamCount = 1;
+  public int otherTeamCount = 2;
 
-  public static final int SAME_TEAM_COUNT = 0;
-  public static final int DIFF_TEAM_COUNT = 1;
+  @Override
+  public void setConfig(ConfigurationSection config) {
+    minRange = config.getInt("min-range", 8);
+    sameTeamCount = config.getInt("same-team-count", 1);
+    otherTeamCount = config.getInt("other-team-count", 2);
+    minShifters = sameTeamCount + otherTeamCount;
+  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -31,7 +39,7 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
 
     Player player = event.getPlayer();
     Collection<Player> nearbyPlayers =
-        player.getWorld().getNearbyPlayers(player.getLocation(), MAX_RANGE);
+        player.getWorld().getNearbyPlayers(player.getLocation(), minRange);
 
     Collection<MatchPlayer> players =
         nearbyPlayers.stream()
@@ -46,7 +54,7 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
                 })
             .collect(Collectors.toList());
 
-    if (players.size() < MIN_SHIFTERS) return;
+    if (players.size() < minShifters) return;
 
     // Create map for count of each team's players
     Map<Competitor, Long> teamCounts =
@@ -61,7 +69,8 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
                   Competitor playerTeam = mp.getCompetitor();
                   long sameTeamCount = teamCounts.getOrDefault(playerTeam, 0L) - 1;
                   long differentTeamCount = players.size() - sameTeamCount - 1;
-                  return sameTeamCount >= SAME_TEAM_COUNT && differentTeamCount >= DIFF_TEAM_COUNT;
+                  return sameTeamCount >= this.sameTeamCount
+                      && differentTeamCount >= otherTeamCount;
                 })
             .map(MatchPlayer::getBukkit)
             .collect(Collectors.toList());

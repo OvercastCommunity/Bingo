@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
-import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.goals.GoalMatchModule;
 import tc.oc.pgm.goals.events.GoalCompleteEvent;
@@ -19,7 +19,7 @@ public class CleanMatchObjective extends ObjectiveTracker {
   public Set<Competitor> objectivesTouched = new HashSet<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onMatchLoad(MatchLoadEvent event) {
+  public void onMatchLoad(MatchAfterLoadEvent event) {
     goals = event.getMatch().getModule(GoalMatchModule.class);
     objectivesTouched.clear();
   }

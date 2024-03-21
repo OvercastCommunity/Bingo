@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
@@ -15,10 +16,16 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 @Tracker("quick-kills")
 public class QuickKillsObjective extends ObjectiveTracker {
 
-  public final int KILLS_THRESHOLD = 3;
-  public final long TIME_THRESHOLD_SECONDS = 5;
+  public int killsRequired = 3;
+  public long timeThresholdSeconds = 5;
 
   private final Map<UUID, Set<Long>> lastKillTimes = new HashMap<>();
+
+  @Override
+  public void setConfig(ConfigurationSection config) {
+    killsRequired = config.getInt("kills-required", 3);
+    timeThresholdSeconds = config.getLong("time-threshold-seconds", 5);
+  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {
@@ -37,14 +44,14 @@ public class QuickKillsObjective extends ObjectiveTracker {
 
     // Update kill count and check if the goal is reached
     int size = updateKillCount(player.getId());
-    if (size >= KILLS_THRESHOLD) {
+    if (size >= killsRequired) {
       reward(player.getBukkit());
     }
   }
 
   private int updateKillCount(UUID playerUUID) {
     long currentTime = System.currentTimeMillis();
-    long longestTimeAllowed = currentTime - TIME_THRESHOLD_SECONDS * 1000;
+    long longestTimeAllowed = currentTime - timeThresholdSeconds * 1000;
 
     // Get the set of timestamps for the current player
     Set<Long> timestamps = lastKillTimes.getOrDefault(playerUUID, new HashSet<>());
