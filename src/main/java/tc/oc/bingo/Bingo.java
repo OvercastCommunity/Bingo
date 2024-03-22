@@ -4,6 +4,7 @@ import co.aikar.commands.BukkitCommandManager;
 import fr.minuskube.inv.InventoryManager;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -40,7 +41,7 @@ public class Bingo extends JavaPlugin {
   @Getter(AccessLevel.NONE)
   private BingoDatabase database;
 
-  private final HashMap<UUID, BingoPlayerCard> cards = new HashMap<>();
+  private final Map<UUID, BingoPlayerCard> cards = new HashMap<>();
   private InventoryManager inventoryManager;
   private BingoCard bingoCard = null;
   private RewardManager rewards;

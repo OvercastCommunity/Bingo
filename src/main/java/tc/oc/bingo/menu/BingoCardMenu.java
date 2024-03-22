@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.Style;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -27,12 +30,16 @@ import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.api.PGM;
+import tc.oc.pgm.util.named.NameStyle;
+import tc.oc.pgm.util.named.Named;
+import tc.oc.pgm.util.player.PlayerComponent;
+import tc.oc.pgm.util.text.TextTranslations;
 
 public class BingoCardMenu implements InventoryProvider {
 
-  public static Map<UUID, Integer> PLAYER_OBJECTIVE_INDEX = new HashMap<>();
+  private static final Map<UUID, Integer> PLAYER_OBJECTIVE_INDEX = new HashMap<>();
 
-  public static final SmartInventory INVENTORY =
+  private static final SmartInventory INVENTORY =
       SmartInventory.builder()
           .id("bingoCard")
           .provider(new BingoCardMenu())
@@ -47,7 +54,7 @@ public class BingoCardMenu implements InventoryProvider {
     bingo = Bingo.get();
   }
 
-  public static void openWithObjective(Player player, Integer objectiveIndex) {
+  public static void open(Player player, @Nullable Integer objectiveIndex) {
     PLAYER_OBJECTIVE_INDEX.put(player.getUniqueId(), objectiveIndex);
     INVENTORY.open(player);
     PLAYER_OBJECTIVE_INDEX.remove(player.getUniqueId());
@@ -74,7 +81,7 @@ public class BingoCardMenu implements InventoryProvider {
                   objectiveItem.getY(),
                   objectiveItem.getX() + xOffset,
                   ClickableItem.of(
-                      makeIconFor(objectiveItem, playerCard, requestedObjectiveIndex),
+                      makeIconFor(player, objectiveItem, playerCard, requestedObjectiveIndex),
                       event -> {}));
             });
   }
@@ -125,6 +132,7 @@ public class BingoCardMenu implements InventoryProvider {
   }
 
   private ItemStack makeIconFor(
+      Player viewer,
       ObjectiveItem objectiveItem,
       BingoPlayerCard playerCard,
       @Nullable Integer requestedObjectiveIndex) {
@@ -224,12 +232,23 @@ public class BingoCardMenu implements InventoryProvider {
         @Nullable
         String username =
             PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
+
+        Component discoveryPlayer =
+            PlayerComponent.player(objectiveItem.getDiscoveryUUID(), NameStyle.PLAIN).style(Style.style(NamedTextColor.GOLD));
+        String discoveryName = TextTranslations.translateLegacy(discoveryPlayer, viewer);
+
         if (username != null) {
           if (!selfDiscovered) loreList.add("");
-          loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + username);
+          // TODO: use online players getName
+          loreList.add(ChatColor.GRAY + "Discovered by: " + discoveryName);
         }
       } else {
-        loreList.add(ChatColor.GRAY + "Discovered by: " + ChatColor.GOLD + "Many Players");
+        loreList.add(
+            ChatColor.GRAY
+                + "Discovered by: "
+                + ChatColor.GOLD
+                + ChatColor.ITALIC
+                + "Several Players");
       }
     }
 

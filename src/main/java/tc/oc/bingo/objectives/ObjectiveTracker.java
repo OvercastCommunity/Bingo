@@ -43,7 +43,11 @@ public class ObjectiveTracker implements Listener {
   }
 
   public void reward(List<Player> players) {
-    Bingo.get().getRewards().rewardPlayers(objectiveSlug, players);
+    if (players.size() == 1) {
+      Bingo.get().getRewards().rewardPlayer(objectiveSlug, players.get(0));
+    } else {
+      Bingo.get().getRewards().rewardPlayers(objectiveSlug, players);
+    }
   }
 
   public void reward(Player player) {

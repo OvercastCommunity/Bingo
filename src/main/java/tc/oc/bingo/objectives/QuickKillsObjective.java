@@ -51,18 +51,17 @@ public class QuickKillsObjective extends ObjectiveTracker {
 
   private int updateKillCount(UUID playerUUID) {
     long currentTime = System.currentTimeMillis();
-    long longestTimeAllowed = currentTime - timeThresholdSeconds * 1000;
+    long longestTimeAllowed = currentTime - (timeThresholdSeconds * 1000);
 
     // Get the set of timestamps for the current player
-    Set<Long> timestamps = lastKillTimes.getOrDefault(playerUUID, new HashSet<>());
+    Set<Long> timestamps = lastKillTimes.computeIfAbsent(playerUUID, uuid -> new HashSet<>());
 
     // Remove timestamps older than longestTimeAllowed
     timestamps.removeIf(timestamp -> timestamp < longestTimeAllowed);
 
     // Update the set of timestamps for the current player with the current time
     timestamps.add(currentTime);
-    lastKillTimes.put(playerUUID, timestamps);
 
-    return lastKillTimes.size();
+    return timestamps.size();
   }
 }

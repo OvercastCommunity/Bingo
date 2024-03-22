@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -21,7 +22,7 @@ import tc.oc.bingo.database.ProgressItem;
 public class WoolCollectorObjective extends ObjectiveTracker
     implements PersistentStore<List<Integer>> {
 
-  public HashMap<UUID, List<Integer>> woolsCollected = new HashMap<>();
+  public Map<UUID, List<Integer>> woolsCollected = new HashMap<>();
 
   private int minWoolCount = 5;
 

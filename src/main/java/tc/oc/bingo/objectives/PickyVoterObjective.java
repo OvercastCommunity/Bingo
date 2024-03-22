@@ -13,17 +13,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import tc.oc.bingo.Bingo;
-import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
-import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.rotation.vote.events.MatchPlayerVoteEvent;
 
 @Tracker("picky-voter")
 public class PickyVoterObjective extends ObjectiveTracker {
 
-  public HashMap<UUID, List<String>> playerVotes = new HashMap<>();
-
-  public static final int POST_LOAD_CHECK_DELAY = 5000;
+  // TODO: change all hash maps to map
+  public Map<UUID, List<String>> playerVotes = new HashMap<>();
 
   private int minMapVotes = 4;
   private int maxMapVotes = 4;
@@ -49,29 +46,21 @@ public class PickyVoterObjective extends ObjectiveTracker {
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void onMatchLoaded(MatchAfterLoadEvent event) {
-    getServer()
-        .getScheduler()
-        .runTaskLater(
-            Bingo.get(),
-            () -> {
-              List<Player> uuids =
-                  playerVotes.entrySet().stream()
-                      .filter(
-                          entry -> {
-                            int voteCount = entry.getValue().size();
-                            return voteCount >= minMapVotes && voteCount <= maxMapVotes;
-                          })
-                      .map(Map.Entry::getKey)
-                      .map(uuid -> event.getMatch().getPlayer(uuid))
-                      .filter(Objects::nonNull)
-                      .map(MatchPlayer::getBukkit)
-                      .collect(Collectors.toList());
+  public void onMatchLoad(MatchLoadEvent event) {
+    List<Player> uuids =
+        playerVotes.entrySet().stream()
+            .filter(
+                entry -> {
+                  int voteCount = entry.getValue().size();
+                  return voteCount >= minMapVotes && voteCount <= maxMapVotes;
+                })
+            .map(Map.Entry::getKey)
+            .map(uuid -> getServer().getPlayer(uuid))
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
 
-              playerVotes.clear();
+    playerVotes.clear();
 
-              if (!uuids.isEmpty()) reward(uuids);
-            },
-            POST_LOAD_CHECK_DELAY);
+    if (!uuids.isEmpty()) reward(uuids);
   }
 }

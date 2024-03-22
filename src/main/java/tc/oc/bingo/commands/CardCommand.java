@@ -32,8 +32,7 @@ public class CardCommand extends BaseCommand {
           .loadBingoCard(player.getUniqueId())
           .whenComplete(
               (bingoPlayerCard, throwable) -> {
-                if (index != null) BingoCardMenu.openWithObjective(player, index);
-                else BingoCardMenu.INVENTORY.open(player);
+                BingoCardMenu.open(player, index);
               });
     }
   }

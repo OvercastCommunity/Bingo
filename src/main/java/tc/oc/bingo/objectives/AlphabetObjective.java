@@ -5,7 +5,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -15,16 +14,11 @@ import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("alphabet-killer")
-public class AlphabetObjective extends ObjectiveTracker implements PersistentStore<Integer> {
+public class AlphabetObjective extends ObjectiveTracker implements PersistentStore<Character> {
 
-  private int indexCountRequired = 25;
+  private static final char LAST_CHAR = 'Z';
 
-  public Map<UUID, Integer> alphabetProgress = new HashMap<>();
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    indexCountRequired = config.getInt("index-count-required", 25);
-  }
+  public Map<UUID, Character> alphabetProgress = new HashMap<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(PlayerQuitEvent event) {
@@ -42,35 +36,34 @@ public class AlphabetObjective extends ObjectiveTracker implements PersistentSto
     if (player == null) return;
 
     UUID playerId = player.getId();
-    Integer currentIndex = getCurrentIndex(playerId);
-    int index = 'A' + currentIndex;
+    char currentChar = getCurrentIndex(playerId);
 
     // Check if current character is in the name
-    Integer finalCurrentIndex = currentIndex;
     boolean found =
         event
             .getPlayer()
-            .getNameLegacy()
-            .toLowerCase(Locale.ROOT)
-            .chars()
-            .anyMatch(c -> c == index);
+            .getBukkit()
+            .getName(player.getBukkit())
+            .toUpperCase(Locale.ROOT)
+            .contains(currentChar + "");
 
     if (!found) return;
-    Integer newIndex = ++currentIndex;
 
-    alphabetProgress.put(playerId, newIndex);
-
-    // When they reach the index count required i.e 25 = 'Z'
-    storeObjectiveData(player.getBukkit(), getStringForStore(newIndex));
-    if (newIndex >= indexCountRequired) {
+    // When they reach 'Z' reward
+    if (currentChar >= LAST_CHAR) {
       reward(player.getBukkit());
+    } else {
+      currentChar++; // bump current char before storing
+      storeObjectiveData(player.getBukkit(), getStringForStore(currentChar));
     }
+
+    alphabetProgress.put(playerId, currentChar);
   }
 
-  public Integer getCurrentIndex(UUID playerId) {
+  public char getCurrentIndex(UUID playerId) {
     // Create or fetch progress item to cache
     if (!alphabetProgress.containsKey(playerId)) {
-      Integer index = 0;
+      char index = 'A';
       ProgressItem progressItem = getProgress(playerId);
 
       if (progressItem != null) {
@@ -85,13 +78,13 @@ public class AlphabetObjective extends ObjectiveTracker implements PersistentSto
   }
 
   @Override
-  public Integer getDataFromString(@Nullable String string) {
-    if (string == null) return -1;
-    return Integer.parseInt(string);
+  public Character getDataFromString(@Nullable String string) {
+    if (string == null) return 'A';
+    return string.charAt(0);
   }
 
   @Override
-  public String getStringForStore(Integer integer) {
-    return integer.toString();
+  public String getStringForStore(Character character) {
+    return character + "";
   }
 }

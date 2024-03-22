@@ -106,6 +106,6 @@ public class Messages {
                         text("Click to see your progress using ", NamedTextColor.GRAY)
                             .append(
                                 text("/bingo", NamedTextColor.YELLOW, TextDecoration.UNDERLINED))))
-                .clickEvent(runCommand("/bingo")));
+                .clickEvent(runCommand("/bingo " + objectiveItem.getIndex())));
   }
 }

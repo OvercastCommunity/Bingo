@@ -1,6 +1,7 @@
 package tc.oc.bingo.objectives;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
@@ -18,7 +19,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
   private int objectiveRange = 10;
 
   public GoalMatchModule goals = null;
-  public HashMap<Competitor, Set<Vector>> objectiveLocations = new HashMap<>();
+  public Map<Competitor, Set<Vector>> objectiveLocations = new HashMap<>();
 
   @Override
   public void setConfig(ConfigurationSection config) {
@@ -31,6 +32,8 @@ public class DefenderKillObjective extends ObjectiveTracker {
     objectiveLocations.clear();
 
     if (goals == null) return;
+
+    // TODO: ignore objectives above a set bound
 
     event
         .getMatch()

@@ -2,6 +2,7 @@ package tc.oc.bingo.objectives;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.bukkit.Material;
@@ -16,7 +17,7 @@ public class EatingObjective extends ObjectiveTracker {
 
   public int foodsRequired = 3;
 
-  public HashMap<UUID, Set<Integer>> consumedIds = new HashMap<>();
+  private Map<UUID, Set<Integer>> consumedIds = new HashMap<>();
 
   @Override
   public void setConfig(ConfigurationSection config) {
