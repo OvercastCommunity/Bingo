@@ -1,7 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import static org.bukkit.Bukkit.getServer;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,7 +18,6 @@ import tc.oc.pgm.rotation.vote.events.MatchPlayerVoteEvent;
 @Tracker("picky-voter")
 public class PickyVoterObjective extends ObjectiveTracker {
 
-  // TODO: change all hash maps to map
   public Map<UUID, List<String>> playerVotes = new HashMap<>();
 
   private int minMapVotes = 4;
@@ -55,7 +53,7 @@ public class PickyVoterObjective extends ObjectiveTracker {
                   return voteCount >= minMapVotes && voteCount <= maxMapVotes;
                 })
             .map(Map.Entry::getKey)
-            .map(uuid -> getServer().getPlayer(uuid))
+            .map(uuid -> Bukkit.getServer().getPlayer(uuid))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
 

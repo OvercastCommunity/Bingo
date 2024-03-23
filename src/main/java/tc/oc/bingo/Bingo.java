@@ -12,6 +12,7 @@ import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.Listener;
@@ -73,7 +74,7 @@ public class Bingo extends JavaPlugin {
 
     loadTrackerConfigs(getConfig());
 
-    PluginManager plMan = getServer().getPluginManager();
+    PluginManager plMan = Bukkit.getServer().getPluginManager();
     getTrackersOfType(Listener.class).forEach(listener -> plMan.registerEvents(listener, this));
 
     plMan.registerEvents(new PlayerJoinListener(this), this);

@@ -31,7 +31,6 @@ import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.util.named.NameStyle;
-import tc.oc.pgm.util.named.Named;
 import tc.oc.pgm.util.player.PlayerComponent;
 import tc.oc.pgm.util.text.TextTranslations;
 
@@ -234,7 +233,8 @@ public class BingoCardMenu implements InventoryProvider {
             PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
 
         Component discoveryPlayer =
-            PlayerComponent.player(objectiveItem.getDiscoveryUUID(), NameStyle.PLAIN).style(Style.style(NamedTextColor.GOLD));
+            PlayerComponent.player(objectiveItem.getDiscoveryUUID(), NameStyle.PLAIN)
+                .style(Style.style(NamedTextColor.GOLD));
         String discoveryName = TextTranslations.translateLegacy(discoveryPlayer, viewer);
 
         if (username != null) {

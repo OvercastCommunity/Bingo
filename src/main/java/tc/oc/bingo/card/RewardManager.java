@@ -43,7 +43,7 @@ public class RewardManager implements Listener {
         .sendMessage(event.getCustomAmount() + " " + event.getReason() + " " + event.getReason());
   }
 
-  public ProgressItem shouldReward(Player player, String objectiveSlug) {
+  public ProgressCombo shouldReward(Player player, String objectiveSlug) {
     BingoPlayerCard bingoPlayerCard = bingo.getCards().get(player.getUniqueId());
     if (bingoPlayerCard == null) return null;
 
@@ -58,12 +58,12 @@ public class RewardManager implements Listener {
 
     progressItem.setComplete();
 
-    return progressItem;
+    return ProgressCombo.of(bingoPlayerCard, progressItem);
   }
 
   public void rewardPlayers(String objectiveSlug, List<Player> players) {
 
-    List<ProgressItem> filteredCardItems =
+    List<ProgressCombo> filteredCardItems =
         players.stream()
             .map(player -> shouldReward(player, objectiveSlug))
             .collect(Collectors.toList());
@@ -71,7 +71,7 @@ public class RewardManager implements Listener {
     if (filteredCardItems.isEmpty()) return;
 
     List<UUID> uuids =
-        filteredCardItems.stream().map(ProgressItem::getPlayerUUID).collect(Collectors.toList());
+        filteredCardItems.stream().map(ProgressCombo::getPlayerUUID).collect(Collectors.toList());
 
     ObjectiveItem objectiveItem =
         bingo.getBingoCard().getObjectives().stream()
@@ -91,7 +91,8 @@ public class RewardManager implements Listener {
         .rewardPlayers(uuids, objectiveSlug)
         .thenAccept(
             position -> {
-              filteredCardItems.forEach(progressItem -> progressItem.setPlacedPosition(position));
+              filteredCardItems.forEach(
+                  rewardedCombo -> rewardedCombo.progressItem.setPlacedPosition(position));
               if (objectiveItem != null && match != null && position == 1) {
                 objectiveItem.setComplete(null);
                 match.sendMessage(Messages.getFirstCompletion());
@@ -104,7 +105,26 @@ public class RewardManager implements Listener {
     match.sendMessage(
         Messages.goalCompleted(text(Messages.getManyString(uuids.size())), objectiveItem));
 
-    // TODO: reward players with raindrops
+    filteredCardItems.forEach(
+        rewardedCombo -> {
+          MatchPlayer matchPlayer =
+              PGM.get().getMatchManager().getPlayer(rewardedCombo.getPlayerUUID());
+          Player player = matchPlayer.getBukkit();
+          if (player == null) return;
+
+          RewardType rewardType =
+              issueRaindropRewards(
+                  player,
+                  bingo.getBingoCard(),
+                  rewardedCombo.playerCard,
+                  rewardedCombo.progressItem);
+
+          if (rewardType.isBroadcast()) {
+            match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, rewardType));
+          }
+        });
+
+    // TODO: refactor so methods share logic and also do sound/fireworks in game on goal complete
   }
 
   public void rewardPlayer(String objectiveSlug, Player player) {
@@ -278,6 +298,25 @@ public class RewardManager implements Listener {
     return new Reward(RewardType.SINGLE);
   }
 
+  public static class ProgressCombo {
+
+    public BingoPlayerCard playerCard;
+    public ProgressItem progressItem;
+
+    public ProgressCombo(BingoPlayerCard playerCard, ProgressItem progressItem) {
+      this.playerCard = playerCard;
+      this.progressItem = progressItem;
+    }
+
+    public UUID getPlayerUUID() {
+      return progressItem.getPlayerUUID();
+    }
+
+    public static ProgressCombo of(BingoPlayerCard playerCard, ProgressItem progressItem) {
+      return new ProgressCombo(playerCard, progressItem);
+    }
+  }
+
   public static class Reward {
 
     private final RewardType type;
@@ -285,7 +324,7 @@ public class RewardManager implements Listener {
 
     public Reward(RewardType type) {
       this.type = type;
-      this.amount = 0;
+      this.amount = 1;
     }
 
     public Reward(RewardType type, int amount) {

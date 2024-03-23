@@ -1,7 +1,6 @@
 package tc.oc.bingo.listeners;
 
-import static org.bukkit.Bukkit.getServer;
-
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -19,7 +18,7 @@ public class PlayerJoinListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerJoin(PlayerJoinEvent event) {
-    getServer()
+    Bukkit.getServer()
         .getScheduler()
         .runTaskAsynchronously(
             bingo,

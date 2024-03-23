@@ -1,34 +1,60 @@
 package tc.oc.bingo.objectives;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.util.Vector;
+import tc.oc.bingo.Bingo;
+import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
-import tc.oc.pgm.tracker.TrackerMatchModule;
-import tc.oc.pgm.util.event.player.PlayerOnGroundEvent;
+import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("icarus-height")
 public class IcarusObjective extends ObjectiveTracker {
 
-  public Map<UUID, Vector> placedWater = new HashMap<>();
+  public static final int CHECK_DELAY_TICKS = 2;
 
-  private int minRiseHeight = 100;
-  private TrackerMatchModule tracker = null;
+  private int minVerticalVelocity = 6;
+  private Match match = null;
 
   @Override
   public void setConfig(ConfigurationSection config) {
-    minRiseHeight = config.getInt("min-rise-height", 100);
+    minVerticalVelocity = config.getInt("min-vertical-velocity", 6);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
-    tracker = event.getMatch().getModule(TrackerMatchModule.class);
+    match = event.getMatch();
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
-  public void onPlayerOnGroundChanged(final PlayerOnGroundEvent event) {}
+  @EventHandler
+  public void onEntityDamage(EntityDamageByEntityEvent event) {
+    if (match == null) return;
+
+    if (event.getDamager() instanceof TNTPrimed && event.getEntity() instanceof Player) {
+      Player player = (Player) event.getEntity();
+
+      MatchPlayer matchPlayer = match.getPlayer(player);
+      if (matchPlayer == null || !matchPlayer.isParticipating()) return;
+
+      // Schedule a task to get player's velocity a few ticks later
+      Bukkit.getServer()
+          .getScheduler()
+          .runTaskLater(
+              Bingo.get(),
+              () -> {
+                if (matchPlayer.isDead()) return;
+
+                Vector velocity = player.getVelocity();
+                if (velocity.getY() >= minVerticalVelocity) {
+                  reward(player);
+                }
+              },
+              CHECK_DELAY_TICKS);
+    }
+  }
 }
