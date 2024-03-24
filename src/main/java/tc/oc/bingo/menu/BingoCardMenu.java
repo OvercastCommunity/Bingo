@@ -8,10 +8,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.Style;
@@ -36,27 +33,30 @@ import tc.oc.pgm.util.text.TextTranslations;
 
 public class BingoCardMenu implements InventoryProvider {
 
-  private static final Map<UUID, Integer> PLAYER_OBJECTIVE_INDEX = new HashMap<>();
+  private final BingoPlayerCard playerCard;
+  private final Integer objectiveIndex;
 
-  private static final SmartInventory INVENTORY =
-      SmartInventory.builder()
-          .id("bingoCard")
-          .provider(new BingoCardMenu())
-          .size(5, 9)
-          .title("Bingo Card")
-          .manager(Bingo.get().getInventoryManager())
-          .build();
-
-  public Bingo bingo;
-
-  public BingoCardMenu() {
-    bingo = Bingo.get();
+  public BingoCardMenu(BingoPlayerCard bingoPlayerCard, @Nullable Integer objectiveIndex) {
+    this.playerCard = bingoPlayerCard;
+    this.objectiveIndex = objectiveIndex;
   }
 
-  public static void open(Player player, @Nullable Integer objectiveIndex) {
-    PLAYER_OBJECTIVE_INDEX.put(player.getUniqueId(), objectiveIndex);
-    INVENTORY.open(player);
-    PLAYER_OBJECTIVE_INDEX.remove(player.getUniqueId());
+  public static SmartInventory getInventory(
+      BingoPlayerCard bingoPlayerCard, @Nullable Integer objectiveIndex) {
+    return SmartInventory.builder()
+        .provider(new BingoCardMenu(bingoPlayerCard, objectiveIndex))
+        .manager(Bingo.get().getInventoryManager())
+        .size(5, 9)
+        .title("Bingo Card")
+        .build();
+  }
+
+  public static SmartInventory get(BingoPlayerCard bingoCard) {
+    return BingoCardMenu.getInventory(bingoCard, null);
+  }
+
+  public static SmartInventory get(BingoPlayerCard bingoCard, @Nullable Integer objectiveIndex) {
+    return BingoCardMenu.getInventory(bingoCard, objectiveIndex);
   }
 
   @Override
@@ -64,11 +64,9 @@ public class BingoCardMenu implements InventoryProvider {
     int xOffset = 2;
 
     BingoCard bingoCard = Bingo.get().getBingoCard();
-    BingoPlayerCard playerCard = bingo.getCards().getOrDefault(player.getUniqueId(), null);
-    if (playerCard == null) return;
+    if (bingoCard == null || playerCard == null) return;
 
-    Integer requestedObjectiveIndex =
-        PLAYER_OBJECTIVE_INDEX.getOrDefault(player.getUniqueId(), null);
+    Integer requestedObjectiveIndex = this.objectiveIndex;
 
     contents.set(0, 0, ClickableItem.empty(getInfoItem()));
 
@@ -79,9 +77,8 @@ public class BingoCardMenu implements InventoryProvider {
               contents.set(
                   objectiveItem.getY(),
                   objectiveItem.getX() + xOffset,
-                  ClickableItem.of(
-                      makeIconFor(player, objectiveItem, playerCard, requestedObjectiveIndex),
-                      event -> {}));
+                  ClickableItem.empty(
+                      makeIconFor(player, objectiveItem, playerCard, requestedObjectiveIndex)));
             });
   }
 

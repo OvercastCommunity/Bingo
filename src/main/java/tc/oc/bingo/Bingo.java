@@ -111,12 +111,15 @@ public class Bingo extends JavaPlugin {
     return cards.containsKey(playerId);
   }
 
-  public CompletableFuture<BingoPlayerCard> loadBingoCard(UUID playerId) {
+  public CompletableFuture<BingoPlayerCard> getBingoCard(UUID playerId) {
     BingoPlayerCard bingoPlayerCard = cards.get(playerId);
     if (bingoPlayerCard != null) return CompletableFuture.completedFuture(bingoPlayerCard);
 
-    return database
-        .getCard(playerId)
+    return database.getCard(playerId);
+  }
+
+  public CompletableFuture<BingoPlayerCard> loadBingoCard(UUID playerId) {
+    return this.getBingoCard(playerId)
         .whenComplete((bingoCard, throwable) -> cards.put(playerId, bingoCard));
   }
 

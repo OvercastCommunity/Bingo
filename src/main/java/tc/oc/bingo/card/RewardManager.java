@@ -2,12 +2,14 @@ package tc.oc.bingo.card;
 
 import static net.kyori.adventure.text.Component.text;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -37,41 +39,21 @@ public class RewardManager implements Listener {
   @EventHandler
   public void onRaindropEarn(PlayerEarnCurrencyEvent event) {
     if (!Config.get().isDebug()) return;
-    // TODO: test why not working
+    // TODO: could be fixed, test again
+    //  test why not working
     event
         .getPlayer()
         .sendMessage(event.getCustomAmount() + " " + event.getReason() + " " + event.getReason());
   }
 
-  public ProgressCombo shouldReward(Player player, String objectiveSlug) {
-    BingoPlayerCard bingoPlayerCard = bingo.getCards().get(player.getUniqueId());
-    if (bingoPlayerCard == null) return null;
-
-    Map<String, ProgressItem> progressList = bingoPlayerCard.getProgressList();
-
-    ProgressItem progressItem =
-        progressList.computeIfAbsent(
-            objectiveSlug, slug -> new ProgressItem(player.getUniqueId(), slug, false, null, ""));
-
-    boolean completed = progressItem.isCompleted();
-    if (completed) return null;
-
-    progressItem.setComplete();
-
-    return ProgressCombo.of(bingoPlayerCard, progressItem);
-  }
-
   public void rewardPlayers(String objectiveSlug, List<Player> players) {
-
     List<ProgressCombo> filteredCardItems =
         players.stream()
-            .map(player -> shouldReward(player, objectiveSlug))
+            .map(player -> processReward(player, objectiveSlug))
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
     if (filteredCardItems.isEmpty()) return;
-
-    List<UUID> uuids =
-        filteredCardItems.stream().map(ProgressCombo::getPlayerUUID).collect(Collectors.toList());
 
     ObjectiveItem objectiveItem =
         bingo.getBingoCard().getObjectives().stream()
@@ -86,29 +68,83 @@ public class RewardManager implements Listener {
             .findFirst()
             .orElse(null);
 
-    bingo
-        .getBingoDatabase()
-        .rewardPlayers(uuids, objectiveSlug)
-        .thenAccept(
-            position -> {
-              filteredCardItems.forEach(
-                  rewardedCombo -> rewardedCombo.progressItem.setPlacedPosition(position));
-              if (objectiveItem != null && match != null && position == 1) {
-                objectiveItem.setComplete(null);
-                match.sendMessage(Messages.getFirstCompletion());
-              }
-            });
+    reward(filteredCardItems, objectiveItem, match);
+  }
 
-    if (match == null) return;
-    if (objectiveItem == null) return;
+  public void rewardPlayer(String objectiveSlug, Player player) {
+    ProgressCombo progressCombo = processReward(player, objectiveSlug);
 
-    match.sendMessage(
-        Messages.goalCompleted(text(Messages.getManyString(uuids.size())), objectiveItem));
+    if (progressCombo == null) return;
+
+    ObjectiveItem objectiveItem =
+        bingo.getBingoCard().getObjectives().stream()
+            .filter(o -> o.getSlug().equals(objectiveSlug))
+            .findFirst()
+            .orElse(null);
+
+    Match match = PGM.get().getMatchManager().getMatch(player);
+
+    reward(Collections.singletonList(progressCombo), objectiveItem, match);
+  }
+
+  private ProgressCombo processReward(Player player, String objectiveSlug) {
+    BingoPlayerCard bingoPlayerCard = bingo.getCards().get(player.getUniqueId());
+    if (bingoPlayerCard == null) return null;
+
+    Map<String, ProgressItem> progressList = bingoPlayerCard.getProgressList();
+
+    ProgressItem progressItem =
+        progressList.computeIfAbsent(
+            objectiveSlug, slug -> new ProgressItem(player.getUniqueId(), slug, false, null, ""));
+
+    if (progressItem.isCompleted()) return null;
+
+    progressItem.setComplete();
+
+    return ProgressCombo.of(bingoPlayerCard, progressItem);
+  }
+
+  private void reward(
+      List<ProgressCombo> filteredCardItems, ObjectiveItem objectiveItem, Match match) {
+    if (objectiveItem == null || match == null) return;
+
+    int position =
+        bingo
+            .getBingoDatabase()
+            .rewardPlayers(
+                filteredCardItems.stream()
+                    .map(ProgressCombo::getPlayerUUID)
+                    .collect(Collectors.toList()),
+                objectiveItem.getSlug())
+            .join();
+
+    filteredCardItems.forEach(
+        rewardedCombo -> rewardedCombo.progressItem.setPlacedPosition(position));
+
+    // When completed by a single player get their name
+    UUID playerUUID =
+        filteredCardItems.size() == 1 ? filteredCardItems.get(0).getPlayerUUID() : null;
+    MatchPlayer discoveryPlayer = (playerUUID != null) ? match.getPlayer(playerUUID) : null;
+
+    Component component =
+        (discoveryPlayer != null)
+            ? discoveryPlayer.getName()
+            : text(Messages.getManyString(filteredCardItems.size()));
+
+    match.sendMessage(Messages.goalCompleted(component, objectiveItem));
+
+    if (position == 1) {
+      objectiveItem.setComplete(playerUUID);
+      match.sendMessage(Messages.getFirstCompletion());
+    }
 
     filteredCardItems.forEach(
         rewardedCombo -> {
+          // TODO: get as match players earlier?
           MatchPlayer matchPlayer =
               PGM.get().getMatchManager().getPlayer(rewardedCombo.getPlayerUUID());
+          if (matchPlayer == null) return;
+
           Player player = matchPlayer.getBukkit();
           if (player == null) return;
 
@@ -119,62 +155,12 @@ public class RewardManager implements Listener {
                   rewardedCombo.playerCard,
                   rewardedCombo.progressItem);
 
+          // TODO: Add sound/fireworks in game on goal complete
+
           if (rewardType.isBroadcast()) {
             match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, rewardType));
           }
         });
-
-    // TODO: refactor so methods share logic and also do sound/fireworks in game on goal complete
-  }
-
-  public void rewardPlayer(String objectiveSlug, Player player) {
-    BingoPlayerCard bingoPlayerCard = bingo.getCards().get(player.getUniqueId());
-    if (bingoPlayerCard == null) return;
-
-    Map<String, ProgressItem> progressList = bingoPlayerCard.getProgressList();
-
-    ProgressItem progressItem =
-        progressList.computeIfAbsent(
-            objectiveSlug, slug -> new ProgressItem(player.getUniqueId(), slug, false, null, ""));
-
-    if (progressItem.isCompleted()) return;
-
-    progressItem.setComplete();
-
-    ObjectiveItem objectiveItem =
-        bingo.getBingoCard().getObjectives().stream()
-            .filter(o -> o.getSlug().equals(objectiveSlug))
-            .findFirst()
-            .orElse(null);
-
-    Match match = PGM.get().getMatchManager().getMatch(player);
-
-    bingo
-        .getBingoDatabase()
-        .rewardPlayer(player.getUniqueId(), objectiveSlug)
-        .thenAccept(
-            placedPosition -> {
-              progressItem.setPlacedPosition(placedPosition);
-              if (objectiveItem != null && match != null && placedPosition == 1) {
-                objectiveItem.setComplete(player.getUniqueId());
-                match.sendMessage(Messages.getFirstCompletion());
-              }
-            });
-
-    if (objectiveItem == null) return;
-
-    if (match == null) return;
-    MatchPlayer matchPlayer = match.getPlayer(player);
-    if (matchPlayer == null) return;
-
-    match.sendMessage(Messages.goalCompleted(matchPlayer.getName(), objectiveItem));
-
-    RewardType rewardType =
-        issueRaindropRewards(player, bingo.getBingoCard(), bingoPlayerCard, progressItem);
-
-    if (rewardType.isBroadcast()) {
-      match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, rewardType));
-    }
   }
 
   public void storeObjectiveData(UUID uuid, String objectiveSlug, String dataAsString) {
