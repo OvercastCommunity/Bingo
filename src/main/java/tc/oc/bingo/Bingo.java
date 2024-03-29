@@ -63,6 +63,8 @@ public class Bingo extends JavaPlugin {
 
     database = new SQLDatabase();
 
+    this.cardRefresher = new CardRefresher();
+
     trackers =
         Reflections.findClasses(
                 ObjectiveTracker.class.getPackage().getName(),
@@ -73,6 +75,12 @@ public class Bingo extends JavaPlugin {
             .collect(Collectors.toList());
 
     loadTrackerConfigs(getConfig());
+
+    // TODO: this
+    //  Load trackers based on if they're enabled or not (global config and existing on card (query
+    // first)
+    //  Don't recreate if they already exist
+    //  Remove ones that are no longer needed etc
 
     PluginManager plMan = Bukkit.getServer().getPluginManager();
     getTrackersOfType(Listener.class).forEach(listener -> plMan.registerEvents(listener, this));
@@ -86,8 +94,6 @@ public class Bingo extends JavaPlugin {
 
     inventoryManager = new InventoryManager(Bingo.get());
     inventoryManager.init();
-
-    this.cardRefresher = new CardRefresher();
   }
 
   public void loadTrackerConfigs(FileConfiguration config) {

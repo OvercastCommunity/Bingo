@@ -109,7 +109,7 @@ public class SQLDatabase implements BingoDatabase {
             List<ObjectiveItem> objectives = new ArrayList<>();
 
             // SQL query to retrieve user's objective progress
-            String sql = "SELECT * FROM " + BINGO_OBJECTIVES;
+            String sql = "SELECT * FROM " + BINGO_OBJECTIVES + " WHERE idx != -1";
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
             // Executing query

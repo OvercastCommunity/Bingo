@@ -12,7 +12,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import tc.oc.bingo.card.RewardType;
+import tc.oc.bingo.card.RewardManager;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.pgm.api.player.MatchPlayer;
 
@@ -65,10 +65,18 @@ public class Messages {
     return "a moment";
   }
 
-  public static Component getRewardTypeBroadcast(MatchPlayer player, RewardType rewardType) {
-    return text(getHappyFace() + " ")
-        .append(player.getName())
-        .append(text(" has completed a " + rewardType.getName(), NamedTextColor.GRAY));
+  public static Component getRewardTypeBroadcast(MatchPlayer player, RewardManager.Reward reward) {
+    TextComponent message =
+        text(getHappyFace() + " ")
+            .append(player.getName())
+            .append(text(" has completed a ", NamedTextColor.GRAY))
+            .append(text(reward.getType().getName(), reward.getType().getColor()));
+
+    if (reward.getAmount() > 1) {
+      message = message.append(text(" x" + reward.getAmount(), NamedTextColor.GOLD));
+    }
+
+    return message;
   }
 
   public static Component getBingoPrefix() {

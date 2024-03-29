@@ -16,6 +16,7 @@ import org.bukkit.FireworkEffect;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.util.Vector;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.BingoCard;
@@ -162,7 +163,7 @@ public class RewardManager implements Listener {
           Player player = matchPlayer.getBukkit();
           if (player == null) return;
 
-          RewardType rewardType =
+          Reward reward =
               issueRaindropRewards(
                   player,
                   bingo.getBingoCard(),
@@ -170,10 +171,10 @@ public class RewardManager implements Listener {
                   rewardedCombo.progressItem);
 
           LocationUtils.spawnFirework(
-              player.getLocation(), FIREWORK_EFFECT, ROCKET_POWER);
+              player.getLocation().add(new Vector(0, 2, 0)), FIREWORK_EFFECT, ROCKET_POWER);
 
-          if (rewardType.isBroadcast()) {
-            match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, rewardType));
+          if (reward.getType().isBroadcast()) {
+            match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, reward));
           }
         });
   }
@@ -182,7 +183,7 @@ public class RewardManager implements Listener {
     bingo.getBingoDatabase().storePlayerProgress(uuid, objectiveSlug, dataAsString);
   }
 
-  public RewardType issueRaindropRewards(
+  public Reward issueRaindropRewards(
       Player player, BingoCard bingoCard, BingoPlayerCard playerCard, ProgressItem completedItem) {
     Reward reward = getCompletionType(bingoCard, playerCard, completedItem);
     int rewardAmount = getRewardAmount(reward.type);
@@ -202,7 +203,7 @@ public class RewardManager implements Listener {
                   rewardAmount,
                   "Bingo Goal " + reward.type.getName() + rewardExtra));
 
-      return reward.type;
+      return reward;
     }
     return null;
   }
@@ -261,14 +262,17 @@ public class RewardManager implements Listener {
 
     // TODO: check logic
     // Check for diagonal lines containing the completed item
-    boolean diagonal1Line = true;
-    boolean diagonal2Line = true;
-    for (int i = 0; i < gridWidth; i++) {
-      if (!completionMap.getOrDefault(i * gridWidth + i, false)) {
-        diagonal1Line = false;
-      }
-      if (!completionMap.getOrDefault(i * gridWidth + ((gridWidth - 1) - i), false)) {
-        diagonal2Line = false;
+    boolean diagonal1Line = completedX == completedY;
+    boolean diagonal2Line = completedX + completedY == gridWidth - 1;
+
+    if (diagonal1Line || diagonal2Line) {
+      for (int i = 0; i < gridWidth; i++) {
+        if (!completionMap.getOrDefault(i * gridWidth + i, false)) {
+          diagonal1Line = false;
+        }
+        if (!completionMap.getOrDefault(i * gridWidth + ((gridWidth - 1) - i), false)) {
+          diagonal2Line = false;
+        }
       }
     }
 
@@ -279,7 +283,7 @@ public class RewardManager implements Listener {
     if (diagonal1Line) lines++;
     if (diagonal2Line) lines++;
 
-    if (lines > 2) {
+    if (lines >= 2) {
       boolean fullHouse = true;
       for (Boolean completionStatus : completionMap.values()) {
         if (!completionStatus) {
@@ -332,6 +336,14 @@ public class RewardManager implements Listener {
     public Reward(RewardType type, int amount) {
       this.type = type;
       this.amount = amount;
+    }
+
+    public RewardType getType() {
+      return type;
+    }
+
+    public int getAmount() {
+      return amount;
     }
   }
 }
