@@ -5,6 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
+import tc.oc.pgm.api.player.PlayerRelation;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.api.tracker.info.FallInfo;
 import tc.oc.pgm.tracker.Trackers;
@@ -21,12 +22,9 @@ public class BigFallObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
-    if (!event.isSuicide()) return;
+    if (!(event.getKiller() == null || event.isKiller(event.getPlayer()))) return;
 
-    ParticipantState killer = event.getKiller();
-    if (killer == null) return;
-
-    MatchPlayer player = killer.getPlayer().orElse(null);
+    MatchPlayer player = event.getPlayer();
     if (player == null) return;
 
     if (event.getDamageInfo() instanceof FallInfo) {

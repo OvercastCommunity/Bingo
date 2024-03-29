@@ -4,11 +4,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,21 +24,53 @@ public class SQLDatabase implements BingoDatabase {
   private static final String BINGO_OBJECTIVES = "bingo_objectives";
   private static final String BINGO_PROGRESS = "bingo_progress";
 
+  public static final String CREATE_OBJECTIVE_TABLE_SQL =
+      "CREATE TABLE IF NOT EXISTS "
+          + BINGO_OBJECTIVES
+          + " ("
+          + "slug VARCHAR(255) PRIMARY KEY,"
+          + "name VARCHAR(255),"
+          + "description TEXT,"
+          + "idx INT,"
+          + "clue TEXT,"
+          + "hint_level INT,"
+          + "next_clue_unlock DATETIME,"
+          + "discovery_uuid VARCHAR(255),"
+          + "discovery_time DATETIME"
+          + ")";
+
+  public static final String CREATE_PROGRESS_TABLE_SQL =
+      "CREATE TABLE IF NOT EXISTS "
+          + BINGO_PROGRESS
+          + " ("
+          + "player_uuid VARCHAR(255),"
+          + "objective_slug VARCHAR(255),"
+          + "completed BOOLEAN DEFAULT FALSE,"
+          + "completed_at DATETIME,"
+          + "placed_position INT,"
+          + "data TEXT,"
+          + "PRIMARY KEY (player_uuid, objective_slug)"
+          + ")";
+
   private static final String PROGRESS_COUNT_QUERY =
-      "SELECT COUNT(*) FROM bingo_progress WHERE objective_slug = ? AND completed";
+      "SELECT COUNT(*) FROM " + BINGO_PROGRESS + " WHERE objective_slug = ? AND completed";
 
   private static final String UPSERT_COMPLETED_SQL =
-      "INSERT INTO bingo_progress (player_uuid, objective_slug, completed, completed_at, placed_position) "
+      "INSERT INTO "
+          + BINGO_PROGRESS
+          + " (player_uuid, objective_slug, completed, completed_at, placed_position) "
           + "VALUES (?, ?, ?, ?, ?) "
           + "ON DUPLICATE KEY UPDATE completed = VALUES(completed), completed_at = VALUES(completed_at), placed_position = VALUES(placed_position)";
 
   private static final String UPSERT_PROGRESS_SQL =
-      "INSERT INTO bingo_progress (player_uuid, objective_slug, data) "
+      "INSERT INTO "
+          + BINGO_PROGRESS
+          + " (player_uuid, objective_slug, data) "
           + "VALUES (?, ?, ?) "
           + "ON DUPLICATE KEY UPDATE data = VALUES(data)";
 
   private static final String UPDATE_OBJECTIVE_DISCOVERY_SQL =
-      "UPDATE bingo_objectives SET discovery_uuid = ?, discovery_time = ? WHERE slug = ?";
+      "UPDATE " + BINGO_OBJECTIVES + " SET discovery_uuid = ?, discovery_time = ? WHERE slug = ?";
 
   private static final ExceptionHandlingExecutorService EXECUTOR =
       new ExceptionHandlingExecutorService(ForkJoinPool.commonPool());;
@@ -54,48 +84,19 @@ public class SQLDatabase implements BingoDatabase {
   }
 
   private void createTables() {
+    CompletableFuture.runAsync(
+        () -> {
+          createTablesImpl(CREATE_OBJECTIVE_TABLE_SQL);
+          createTablesImpl(CREATE_PROGRESS_TABLE_SQL);
+        },
+        EXECUTOR);
+  }
 
-    // Opening database connection
-    try (Connection connection = getConnection()) {
-
-      // Creating statement
-      Statement statement = connection.createStatement();
-
-      // Creating Objective table
-      String createObjectiveTableSQL =
-          "CREATE TABLE IF NOT EXISTS bingo_objectives ("
-              + "slug VARCHAR(255) PRIMARY KEY,"
-              + "name VARCHAR(255),"
-              + "description TEXT,"
-              + "idx INT,"
-              + "clue TEXT,"
-              + "hint_level INT,"
-              + "next_clue_unlock DATETIME,"
-              + "discovery_uuid VARCHAR(255),"
-              + "discovery_time DATETIME"
-              + ")";
-
-      statement.execute(createObjectiveTableSQL);
-      System.out.println("Objective table created successfully.");
-
-      // Creating Bingo Progress table
-      String createBingoProgressTableSQL =
-          "CREATE TABLE IF NOT EXISTS bingo_progress ("
-              + "player_uuid VARCHAR(255),"
-              + "objective_slug VARCHAR(255),"
-              + "completed BOOLEAN DEFAULT FALSE,"
-              + "completed_at DATETIME,"
-              + "placed_position INT,"
-              + "data TEXT,"
-              + "PRIMARY KEY (player_uuid, objective_slug)"
-              + ")";
-
-      statement.execute(createBingoProgressTableSQL);
-      System.out.println("Bingo Progress table created successfully.");
-
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
+  @SneakyThrows
+  public void createTablesImpl(String sqlQuery) {
+    @Cleanup Connection conn = getConnection();
+    @Cleanup PreparedStatement stmt = conn.prepareStatement(sqlQuery);
+    stmt.execute();
   }
 
   @Override
@@ -108,7 +109,7 @@ public class SQLDatabase implements BingoDatabase {
             List<ObjectiveItem> objectives = new ArrayList<>();
 
             // SQL query to retrieve user's objective progress
-            String sql = "SELECT * FROM bingo_objectives";
+            String sql = "SELECT * FROM " + BINGO_OBJECTIVES;
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
 
             // Executing query
@@ -172,7 +173,7 @@ public class SQLDatabase implements BingoDatabase {
             Map<String, ProgressItem> progressList = new HashMap<>();
 
             // SQL query to retrieve user's objective progress
-            String sql = "SELECT * FROM bingo_progress WHERE player_uuid = ?";
+            String sql = "SELECT * FROM " + BINGO_PROGRESS + " WHERE player_uuid = ?";
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             preparedStatement.setString(1, playerId.toString());
 
@@ -232,27 +233,9 @@ public class SQLDatabase implements BingoDatabase {
               position++;
               storePlayerCompletion(players, objectiveSlug, position);
 
-              if (position == 1) storeGoalDiscoverer(null, objectiveSlug);
-
-              return position;
-            });
-  }
-
-  @Override
-  public CompletableFuture<Integer> rewardPlayer(UUID player, String objectiveSlug) {
-    // See how many other players have completed this task
-    return getCompletionCount(objectiveSlug)
-        .thenApply(
-            position -> {
-
-              // Add one to this number and upsert an entry for storing completion
-              position++;
-              storePlayerCompletion(player, objectiveSlug, position);
-
-              // If the user was the first to complete the objective update the objective with the
-              // player's uuid and unlock time
               if (position == 1) {
-                storeGoalDiscoverer(player, objectiveSlug);
+                UUID playerUUID = players.size() == 1 ? players.get(0) : null;
+                storeGoalDiscoverer(playerUUID, objectiveSlug);
               }
 
               return position;
@@ -274,14 +257,6 @@ public class SQLDatabase implements BingoDatabase {
     stmt.setString(2, objectiveSlug);
     stmt.setString(3, dataAsString);
     stmt.executeUpdate();
-  }
-
-  @Override
-  public CompletableFuture<Void> storePlayerCompletion(
-      UUID uuid, String objectiveSlug, Integer position) {
-    return CompletableFuture.runAsync(
-        () -> storePlayerCompletionsImpl(Collections.singletonList(uuid), objectiveSlug, position),
-        EXECUTOR);
   }
 
   @Override

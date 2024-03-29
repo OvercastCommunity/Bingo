@@ -1,8 +1,13 @@
 package tc.oc.bingo.util;
 
+import org.bukkit.Bukkit;
+import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.util.Vector;
 
 public class LocationUtils {
@@ -51,5 +56,14 @@ public class LocationUtils {
       }
     }
     return false;
+  }
+
+  public static void spawnFirework(Location location, FireworkEffect effect, int power) {
+    FireworkMeta meta = (FireworkMeta) Bukkit.getItemFactory().getItemMeta(Material.FIREWORK);
+    meta.setPower(power);
+    meta.addEffect(effect);
+
+    Firework firework = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
+    firework.setFireworkMeta(meta);
   }
 }

@@ -20,7 +20,7 @@ public class Messages {
 
   private static final String[] FACES = {
     "\\(◕ ◡ ◕\\)",
-    "(っ◕‿◕)っ ",
+    "(っ◕‿◕)っ",
     "(✿◠‿◠)",
     "\\ (•◡•) /",
     "(ಠ⌣ಠ)",
@@ -66,7 +66,7 @@ public class Messages {
   }
 
   public static Component getRewardTypeBroadcast(MatchPlayer player, RewardType rewardType) {
-    return text(getHappyFace())
+    return text(getHappyFace() + " ")
         .append(player.getName())
         .append(text(" has completed a " + rewardType.getName(), NamedTextColor.GRAY));
   }

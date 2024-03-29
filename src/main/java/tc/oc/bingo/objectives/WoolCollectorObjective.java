@@ -10,10 +10,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
-import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.database.ProgressItem;
@@ -32,12 +33,31 @@ public class WoolCollectorObjective extends ObjectiveTracker
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onPlayerOnGroundChanged(final PlayerPickupItemEvent event) {
+  public void onPlayerPickUpItem(
+      final PlayerPickupItemEvent event) { // TODO: add other events for pickups
+    validateWoolPickUp(event.getPlayer(), event.getItem().getItemStack());
+  }
 
-    Integer woolId = getWoolId(event.getItem().getItemStack());
+  // TODO: test these
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onItemTransfer(InventoryMoveItemEvent event) {
+    if (event.getActor() instanceof Player) {
+      validateWoolPickUp((Player) event.getActor(), event.getItem());
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onItemCraft(CraftItemEvent event) {
+    validateWoolPickUp(event.getActor(), event.getRecipe().getResult());
+  }
+
+  private void validateWoolPickUp(Player player, ItemStack itemStack) {
+    Integer woolId = getWoolId(itemStack);
     if (woolId == null) return;
 
-    UUID playerId = event.getPlayer().getUniqueId();
+    // TODO: permission checks here too?
+
+    UUID playerId = player.getUniqueId();
     List<Integer> indexes = getCurrentWoolIndexes(playerId);
 
     if (indexes.contains(woolId)) return;
@@ -45,19 +65,12 @@ public class WoolCollectorObjective extends ObjectiveTracker
     indexes.add(woolId);
     woolsCollected.put(playerId, indexes);
 
-    storeObjectiveData(event.getPlayer(), getStringForStore(indexes));
+    storeObjectiveData(player, getStringForStore(indexes));
 
     if (indexes.size() >= minWoolCount) {
-      reward(event.getPlayer());
+      reward(player);
     }
   }
-
-  // TODO: test these
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onItemTransfer(InventoryMoveItemEvent event) {}
-
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onItemCraft(PrepareItemCraftEvent event) {}
 
   public @Nullable Integer getWoolId(ItemStack item) {
     if (!item.getType().equals(Material.WOOL)) return null;

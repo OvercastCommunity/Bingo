@@ -29,6 +29,8 @@ public class AlphabetObjective extends ObjectiveTracker implements PersistentSto
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;
 
+    // TODO: permission checks here too?
+
     ParticipantState killer = event.getKiller();
     if (killer == null) return;
 

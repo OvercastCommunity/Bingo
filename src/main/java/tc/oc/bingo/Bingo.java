@@ -115,6 +115,10 @@ public class Bingo extends JavaPlugin {
     BingoPlayerCard bingoPlayerCard = cards.get(playerId);
     if (bingoPlayerCard != null) return CompletableFuture.completedFuture(bingoPlayerCard);
 
+    return getBingoCardFromDatabase(playerId);
+  }
+
+  public CompletableFuture<BingoPlayerCard> getBingoCardFromDatabase(UUID playerId) {
     return database.getCard(playerId);
   }
 

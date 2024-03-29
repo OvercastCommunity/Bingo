@@ -1,21 +1,26 @@
 # Bingo Config
-
 enable: true
-grid-width: false
+debug: false
+grid-width: 5
+
+# Rewards based on unlock type
+rewards:
+  single: 100
+  line: 250
+  card: 5000
 
 # Objective config options
-alphabet-killer:
-  index-count-required: 25
 big-fall:
   min-fall-height: 100
 defender-kill:
-  objective-range: 10
+  objective-max-range: 5
+  objective-max-size: 30
 eating:
   foods-required: 3
 hedgehog:
   min-arrows: 25
 icarus-height:
-  min-rise-height: 100
+  min-vertical-velocity: 6 # About 100 blocks in the air
 kill-streak:
   required-streak: 10
 match-length:

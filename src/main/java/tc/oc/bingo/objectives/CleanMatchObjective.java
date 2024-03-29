@@ -9,14 +9,16 @@ import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.goals.GoalMatchModule;
+import tc.oc.pgm.goals.OwnedGoal;
 import tc.oc.pgm.goals.events.GoalCompleteEvent;
 import tc.oc.pgm.goals.events.GoalTouchEvent;
+import tc.oc.pgm.teams.Team;
 
 @Tracker("clean-match")
 public class CleanMatchObjective extends ObjectiveTracker {
 
   public GoalMatchModule goals = null;
-  public Set<Competitor> objectivesTouched = new HashSet<>();
+  public Set<String> objectivesTouched = new HashSet<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
@@ -28,16 +30,22 @@ public class CleanMatchObjective extends ObjectiveTracker {
   public void onGoalTouch(GoalTouchEvent event) {
     if (goals == null) return;
 
-    Collection<Competitor> competitors = goals.getCompetitors(event.getGoal());
-    objectivesTouched.addAll(competitors);
+    Team owner = event.getGoal().getOwner();
+    if (owner == null) return;
+
+    objectivesTouched.add(owner.getId());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onGoalComplete(GoalCompleteEvent event) {
     if (goals == null) return;
+    if (!(event.getGoal() instanceof OwnedGoal)) return;
 
-    Collection<Competitor> competitors = goals.getCompetitors(event.getGoal());
-    objectivesTouched.addAll(competitors);
+    OwnedGoal<?> goal = (OwnedGoal<?>) event.getGoal();
+    Team owner = goal.getOwner();
+    if (owner == null) return;
+
+    objectivesTouched.add(owner.getId());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -45,10 +53,11 @@ public class CleanMatchObjective extends ObjectiveTracker {
     if (objectivesTouched.isEmpty()) return;
 
     Collection<Competitor> winners = event.getMatch().getWinners();
+    if (winners.size() != 1) return;
 
     winners.forEach(
         competitor -> {
-          if (!objectivesTouched.contains(competitor)) {
+          if (!objectivesTouched.contains(competitor.getId())) {
             competitor.getPlayers().forEach(player -> reward(player.getBukkit()));
           }
         });

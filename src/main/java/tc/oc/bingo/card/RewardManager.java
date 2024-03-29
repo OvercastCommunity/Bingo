@@ -11,6 +11,8 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +22,7 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
+import tc.oc.bingo.util.LocationUtils;
 import tc.oc.bingo.util.Messages;
 import tc.oc.occ.dispense.events.currency.CurrencyType;
 import tc.oc.occ.dispense.events.currency.PlayerEarnCurrencyEvent;
@@ -28,6 +31,16 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 public class RewardManager implements Listener {
+
+  private static final FireworkEffect FIREWORK_EFFECT =
+      FireworkEffect.builder()
+          .with(FireworkEffect.Type.BURST)
+          .withFlicker()
+          .withColor(Color.LIME)
+          .withFade(Color.BLACK)
+          .build();
+
+  private static final int ROCKET_POWER = 0;
 
   private final Bingo bingo;
 
@@ -39,8 +52,6 @@ public class RewardManager implements Listener {
   @EventHandler
   public void onRaindropEarn(PlayerEarnCurrencyEvent event) {
     if (!Config.get().isDebug()) return;
-    // TODO: could be fixed, test again
-    //  test why not working
     event
         .getPlayer()
         .sendMessage(event.getCustomAmount() + " " + event.getReason() + " " + event.getReason());
@@ -72,6 +83,9 @@ public class RewardManager implements Listener {
   }
 
   public void rewardPlayer(String objectiveSlug, Player player) {
+
+    // check permission checks to complete objectives
+
     ProgressCombo progressCombo = processReward(player, objectiveSlug);
 
     if (progressCombo == null) return;
@@ -116,7 +130,7 @@ public class RewardManager implements Listener {
                     .map(ProgressCombo::getPlayerUUID)
                     .collect(Collectors.toList()),
                 objectiveItem.getSlug())
-            .join();
+            .join(); // todo: join?
 
     filteredCardItems.forEach(
         rewardedCombo -> rewardedCombo.progressItem.setPlacedPosition(position));
@@ -155,7 +169,8 @@ public class RewardManager implements Listener {
                   rewardedCombo.playerCard,
                   rewardedCombo.progressItem);
 
-          // TODO: Add sound/fireworks in game on goal complete
+          LocationUtils.spawnFirework(
+              player.getLocation(), FIREWORK_EFFECT, ROCKET_POWER);
 
           if (rewardType.isBroadcast()) {
             match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, rewardType));
@@ -177,6 +192,7 @@ public class RewardManager implements Listener {
     rewardAmount = rewardAmount * reward.amount;
 
     if (rewardAmount != 0) {
+      String rewardExtra = reward.amount > 1 ? " x" + reward.amount : "";
       Bukkit.getPluginManager()
           .callEvent(
               new PlayerEarnCurrencyEvent(
@@ -184,7 +200,7 @@ public class RewardManager implements Listener {
                   CurrencyType.CUSTOM,
                   true,
                   rewardAmount,
-                  "Bingo Goal " + reward.type.getName()));
+                  "Bingo Goal " + reward.type.getName() + rewardExtra));
 
       return reward.type;
     }

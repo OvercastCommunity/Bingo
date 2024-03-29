@@ -10,15 +10,15 @@ public interface BingoDatabase {
 
   CompletableFuture<BingoPlayerCard> getCard(UUID playerId);
 
-  CompletableFuture<Integer> rewardPlayer(UUID player, String objectiveSlug);
+  // CompletableFuture<Integer> rewardPlayer(UUID player, String objectiveSlug);
 
   CompletableFuture<Integer> rewardPlayers(List<UUID> players, String objectiveSlug);
 
   CompletableFuture<Void> storePlayerProgress(
       UUID playerId, String objectiveSlug, String dataAsString);
 
-  CompletableFuture<Void> storePlayerCompletion(
-      UUID player, String objectiveSlug, Integer position);
+  //  CompletableFuture<Void> storePlayerCompletion(
+  //      UUID player, String objectiveSlug, Integer position);
 
   CompletableFuture<Void> storePlayerCompletion(
       List<UUID> uuids, String objectiveSlug, Integer position);
