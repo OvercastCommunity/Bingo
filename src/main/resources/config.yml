@@ -14,7 +14,7 @@ big-fall:
   min-fall-height: 100
 defender-kill:
   objective-max-range: 5
-  objective-max-size: 30
+  objective-max-size: 40
 eating:
   foods-required: 3
 flower-pot:

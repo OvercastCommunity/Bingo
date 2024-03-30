@@ -22,6 +22,7 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
+import tc.oc.bingo.util.Exceptions;
 import tc.oc.bingo.util.LocationUtils;
 import tc.oc.bingo.util.Messages;
 import tc.oc.occ.dispense.events.currency.CurrencyType;
@@ -94,10 +95,13 @@ public class RewardManager implements Listener {
     List<UUID> players =
         toReward.stream().map(ProgressItem::getPlayerUUID).collect(Collectors.toList());
 
-    bingo
-        .getBingoDatabase()
-        .rewardPlayers(players, objective.getSlug())
-        .whenComplete((position, throwable) -> postReward(toReward, objective, match, position));
+    Exceptions.handle(
+        bingo
+            .getBingoDatabase()
+            .rewardPlayers(players, objective.getSlug())
+            .thenAcceptAsync(
+                (position) -> postReward(toReward, objective, match, position),
+                PGM.get().getExecutor()));
   }
 
   private void postReward(
@@ -136,7 +140,8 @@ public class RewardManager implements Listener {
   }
 
   public void storeObjectiveData(UUID uuid, String objectiveSlug, String dataAsString) {
-    bingo.getBingoDatabase().storePlayerProgress(uuid, objectiveSlug, dataAsString);
+    Exceptions.handle(
+        bingo.getBingoDatabase().storePlayerProgress(uuid, objectiveSlug, dataAsString));
   }
 
   public Reward issueRaindropRewards(

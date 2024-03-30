@@ -29,6 +29,7 @@ import tc.oc.bingo.database.SQLDatabase;
 import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
+import tc.oc.bingo.util.Exceptions;
 import tc.oc.bingo.util.Reflections;
 
 @Getter
@@ -127,17 +128,16 @@ public class Bingo extends JavaPlugin {
   public CompletableFuture<BingoPlayerCard> loadPlayerCard(UUID playerId) {
     return database
         .getPlayerCard(playerId)
-        .whenComplete((bingoCard, throwable) -> cards.put(playerId, bingoCard));
+        .thenApply(
+            (bingoCard) -> {
+              cards.put(playerId, bingoCard);
+              return bingoCard;
+            });
   }
 
   public CompletableFuture<BingoCard> loadBingoCard() {
-    return database
-        .getCard()
-        .whenComplete(
-            (bingoCard, throwable) -> {
-              if (throwable != null) return;
-              this.bingoCard = bingoCard;
-            });
+    return Exceptions.handle(
+        database.getCard().thenApply((bingoCard) -> this.bingoCard = bingoCard));
   }
 
   public BingoDatabase getBingoDatabase() {

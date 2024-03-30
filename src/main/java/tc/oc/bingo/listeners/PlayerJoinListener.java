@@ -7,6 +7,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import tc.oc.bingo.Bingo;
+import tc.oc.bingo.util.Exceptions;
+import tc.oc.pgm.api.PGM;
 
 public class PlayerJoinListener implements Listener {
 
@@ -19,13 +21,15 @@ public class PlayerJoinListener implements Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerJoin(PlayerJoinEvent event) {
     UUID uuid = event.getPlayer().getUniqueId();
-    bingo
-        .loadPlayerCard(uuid)
-        .whenComplete(
-            (card, t) -> {
-              // If player logged off before database responded, remove now
-              if (!event.getPlayer().isOnline()) bingo.getCards().remove(uuid);
-            });
+    Exceptions.handle(
+        bingo
+            .loadPlayerCard(uuid)
+            .thenAcceptAsync(
+                (card) -> {
+                  // If player logged off before database responded, remove now
+                  if (!event.getPlayer().isOnline()) bingo.getCards().remove(uuid);
+                },
+                PGM.get().getExecutor()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

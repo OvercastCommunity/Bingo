@@ -25,7 +25,7 @@ import tc.oc.pgm.teams.Team;
 public class DefenderKillObjective extends ObjectiveTracker {
 
   private int objectiveMaxRange = 5;
-  private int objectiveMaxSize = 30;
+  private int objectiveMaxSize = 40;
 
   public GoalMatchModule goals = null;
   public Map<Competitor, Set<Bounds>> objectiveLocations = new HashMap<>();
@@ -34,7 +34,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
   public void setConfig(ConfigurationSection config) {
     // TODO: figure out distances
     objectiveMaxRange = config.getInt("objective-max-range", 5);
-    objectiveMaxSize = config.getInt("objective-max-size", 30);
+    objectiveMaxSize = config.getInt("objective-max-size", 40);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -55,7 +55,11 @@ public class DefenderKillObjective extends ObjectiveTracker {
                       goal -> {
                         if (goal instanceof Destroyable) {
                           Destroyable destroyable = (Destroyable) goal;
-                          addTeamBounds(destroyable.getOwner(), destroyable.getBlockRegion());
+                          FiniteBlockRegion blockRegion = destroyable.getBlockRegion();
+                          if (blockRegion.getBlockVolume() > objectiveMaxSize) {
+                            return;
+                          }
+                          addTeamBounds(destroyable.getOwner(), blockRegion);
                         }
 
                         if (goal instanceof Core) {
@@ -76,7 +80,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
     MatchPlayer killerPlayer = killer.getPlayer().orElse(null);
     if (killerPlayer == null) return;
 
-    Vector deathLocation = event.getPlayer().getLocation().toVector();
+    Vector deathLocation = event.getPlayer().getBukkit().getEyeLocation().toVector();
 
     Set<Bounds> teamBounds = objectiveLocations.get(killerPlayer.getCompetitor());
     Optional<Bounds> first =
@@ -86,9 +90,6 @@ public class DefenderKillObjective extends ObjectiveTracker {
   }
 
   private void addTeamBounds(Team owner, FiniteBlockRegion blockRegion) {
-    int size = blockRegion.getBlockVolume();
-    if (size > objectiveMaxSize) return;
-
     Set<Bounds> teamBounds = objectiveLocations.computeIfAbsent(owner, c -> new HashSet<>());
 
     Bounds clonedRegion = blockRegion.getBounds().clone();
