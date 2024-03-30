@@ -3,7 +3,6 @@ package tc.oc.bingo.objectives;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -17,14 +16,15 @@ import tc.oc.pgm.api.player.MatchPlayer;
 @Tracker("player-shifting")
 public class PlayerShiftingObjective extends ObjectiveTracker {
 
-  public int minRange = 8;
+  // Due to the algorithm used, the actual max distance is twice this range
+  public int radius = 4;
   public int minShifters = 4;
   public int sameTeamCount = 1;
   public int otherTeamCount = 2;
 
   @Override
   public void setConfig(ConfigurationSection config) {
-    minRange = config.getInt("min-range", 8);
+    radius = config.getInt("radius", 4);
     sameTeamCount = config.getInt("same-team-count", 1);
     otherTeamCount = config.getInt("other-team-count", 2);
     minShifters = sameTeamCount + otherTeamCount;
@@ -39,19 +39,13 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
 
     Player player = event.getPlayer();
     Collection<Player> nearbyPlayers =
-        player.getWorld().getNearbyPlayers(player.getLocation(), minRange);
+        player.getWorld().getNearbyPlayers(player.getLocation(), radius);
 
     Collection<MatchPlayer> players =
         nearbyPlayers.stream()
-            .filter(
-                player1 -> {
-                  return player1.isSneaking() || player1.equals(player);
-                })
+            .filter(p -> p.isSneaking() || p.equals(player))
             .map(match::getPlayer)
-            .filter(
-                obj -> {
-                  return Objects.nonNull(obj) && obj.canInteract();
-                })
+            .filter(mp -> mp != null && mp.canInteract())
             .collect(Collectors.toList());
 
     if (players.size() < minShifters) return;

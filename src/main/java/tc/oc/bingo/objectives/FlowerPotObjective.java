@@ -2,6 +2,7 @@ package tc.oc.bingo.objectives;
 
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,6 +13,14 @@ import tc.oc.pgm.api.match.Match;
 
 @Tracker("flower-pot")
 public class FlowerPotObjective extends ObjectiveTracker {
+
+  // Bypass the flower-only restriction, allow bush, mushroom to work
+  private boolean allowAny = false;
+
+  @Override
+  public void setConfig(ConfigurationSection config) {
+    allowAny = config.getBoolean("allow-any", false);
+  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
@@ -30,6 +39,6 @@ public class FlowerPotObjective extends ObjectiveTracker {
   }
 
   public boolean isFlower(Material material) {
-    return material.equals(Material.RED_ROSE) || material.equals(Material.YELLOW_FLOWER);
+    return allowAny || material == Material.RED_ROSE || material == Material.YELLOW_FLOWER;
   }
 }

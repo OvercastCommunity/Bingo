@@ -5,20 +5,18 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import lombok.Data;
-import lombok.ToString;
 import tc.oc.bingo.config.Config;
 
 @Data
-@ToString
 public class ObjectiveItem {
 
-  private String slug;
-  private String name;
-  private String description;
-  private int index;
-  private String clue;
-  private int hintLevel;
-  private @Nullable LocalDateTime nextClueUnlock;
+  private final String slug;
+  private final String name;
+  private final String description;
+  private final int index;
+  private final String clue;
+  private final int hintLevel;
+  private final @Nullable LocalDateTime nextClueUnlock;
   private UUID discoveryUUID;
   private @Nullable LocalDateTime discoveryTime;
 

@@ -18,12 +18,13 @@ import tc.oc.pgm.teams.Team;
 public class CleanMatchObjective extends ObjectiveTracker {
 
   public GoalMatchModule goals = null;
-  public Set<String> objectivesTouched = new HashSet<>();
+  // Teams who's objective has been touched
+  public Set<String> damagedTeamIds = new HashSet<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
     goals = event.getMatch().getModule(GoalMatchModule.class);
-    objectivesTouched.clear();
+    damagedTeamIds.clear();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -33,7 +34,7 @@ public class CleanMatchObjective extends ObjectiveTracker {
     Team owner = event.getGoal().getOwner();
     if (owner == null) return;
 
-    objectivesTouched.add(owner.getId());
+    damagedTeamIds.add(owner.getId());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -45,19 +46,19 @@ public class CleanMatchObjective extends ObjectiveTracker {
     Team owner = goal.getOwner();
     if (owner == null) return;
 
-    objectivesTouched.add(owner.getId());
+    damagedTeamIds.add(owner.getId());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchFinish(MatchFinishEvent event) {
-    if (objectivesTouched.isEmpty()) return;
+    if (damagedTeamIds.size() != 1) return;
 
     Collection<Competitor> winners = event.getMatch().getWinners();
     if (winners.size() != 1) return;
 
     winners.forEach(
         competitor -> {
-          if (!objectivesTouched.contains(competitor.getId())) {
+          if (!damagedTeamIds.contains(competitor.getId())) {
             competitor.getPlayers().forEach(player -> reward(player.getBukkit()));
           }
         });

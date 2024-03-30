@@ -1,10 +1,9 @@
 package tc.oc.bingo.objectives;
 
-import java.util.ArrayList;
+import com.google.common.collect.Iterables;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -17,13 +16,10 @@ import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
-import tc.oc.bingo.database.ProgressItem;
+import org.jetbrains.annotations.NotNull;
 
 @Tracker("wool-collector")
-public class WoolCollectorObjective extends ObjectiveTracker
-    implements PersistentStore<List<Integer>> {
-
-  public Map<UUID, List<Integer>> woolsCollected = new HashMap<>();
+public class WoolCollectorObjective extends ObjectiveTracker.Stateful<Set<Integer>> {
 
   private int minWoolCount = 5;
 
@@ -58,17 +54,12 @@ public class WoolCollectorObjective extends ObjectiveTracker
     // TODO: permission checks here too?
 
     UUID playerId = player.getUniqueId();
-    List<Integer> indexes = getCurrentWoolIndexes(playerId);
-
-    if (indexes.contains(woolId)) return;
-
-    indexes.add(woolId);
-    woolsCollected.put(playerId, indexes);
-
-    storeObjectiveData(player, getStringForStore(indexes));
-
-    if (indexes.size() >= minWoolCount) {
-      reward(player);
+    Set<Integer> indexes = getObjectiveData(playerId);
+    if (indexes.add(woolId)) {
+      storeObjectiveData(playerId, indexes);
+      if (indexes.size() >= minWoolCount) {
+        reward(player);
+      }
     }
   }
 
@@ -77,32 +68,19 @@ public class WoolCollectorObjective extends ObjectiveTracker
     return (int) item.getDurability();
   }
 
-  public List<Integer> getCurrentWoolIndexes(UUID playerId) {
-    // Create or fetch progress item to cache
-    if (!woolsCollected.containsKey(playerId)) {
-      List<Integer> indexes = new ArrayList<>();
-      ProgressItem progressItem = getProgress(playerId);
-
-      if (progressItem != null) {
-        indexes = getDataFromString(progressItem.getData());
-      }
-
-      woolsCollected.put(playerId, indexes);
-      return indexes;
-    }
-
-    return woolsCollected.get(playerId);
+  @Override
+  public @NotNull Set<Integer> initial() {
+    return new HashSet<>();
   }
 
   @Override
-  public List<Integer> getDataFromString(@Nullable String string) {
-    if (string == null) return new ArrayList<>();
-
-    return Arrays.stream(string.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+  public @NotNull Set<Integer> deserialize(@NotNull String string) {
+    if (string.isEmpty()) return initial();
+    return Arrays.stream(string.split(",")).map(Integer::parseInt).collect(Collectors.toSet());
   }
 
   @Override
-  public String getStringForStore(List<Integer> indexes) {
-    return indexes.stream().map(Object::toString).collect(Collectors.joining(","));
+  public @NotNull String serialize(@NotNull Set<Integer> data) {
+    return String.join(",", Iterables.transform(data, Object::toString));
   }
 }

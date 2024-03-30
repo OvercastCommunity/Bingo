@@ -12,7 +12,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import tc.oc.pgm.api.match.event.MatchLoadEvent;
+import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.rotation.vote.events.MatchPlayerVoteEvent;
 
 @Tracker("picky-voter")
@@ -44,8 +44,8 @@ public class PickyVoterObjective extends ObjectiveTracker {
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void onMatchLoad(MatchLoadEvent event) {
-    List<Player> uuids =
+  public void onMatchLoad(MatchAfterLoadEvent event) {
+    List<Player> players =
         playerVotes.entrySet().stream()
             .filter(
                 entry -> {
@@ -59,6 +59,6 @@ public class PickyVoterObjective extends ObjectiveTracker {
 
     playerVotes.clear();
 
-    if (!uuids.isEmpty()) reward(uuids);
+    if (!players.isEmpty()) reward(players);
   }
 }

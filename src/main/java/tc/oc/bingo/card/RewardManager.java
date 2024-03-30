@@ -2,11 +2,11 @@ package tc.oc.bingo.card;
 
 import static net.kyori.adventure.text.Component.text;
 
-import java.util.Collections;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
@@ -16,7 +16,6 @@ import org.bukkit.FireworkEffect;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.util.Vector;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.BingoCard;
@@ -59,19 +58,15 @@ public class RewardManager implements Listener {
   }
 
   public void rewardPlayers(String objectiveSlug, List<Player> players) {
-    List<ProgressCombo> filteredCardItems =
+    List<ProgressItem> filteredCardItems =
         players.stream()
-            .map(player -> processReward(player, objectiveSlug))
+            .map(player -> tryComplete(player, objectiveSlug))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
     if (filteredCardItems.isEmpty()) return;
 
-    ObjectiveItem objectiveItem =
-        bingo.getBingoCard().getObjectives().stream()
-            .filter(o -> o.getSlug().equals(objectiveSlug))
-            .findFirst()
-            .orElse(null);
+    ObjectiveItem objectiveItem = bingo.getBingoCard().getObjectiveBySlug(objectiveSlug);
 
     Match match =
         players.stream()
@@ -83,68 +78,40 @@ public class RewardManager implements Listener {
     reward(filteredCardItems, objectiveItem, match);
   }
 
-  public void rewardPlayer(String objectiveSlug, Player player) {
+  private ProgressItem tryComplete(Player player, String objectiveSlug) {
+    BingoPlayerCard card = bingo.getCards().get(player.getUniqueId());
+    if (card == null) return null;
 
-    // check permission checks to complete objectives
-
-    ProgressCombo progressCombo = processReward(player, objectiveSlug);
-
-    if (progressCombo == null) return;
-
-    ObjectiveItem objectiveItem =
-        bingo.getBingoCard().getObjectives().stream()
-            .filter(o -> o.getSlug().equals(objectiveSlug))
-            .findFirst()
-            .orElse(null);
-
-    Match match = PGM.get().getMatchManager().getMatch(player);
-
-    reward(Collections.singletonList(progressCombo), objectiveItem, match);
-  }
-
-  private ProgressCombo processReward(Player player, String objectiveSlug) {
-    BingoPlayerCard bingoPlayerCard = bingo.getCards().get(player.getUniqueId());
-    if (bingoPlayerCard == null) return null;
-
-    Map<String, ProgressItem> progressList = bingoPlayerCard.getProgressList();
-
-    ProgressItem progressItem =
-        progressList.computeIfAbsent(
-            objectiveSlug, slug -> new ProgressItem(player.getUniqueId(), slug, false, null, ""));
-
+    ProgressItem progressItem = card.getProgress(objectiveSlug);
     if (progressItem.isCompleted()) return null;
-
     progressItem.setComplete();
-
-    return ProgressCombo.of(bingoPlayerCard, progressItem);
+    return progressItem;
   }
 
-  private void reward(
-      List<ProgressCombo> filteredCardItems, ObjectiveItem objectiveItem, Match match) {
-    if (objectiveItem == null || match == null) return;
+  private void reward(List<ProgressItem> toReward, ObjectiveItem objective, Match match) {
+    if (objective == null || match == null) return;
 
-    int position =
-        bingo
-            .getBingoDatabase()
-            .rewardPlayers(
-                filteredCardItems.stream()
-                    .map(ProgressCombo::getPlayerUUID)
-                    .collect(Collectors.toList()),
-                objectiveItem.getSlug())
-            .join(); // todo: join?
+    List<UUID> players =
+        toReward.stream().map(ProgressItem::getPlayerUUID).collect(Collectors.toList());
 
-    filteredCardItems.forEach(
-        rewardedCombo -> rewardedCombo.progressItem.setPlacedPosition(position));
+    bingo
+        .getBingoDatabase()
+        .rewardPlayers(players, objective.getSlug())
+        .whenComplete((position, throwable) -> postReward(toReward, objective, match, position));
+  }
+
+  private void postReward(
+      List<ProgressItem> rewarded, ObjectiveItem objectiveItem, Match match, Integer position) {
+    rewarded.forEach(item -> item.setPlacedPosition(position));
 
     // When completed by a single player get their name
-    UUID playerUUID =
-        filteredCardItems.size() == 1 ? filteredCardItems.get(0).getPlayerUUID() : null;
+    UUID playerUUID = rewarded.size() == 1 ? rewarded.get(0).getPlayerUUID() : null;
     MatchPlayer discoveryPlayer = (playerUUID != null) ? match.getPlayer(playerUUID) : null;
 
     Component component =
         (discoveryPlayer != null)
             ? discoveryPlayer.getName()
-            : text(Messages.getManyString(filteredCardItems.size()));
+            : text(Messages.getManyString(rewarded.size()));
 
     match.sendMessage(Messages.goalCompleted(component, objectiveItem));
 
@@ -153,28 +120,17 @@ public class RewardManager implements Listener {
       match.sendMessage(Messages.getFirstCompletion());
     }
 
-    filteredCardItems.forEach(
-        rewardedCombo -> {
-          // TODO: get as match players earlier?
-          MatchPlayer matchPlayer =
-              PGM.get().getMatchManager().getPlayer(rewardedCombo.getPlayerUUID());
-          if (matchPlayer == null) return;
-
-          Player player = matchPlayer.getBukkit();
+    rewarded.forEach(
+        rewardedItem -> {
+          Player player = Bukkit.getPlayer(rewardedItem.getPlayerUUID());
           if (player == null) return;
 
-          Reward reward =
-              issueRaindropRewards(
-                  player,
-                  bingo.getBingoCard(),
-                  rewardedCombo.playerCard,
-                  rewardedCombo.progressItem);
+          Reward reward = issueRaindropRewards(player, bingo.getBingoCard(), rewardedItem);
 
-          LocationUtils.spawnFirework(
-              player.getLocation().add(new Vector(0, 2, 0)), FIREWORK_EFFECT, ROCKET_POWER);
+          LocationUtils.spawnFirework(player.getLocation(), FIREWORK_EFFECT, ROCKET_POWER);
 
           if (reward.getType().isBroadcast()) {
-            match.sendMessage(Messages.getRewardTypeBroadcast(matchPlayer, reward));
+            match.sendMessage(Messages.getRewardTypeBroadcast(player, reward));
           }
         });
   }
@@ -184,8 +140,8 @@ public class RewardManager implements Listener {
   }
 
   public Reward issueRaindropRewards(
-      Player player, BingoCard bingoCard, BingoPlayerCard playerCard, ProgressItem completedItem) {
-    Reward reward = getCompletionType(bingoCard, playerCard, completedItem);
+      Player player, BingoCard bingoCard, ProgressItem completedItem) {
+    Reward reward = getCompletionType(bingoCard, completedItem);
     int rewardAmount = getRewardAmount(reward.type);
 
     if (rewardAmount == 0) return null;
@@ -221,20 +177,19 @@ public class RewardManager implements Listener {
     }
   }
 
-  public Reward getCompletionType(
-      BingoCard bingoCard, BingoPlayerCard playerCard, ProgressItem completedItem) {
+  public Reward getCompletionType(BingoCard bingoCard, ProgressItem completedItem) {
     List<ObjectiveItem> bingoItems = bingoCard.getObjectives();
-    Map<String, ProgressItem> playerItems = playerCard.getProgressList();
+    Map<String, ProgressItem> playerItems = completedItem.getCard().getProgressMap();
 
     // Map to store the completion status of each item in the player's card
     int completedIndex = -1;
-    Map<Integer, Boolean> completionMap = new HashMap<>();
+    Set<Integer> completed = new HashSet<>(25);
     for (ObjectiveItem item : bingoItems) {
       ProgressItem progressItem = playerItems.get(item.getSlug());
       if (item.getSlug().equals(completedItem.getObjectiveSlug())) {
         completedIndex = item.getIndex();
       }
-      completionMap.put(item.getIndex(), progressItem != null && progressItem.isCompleted());
+      if (progressItem != null && progressItem.isCompleted()) completed.add(item.getIndex());
     }
 
     // TODO: check logic with gridWidth added
@@ -245,7 +200,7 @@ public class RewardManager implements Listener {
     // Check for horizontal line containing the completed item
     boolean horizontalLine = true;
     for (int j = 0; j < gridWidth; j++) {
-      if (!completionMap.getOrDefault(completedX * gridWidth + j, false)) {
+      if (!completed.contains(completedX * gridWidth + j)) {
         horizontalLine = false;
         break;
       }
@@ -254,7 +209,7 @@ public class RewardManager implements Listener {
     // Check for vertical line containing the completed item
     boolean verticalLine = true;
     for (int i = 0; i < gridWidth; i++) {
-      if (!completionMap.getOrDefault(i * gridWidth + completedY, false)) {
+      if (!completed.contains(i * gridWidth + completedY)) {
         verticalLine = false;
         break;
       }
@@ -267,10 +222,10 @@ public class RewardManager implements Listener {
 
     if (diagonal1Line || diagonal2Line) {
       for (int i = 0; i < gridWidth; i++) {
-        if (!completionMap.getOrDefault(i * gridWidth + i, false)) {
+        if (!completed.contains(i * gridWidth + i)) {
           diagonal1Line = false;
         }
-        if (!completionMap.getOrDefault(i * gridWidth + ((gridWidth - 1) - i), false)) {
+        if (!completed.contains(i * gridWidth + ((gridWidth - 1) - i))) {
           diagonal2Line = false;
         }
       }
@@ -284,13 +239,7 @@ public class RewardManager implements Listener {
     if (diagonal2Line) lines++;
 
     if (lines >= 2) {
-      boolean fullHouse = true;
-      for (Boolean completionStatus : completionMap.values()) {
-        if (!completionStatus) {
-          fullHouse = false;
-          break;
-        }
-      }
+      boolean fullHouse = completed.size() == bingoItems.size();
 
       if (fullHouse) {
         return new Reward(RewardType.CARD);
@@ -302,25 +251,6 @@ public class RewardManager implements Listener {
     }
 
     return new Reward(RewardType.SINGLE);
-  }
-
-  public static class ProgressCombo {
-
-    public BingoPlayerCard playerCard;
-    public ProgressItem progressItem;
-
-    public ProgressCombo(BingoPlayerCard playerCard, ProgressItem progressItem) {
-      this.playerCard = playerCard;
-      this.progressItem = progressItem;
-    }
-
-    public UUID getPlayerUUID() {
-      return progressItem.getPlayerUUID();
-    }
-
-    public static ProgressCombo of(BingoPlayerCard playerCard, ProgressItem progressItem) {
-      return new ProgressCombo(playerCard, progressItem);
-    }
   }
 
   public static class Reward {

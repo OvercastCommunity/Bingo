@@ -1,6 +1,6 @@
 package tc.oc.bingo.listeners;
 
-import org.bukkit.Bukkit;
+import java.util.UUID;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,18 +18,13 @@ public class PlayerJoinListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerJoin(PlayerJoinEvent event) {
-    Bukkit.getServer()
-        .getScheduler()
-        .runTaskAsynchronously(
-            bingo,
-            () -> {
-              bingo
-                  .getBingoDatabase()
-                  .getCard(event.getPlayer().getUniqueId())
-                  .whenComplete(
-                      (bingoPlayerCard, throwable) -> {
-                        bingo.getCards().put(event.getPlayer().getUniqueId(), bingoPlayerCard);
-                      });
+    UUID uuid = event.getPlayer().getUniqueId();
+    bingo
+        .loadPlayerCard(uuid)
+        .whenComplete(
+            (card, t) -> {
+              // If player logged off before database responded, remove now
+              if (!event.getPlayer().isOnline()) bingo.getCards().remove(uuid);
             });
   }
 

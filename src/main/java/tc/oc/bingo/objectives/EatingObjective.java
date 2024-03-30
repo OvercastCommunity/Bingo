@@ -1,7 +1,7 @@
 package tc.oc.bingo.objectives;
 
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -17,7 +17,7 @@ public class EatingObjective extends ObjectiveTracker {
 
   public int foodsRequired = 3;
 
-  private Map<UUID, Set<Integer>> consumedIds = new HashMap<>();
+  private final Map<UUID, Set<Material>> consumedIds = new HashMap<>();
 
   @Override
   public void setConfig(ConfigurationSection config) {
@@ -31,16 +31,15 @@ public class EatingObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerConsume(PlayerItemConsumeEvent event) {
-
     Material item = event.getItem().getType();
     if (item.isEdible()) {
       UUID playerUUID = event.getPlayer().getUniqueId();
 
-      Set<Integer> consumedItems = consumedIds.getOrDefault(playerUUID, new HashSet<>());
-      consumedItems.add(item.getId());
-      consumedIds.put(playerUUID, consumedItems);
+      Set<Material> consumedItems =
+          consumedIds.computeIfAbsent(playerUUID, id -> EnumSet.noneOf(Material.class));
 
-      if (consumedItems.size() >= foodsRequired) reward(event.getPlayer());
+      if (consumedItems.add(item) && consumedItems.size() >= foodsRequired)
+        reward(event.getPlayer());
     }
   }
 }

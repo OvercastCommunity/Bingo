@@ -6,23 +6,28 @@ import lombok.Data;
 @Data
 public class ProgressItem {
 
-  private UUID playerUUID;
+  private final BingoPlayerCard card;
+
   private String objectiveSlug;
   private boolean completed;
   private Integer placedPosition;
   private String data;
 
   public ProgressItem(
-      UUID playerUUID,
+      BingoPlayerCard card,
       String objectiveSlug,
       boolean completed,
       Integer placedPosition,
       String data) {
-    this.playerUUID = playerUUID;
+    this.card = card;
     this.objectiveSlug = objectiveSlug;
     this.completed = completed;
     this.placedPosition = placedPosition;
     this.data = data;
+  }
+
+  public UUID getPlayerUUID() {
+    return card.getPlayerUUID();
   }
 
   public void setComplete() {

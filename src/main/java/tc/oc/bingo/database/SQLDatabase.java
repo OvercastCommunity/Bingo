@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Executors;
 import javax.annotation.Nullable;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
@@ -52,7 +52,13 @@ public class SQLDatabase implements BingoDatabase {
           + "PRIMARY KEY (player_uuid, objective_slug)"
           + ")";
 
-  private static final String PROGRESS_COUNT_QUERY =
+  private static final String SELECT_CARD_SQL =
+      "SELECT * FROM " + BINGO_OBJECTIVES + " WHERE idx != -1";
+
+  private static final String SELECT_PROGRESS_SQL =
+      "SELECT * FROM " + BINGO_PROGRESS + " WHERE player_uuid = ?";
+
+  private static final String COUNT_COMPLETED_SQL =
       "SELECT COUNT(*) FROM " + BINGO_PROGRESS + " WHERE objective_slug = ? AND completed";
 
   private static final String UPSERT_COMPLETED_SQL =
@@ -73,7 +79,7 @@ public class SQLDatabase implements BingoDatabase {
       "UPDATE " + BINGO_OBJECTIVES + " SET discovery_uuid = ?, discovery_time = ? WHERE slug = ?";
 
   private static final ExceptionHandlingExecutorService EXECUTOR =
-      new ExceptionHandlingExecutorService(ForkJoinPool.commonPool());;
+      new ExceptionHandlingExecutorService(Executors.newFixedThreadPool(5));
 
   public SQLDatabase() {
     createTables();
@@ -84,162 +90,111 @@ public class SQLDatabase implements BingoDatabase {
   }
 
   private void createTables() {
-    CompletableFuture.runAsync(
-        () -> {
-          createTablesImpl(CREATE_OBJECTIVE_TABLE_SQL);
-          createTablesImpl(CREATE_PROGRESS_TABLE_SQL);
-        },
-        EXECUTOR);
+    CompletableFuture.runAsync(this::createTablesImpl, EXECUTOR);
   }
 
   @SneakyThrows
-  public void createTablesImpl(String sqlQuery) {
+  public void createTablesImpl() {
     @Cleanup Connection conn = getConnection();
-    @Cleanup PreparedStatement stmt = conn.prepareStatement(sqlQuery);
-    stmt.execute();
+
+    @Cleanup PreparedStatement objectiveTable = conn.prepareStatement(CREATE_OBJECTIVE_TABLE_SQL);
+    objectiveTable.execute();
+    @Cleanup PreparedStatement progressTable = conn.prepareStatement(CREATE_PROGRESS_TABLE_SQL);
+    progressTable.execute();
   }
 
   @Override
   public CompletableFuture<BingoCard> getCard() {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          // Opening database connection
-          try (Connection connection = getConnection()) {
-
-            List<ObjectiveItem> objectives = new ArrayList<>();
-
-            // SQL query to retrieve user's objective progress
-            String sql = "SELECT * FROM " + BINGO_OBJECTIVES + " WHERE idx != -1";
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-
-            // Executing query
-            ResultSet resultSet = null;
-            resultSet = preparedStatement.executeQuery();
-
-            // Processing results
-            while (resultSet.next()) {
-
-              String slug = resultSet.getString("slug");
-              String name = resultSet.getString("name");
-              String description = resultSet.getString("description");
-              int index = resultSet.getInt("idx");
-              String clue = resultSet.getString("clue");
-              int hintLevel = resultSet.getInt("hint_level");
-
-              Timestamp nextClueUnlockTimestamp = resultSet.getTimestamp("next_clue_unlock");
-              LocalDateTime nextClueUnlockTime =
-                  (nextClueUnlockTimestamp != null)
-                      ? nextClueUnlockTimestamp.toLocalDateTime()
-                      : null;
-
-              String discoveryString = resultSet.getString("discovery_uuid");
-              UUID discoveryUuid = resultSet.wasNull() ? null : UUID.fromString(discoveryString);
-
-              Timestamp discoveryTimestamp = resultSet.getTimestamp("discovery_time");
-              LocalDateTime discoveryTime =
-                  (discoveryTimestamp != null) ? discoveryTimestamp.toLocalDateTime() : null;
-
-              ObjectiveItem objective =
-                  new ObjectiveItem(
-                      slug,
-                      name,
-                      description,
-                      index,
-                      clue,
-                      hintLevel,
-                      nextClueUnlockTime,
-                      discoveryUuid,
-                      discoveryTime);
-              objectives.add(objective);
-            }
-
-            return new BingoCard(objectives);
-
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
-        },
-        EXECUTOR);
-  }
-
-  @Override
-  public CompletableFuture<BingoPlayerCard> getCard(UUID playerId) {
-
-    return CompletableFuture.supplyAsync(
-        () -> {
-          // Opening database connection
-          try (Connection connection = getConnection()) {
-
-            Map<String, ProgressItem> progressList = new HashMap<>();
-
-            // SQL query to retrieve user's objective progress
-            String sql = "SELECT * FROM " + BINGO_PROGRESS + " WHERE player_uuid = ?";
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            preparedStatement.setString(1, playerId.toString());
-
-            // Executing query
-            ResultSet resultSet = null;
-            resultSet = preparedStatement.executeQuery();
-
-            // Processing results
-            while (resultSet.next()) {
-              String objectiveSlug = resultSet.getString("objective_slug");
-              boolean completed = resultSet.getBoolean("completed");
-              Integer placedPosition =
-                  resultSet.wasNull() ? null : resultSet.getInt("placed_position");
-              String data = resultSet.getString("data");
-
-              ProgressItem progress =
-                  new ProgressItem(playerId, objectiveSlug, completed, placedPosition, data);
-              progressList.put(objectiveSlug, progress);
-            }
-
-            return new BingoPlayerCard(progressList);
-
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
-        },
-        EXECUTOR);
-  }
-
-  public CompletableFuture<Integer> getCompletionCount(String objectiveSlug) {
-    // Check the database to see how many other players have completed this task by slug
-    return CompletableFuture.supplyAsync(() -> getCompletionCountImpl(objectiveSlug), EXECUTOR);
+    return CompletableFuture.supplyAsync(this::getBingoCardImpl, EXECUTOR);
   }
 
   @SneakyThrows
-  private int getCompletionCountImpl(String objectiveSlug) {
-    @Cleanup Connection conn = getConnection();
-    @Cleanup PreparedStatement stmt = conn.prepareStatement(PROGRESS_COUNT_QUERY);
+  private BingoCard getBingoCardImpl() {
+    @Cleanup Connection connection = getConnection();
+    @Cleanup PreparedStatement preparedStatement = connection.prepareStatement(SELECT_CARD_SQL);
+    @Cleanup ResultSet resultSet = preparedStatement.executeQuery();
 
+    List<ObjectiveItem> objectives = new ArrayList<>(25);
+    while (resultSet.next()) {
+      ObjectiveItem objective =
+          new ObjectiveItem(
+              resultSet.getString("slug"),
+              resultSet.getString("name"),
+              resultSet.getString("description"),
+              resultSet.getInt("idx"),
+              resultSet.getString("clue"),
+              resultSet.getInt("hint_level"),
+              parseTimestamp(resultSet.getTimestamp("next_clue_unlock")),
+              parseUuid(resultSet.getString("discovery_uuid")),
+              parseTimestamp(resultSet.getTimestamp("discovery_time")));
+      objectives.add(objective);
+    }
+
+    return new BingoCard(objectives);
+  }
+
+  @Override
+  public CompletableFuture<BingoPlayerCard> getPlayerCard(UUID playerId) {
+    return CompletableFuture.supplyAsync(() -> getCardImpl(playerId), EXECUTOR);
+  }
+
+  @SneakyThrows
+  private BingoPlayerCard getCardImpl(UUID playerId) {
+    @Cleanup Connection connection = getConnection();
+    @Cleanup PreparedStatement preparedStatement = connection.prepareStatement(SELECT_PROGRESS_SQL);
+    preparedStatement.setString(1, playerId.toString());
+
+    @Cleanup ResultSet resultSet = preparedStatement.executeQuery();
+
+    Map<String, ProgressItem> progresses = new HashMap<>();
+    BingoPlayerCard card = new BingoPlayerCard(playerId, progresses);
+    while (resultSet.next()) {
+      ProgressItem item =
+          new ProgressItem(
+              card,
+              resultSet.getString("objective_slug"),
+              resultSet.getBoolean("completed"),
+              resultSet.getInt("placed_position"),
+              resultSet.getString("data"));
+      progresses.put(item.getObjectiveSlug(), item);
+    }
+    return card;
+  }
+
+  @Override
+  public CompletableFuture<Integer> rewardPlayers(List<UUID> players, String objectiveSlug) {
+    return CompletableFuture.supplyAsync(() -> rewardPlayersImpl(players, objectiveSlug), EXECUTOR);
+  }
+
+  @SneakyThrows
+  private Integer rewardPlayersImpl(List<UUID> players, String objectiveSlug) {
+    @Cleanup Connection conn = getConnection();
+
+    int nextPos = getCompletionCountImpl(conn, objectiveSlug) + 1;
+
+    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+    storePlayerCompletionsImpl(conn, players, objectiveSlug, nextPos + 1, timestamp);
+
+    if (nextPos == 1) {
+      UUID playerUUID = players.size() == 1 ? players.get(0) : null;
+      storeGoalDiscovererImpl(conn, playerUUID, objectiveSlug, timestamp);
+    }
+
+    return nextPos;
+  }
+
+  @SneakyThrows
+  private int getCompletionCountImpl(Connection conn, String objectiveSlug) {
+    @Cleanup PreparedStatement stmt = conn.prepareStatement(COUNT_COMPLETED_SQL);
     stmt.setString(1, objectiveSlug);
 
-    ResultSet resultSet = stmt.executeQuery();
+    @Cleanup ResultSet resultSet = stmt.executeQuery();
     int numCompleted = 0;
     if (resultSet.next()) {
       numCompleted = resultSet.getInt(1);
     }
 
     return numCompleted;
-  }
-
-  @Override
-  public CompletableFuture<Integer> rewardPlayers(List<UUID> players, String objectiveSlug) {
-    return getCompletionCount(objectiveSlug)
-        .thenApply(
-            position -> {
-              // Add one to this number and upsert an entry for storing completion
-              position++;
-              storePlayerCompletion(players, objectiveSlug, position);
-
-              if (position == 1) {
-                UUID playerUUID = players.size() == 1 ? players.get(0) : null;
-                storeGoalDiscoverer(playerUUID, objectiveSlug);
-              }
-
-              return position;
-            });
   }
 
   @Override
@@ -250,7 +205,7 @@ public class SQLDatabase implements BingoDatabase {
   }
 
   @SneakyThrows
-  public void storePlayerProgressImpl(UUID playerId, String objectiveSlug, String dataAsString) {
+  private void storePlayerProgressImpl(UUID playerId, String objectiveSlug, String dataAsString) {
     @Cleanup Connection conn = getConnection();
     @Cleanup PreparedStatement stmt = conn.prepareStatement(UPSERT_PROGRESS_SQL);
     stmt.setString(1, playerId.toString());
@@ -259,20 +214,14 @@ public class SQLDatabase implements BingoDatabase {
     stmt.executeUpdate();
   }
 
-  @Override
-  public CompletableFuture<Void> storePlayerCompletion(
-      List<UUID> uuids, String objectiveSlug, Integer position) {
-    return CompletableFuture.runAsync(
-        () -> storePlayerCompletionsImpl(uuids, objectiveSlug, position), EXECUTOR);
-  }
-
   @SneakyThrows
   private void storePlayerCompletionsImpl(
-      List<UUID> uuids, String objectiveSlug, Integer position) {
-    @Cleanup Connection conn = getConnection();
+      Connection conn,
+      List<UUID> uuids,
+      String objectiveSlug,
+      Integer position,
+      Timestamp timestamp) {
     @Cleanup PreparedStatement stmt = conn.prepareStatement(UPSERT_COMPLETED_SQL);
-
-    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
 
     boolean isBatch = uuids.size() > 1;
 
@@ -290,19 +239,22 @@ public class SQLDatabase implements BingoDatabase {
     else stmt.executeUpdate();
   }
 
-  @Override
-  public CompletableFuture<Void> storeGoalDiscoverer(@Nullable UUID uuid, String objectiveSlug) {
-    return CompletableFuture.runAsync(() -> storeGoalDiscovererImpl(uuid, objectiveSlug), EXECUTOR);
-  }
-
   @SneakyThrows
-  public void storeGoalDiscovererImpl(@Nullable UUID uuid, String objectiveSlug) {
-    @Cleanup Connection conn = getConnection();
+  private void storeGoalDiscovererImpl(
+      Connection conn, @Nullable UUID uuid, String objectiveSlug, Timestamp timestamp) {
     @Cleanup PreparedStatement stmt = conn.prepareStatement(UPDATE_OBJECTIVE_DISCOVERY_SQL);
 
     stmt.setString(1, (uuid != null) ? uuid.toString() : null);
-    stmt.setTimestamp(2, new Timestamp(System.currentTimeMillis()));
+    stmt.setTimestamp(2, timestamp);
     stmt.setString(3, objectiveSlug);
     stmt.executeUpdate();
+  }
+
+  private static LocalDateTime parseTimestamp(Timestamp timestamp) {
+    return timestamp == null ? null : timestamp.toLocalDateTime();
+  }
+
+  private static UUID parseUuid(String string) {
+    return string == null ? null : UUID.fromString(string);
   }
 }

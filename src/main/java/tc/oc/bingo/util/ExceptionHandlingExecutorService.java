@@ -101,8 +101,8 @@ public class ExceptionHandlingExecutorService implements ExecutorService {
     return () -> {
       try {
         runnable.run();
-      } catch (Exception e) {
-        e.printStackTrace();
+      } catch (Throwable t) {
+        t.printStackTrace();
       }
     };
   }
@@ -111,8 +111,8 @@ public class ExceptionHandlingExecutorService implements ExecutorService {
     return () -> {
       try {
         return callable.call();
-      } catch (Exception e) {
-        e.printStackTrace();
+      } catch (Throwable t) {
+        t.printStackTrace();
         return null;
       }
     };

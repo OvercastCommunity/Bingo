@@ -13,8 +13,7 @@ public class PlayerCraftObjective extends ObjectiveTracker {
 
   @Override
   public void setConfig(ConfigurationSection config) {
-    String name = config.getString("material-name", "PISTON_BASE");
-    Material material = Material.getMaterial(name);
+    Material material = Material.getMaterial(config.getString("material-name", "PISTON_BASE"));
     if (material != null) materialRequired = material;
   }
 

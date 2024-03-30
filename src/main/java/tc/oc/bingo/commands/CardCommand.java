@@ -7,6 +7,7 @@ import co.aikar.commands.annotation.Default;
 import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.bukkit.contexts.OnlinePlayer;
+import java.util.Collections;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -30,7 +31,7 @@ public class CardCommand extends BaseCommand {
       }
 
       Bingo.get()
-          .loadBingoCard(player.getUniqueId())
+          .getPlayerCard(player.getUniqueId())
           .whenComplete(
               (bingoPlayerCard, throwable) -> {
                 if (throwable != null) {
@@ -52,7 +53,7 @@ public class CardCommand extends BaseCommand {
       Player targetPlayer = target.getPlayer();
 
       Bingo.get()
-          .getBingoCard(targetPlayer.getUniqueId())
+          .getPlayerCard(targetPlayer.getUniqueId())
           .whenComplete(
               (bingoPlayerCard, throwable) -> {
                 if (throwable != null) {
@@ -68,20 +69,17 @@ public class CardCommand extends BaseCommand {
 
   @Subcommand("complete")
   @CommandPermission("bingo.complete")
-  public void bingoCardComplete(
-      CommandSender sender, OnlinePlayer target, @Optional Integer index) {
-    ObjectiveItem objectiveItem =
-        Bingo.get().getBingoCard().getObjectives().stream()
-            .filter(objective -> objective.getIndex() == index)
-            .findFirst()
-            .orElse(null);
+  public void bingoCardComplete(CommandSender sender, OnlinePlayer target, int index) {
+    ObjectiveItem objectiveItem = Bingo.get().getBingoCard().getObjectiveByIndex(index);
 
     if (objectiveItem == null) {
       sender.sendMessage("Unable to find an objective with that index.");
       return;
     }
 
-    Bingo.get().getRewards().rewardPlayer(objectiveItem.getSlug(), target.getPlayer());
+    Bingo.get()
+        .getRewards()
+        .rewardPlayers(objectiveItem.getSlug(), Collections.singletonList(target.getPlayer()));
   }
 
   @Subcommand("refresh")
@@ -91,7 +89,7 @@ public class CardCommand extends BaseCommand {
       Player targetPlayer = target.getPlayer();
 
       Bingo.get()
-          .getBingoCardFromDatabase(targetPlayer.getUniqueId())
+          .loadPlayerCard(targetPlayer.getUniqueId())
           .whenComplete(
               (bingoPlayerCard, throwable) -> {
                 if (throwable != null) {
@@ -99,8 +97,6 @@ public class CardCommand extends BaseCommand {
                   sender.sendMessage("An error occurred when running this command");
                   return;
                 }
-
-                Bingo.get().getCards().put(targetPlayer.getUniqueId(), bingoPlayerCard);
                 sender.sendMessage("Bingo card data updated for " + targetPlayer.getName() + ".");
               });
     }

@@ -1,7 +1,6 @@
 package tc.oc.bingo.objectives;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bukkit.configuration.ConfigurationSection;
@@ -28,7 +27,7 @@ public class MatchLengthObjective extends ObjectiveTracker {
 
     Duration duration = event.getMatch().getDuration();
 
-    if (duration.minus(requiredMins, ChronoUnit.MINUTES).isNegative()) return;
+    if (duration.toMinutes() < requiredMins) return;
 
     List<Player> players =
         event.getMatch().getParticipants().stream()

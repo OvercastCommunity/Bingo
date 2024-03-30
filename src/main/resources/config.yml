@@ -17,10 +17,13 @@ defender-kill:
   objective-max-size: 30
 eating:
   foods-required: 3
+flower-pot:
+  allow-any: false
 hedgehog:
   min-arrows: 25
 icarus-height:
   min-vertical-velocity: 6 # About 100 blocks in the air
+  delay-ticks: 2
 kill-streak:
   required-streak: 10
 match-length:
@@ -31,7 +34,7 @@ picky-voter:
 player-craft:
   material-name: "PISTON_BASE"
 player-shifting:
-  min-range: 8
+  radius: 4
   same-team-count: 1
   other-team-count: 2
 quick-kills:

@@ -133,7 +133,7 @@ public class BingoCardMenu implements InventoryProvider {
       BingoPlayerCard playerCard,
       @Nullable Integer requestedObjectiveIndex) {
 
-    ProgressItem progressItem = playerCard.getProgressList().get(objectiveItem.getSlug());
+    ProgressItem progressItem = playerCard.getProgressMap().get(objectiveItem.getSlug());
 
     boolean completed = progressItem != null && progressItem.isCompleted();
     short itemDamage = (short) (completed ? 10 : 8);

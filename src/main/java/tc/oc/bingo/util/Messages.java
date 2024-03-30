@@ -12,9 +12,11 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.entity.Player;
 import tc.oc.bingo.card.RewardManager;
 import tc.oc.bingo.database.ObjectiveItem;
-import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.util.named.NameStyle;
+import tc.oc.pgm.util.player.PlayerComponent;
 
 public class Messages {
 
@@ -65,10 +67,10 @@ public class Messages {
     return "a moment";
   }
 
-  public static Component getRewardTypeBroadcast(MatchPlayer player, RewardManager.Reward reward) {
+  public static Component getRewardTypeBroadcast(Player player, RewardManager.Reward reward) {
     TextComponent message =
         text(getHappyFace() + " ")
-            .append(player.getName())
+            .append(PlayerComponent.player(player, NameStyle.VERBOSE))
             .append(text(" has completed a ", NamedTextColor.GRAY))
             .append(text(reward.getType().getName(), reward.getType().getColor()));
 
