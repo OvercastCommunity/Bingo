@@ -39,7 +39,7 @@ public class BingoCard {
                 + objective.getIndex());
         continue;
       }
-      if (objectives.get(idx) != null) {
+      if (arr[idx] != null) {
         log.warning(
             "[Bingo] Objectives "
                 + arr[idx].getSlug()

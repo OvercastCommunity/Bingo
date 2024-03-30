@@ -32,6 +32,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
 
   @Override
   public void setConfig(ConfigurationSection config) {
+    // TODO: figure out distances
     objectiveMaxRange = config.getInt("objective-max-range", 5);
     objectiveMaxSize = config.getInt("objective-max-size", 30);
   }

@@ -2,11 +2,12 @@ package tc.oc.bingo.database;
 
 import java.util.UUID;
 import lombok.Data;
+import lombok.ToString;
 
 @Data
 public class ProgressItem {
 
-  private final BingoPlayerCard card;
+  @ToString.Exclude private final BingoPlayerCard card;
 
   private String objectiveSlug;
   private boolean completed;

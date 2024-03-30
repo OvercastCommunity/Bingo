@@ -1,13 +1,10 @@
 package tc.oc.bingo.util;
 
-import net.minecraft.server.v1_8_R3.EntityFireworks;
-import net.minecraft.server.v1_8_R3.PacketPlayOutEntityStatus;
 import org.bukkit.Bukkit;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftFirework;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.inventory.meta.FireworkMeta;
@@ -70,9 +67,6 @@ public class LocationUtils {
     Firework firework = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
     firework.setFireworkMeta(meta);
 
-    EntityFireworks bukkitEntity = ((CraftFirework) firework).getHandle();
-
-    NMSHacks.INSTANCE.sendPacketToViewers(
-        firework, new PacketPlayOutEntityStatus(bukkitEntity, (byte) 17), true);
+    NMSHacks.INSTANCE.skipFireworksLaunch(firework);
   }
 }
