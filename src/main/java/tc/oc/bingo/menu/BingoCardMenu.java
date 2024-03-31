@@ -1,5 +1,7 @@
 package tc.oc.bingo.menu;
 
+import static net.kyori.adventure.text.Component.text;
+
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
 import fr.minuskube.inv.content.InventoryContents;
@@ -27,6 +29,7 @@ import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.api.PGM;
+import tc.oc.pgm.util.inventory.ItemBuilder;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.player.PlayerComponent;
 import tc.oc.pgm.util.text.TextTranslations;
@@ -70,10 +73,23 @@ public class BingoCardMenu implements InventoryProvider {
 
     contents.set(0, 0, ClickableItem.empty(getInfoItem()));
 
+    contents.set(
+        4,
+        0,
+        ClickableItem.of(
+            new ItemBuilder()
+                .material(Material.ARROW)
+                .name(player, text("«", NamedTextColor.GOLD ).append(text(" Battlepass", NamedTextColor.YELLOW)))
+                .build(),
+            event -> {
+              player.performCommand("/bp");
+            }));
+
     bingoCard
         .getObjectives()
         .forEach(
             objectiveItem -> {
+              if (objectiveItem == null) return;
               contents.set(
                   objectiveItem.getY(),
                   objectiveItem.getX() + xOffset,

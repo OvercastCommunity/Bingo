@@ -15,6 +15,8 @@ import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.menu.BingoCardMenu;
+import tc.oc.bingo.util.Exceptions;
+import tc.oc.pgm.api.PGM;
 
 @CommandAlias("bingo")
 public class CardCommand extends BaseCommand {
@@ -30,18 +32,19 @@ public class CardCommand extends BaseCommand {
         return;
       }
 
-      Bingo.get()
-          .getPlayerCard(player.getUniqueId())
-          .whenComplete(
-              (bingoPlayerCard, throwable) -> {
-                if (throwable != null) {
-                  throwable.printStackTrace();
-                  sender.sendMessage("An error occurred when running this command");
-                  return;
-                }
+      Exceptions.handle(
+          Bingo.get()
+              .getPlayerCard(player.getUniqueId())
+              .whenComplete(
+                  (bingoPlayerCard, throwable) -> {
+                    if (throwable != null) {
+                      throwable.printStackTrace();
+                      sender.sendMessage("An error occurred when running this command");
+                      return;
+                    }
 
-                BingoCardMenu.get(bingoPlayerCard, index).open(player);
-              });
+                    BingoCardMenu.get(bingoPlayerCard, index).open(player);
+                  }));
     }
   }
 
@@ -52,18 +55,20 @@ public class CardCommand extends BaseCommand {
       Player senderPlayer = (Player) sender;
       Player targetPlayer = target.getPlayer();
 
-      Bingo.get()
-          .getPlayerCard(targetPlayer.getUniqueId())
-          .whenComplete(
-              (bingoPlayerCard, throwable) -> {
-                if (throwable != null) {
-                  throwable.printStackTrace();
-                  sender.sendMessage("An error occurred when running this command");
-                  return;
-                }
+      Exceptions.handle(
+          Bingo.get()
+              .getPlayerCard(targetPlayer.getUniqueId())
+              .whenCompleteAsync(
+                  (bingoPlayerCard, throwable) -> {
+                    if (throwable != null) {
+                      throwable.printStackTrace();
+                      sender.sendMessage("An error occurred when running this command");
+                      return;
+                    }
 
-                BingoCardMenu.get(bingoPlayerCard).open(senderPlayer);
-              });
+                    BingoCardMenu.get(bingoPlayerCard).open(senderPlayer);
+                  },
+                  PGM.get().getExecutor()));
     }
   }
 
@@ -90,7 +95,7 @@ public class CardCommand extends BaseCommand {
 
       Bingo.get()
           .loadPlayerCard(targetPlayer.getUniqueId())
-          .whenComplete(
+          .whenCompleteAsync(
               (bingoPlayerCard, throwable) -> {
                 if (throwable != null) {
                   throwable.printStackTrace();
@@ -98,7 +103,8 @@ public class CardCommand extends BaseCommand {
                   return;
                 }
                 sender.sendMessage("Bingo card data updated for " + targetPlayer.getName() + ".");
-              });
+              },
+              PGM.get().getExecutor());
     }
   }
 

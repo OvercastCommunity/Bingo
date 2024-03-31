@@ -32,21 +32,13 @@ public class BingoCard {
     for (ObjectiveItem objective : objectives) {
       int idx = objective.getIndex();
       if (idx < 0 || idx >= SIZE) {
-        log.warning(
-            "[Bingo] Objective "
-                + objective.getSlug()
-                + " has invalid index "
-                + objective.getIndex());
+        log.warning(String.format("Objective %s has invalid idx %d", objective.getSlug(), idx));
         continue;
       }
       if (arr[idx] != null) {
         log.warning(
-            "[Bingo] Objectives "
-                + arr[idx].getSlug()
-                + " and "
-                + objective.getSlug()
-                + " clash with index "
-                + idx);
+            String.format(
+                "Objectives %s & %s clash @ idx %s", arr[idx].getSlug(), objective.getSlug(), idx));
         continue;
       }
       arr[idx] = objective;
