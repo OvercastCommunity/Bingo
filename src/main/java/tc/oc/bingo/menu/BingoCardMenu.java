@@ -79,11 +79,12 @@ public class BingoCardMenu implements InventoryProvider {
         ClickableItem.of(
             new ItemBuilder()
                 .material(Material.ARROW)
-                .name(player, text("«", NamedTextColor.GOLD ).append(text(" Battlepass", NamedTextColor.YELLOW)))
+                .name(
+                    player,
+                    text("«", NamedTextColor.GOLD)
+                        .append(text(" Battlepass", NamedTextColor.YELLOW)))
                 .build(),
-            event -> {
-              player.performCommand("/bp");
-            }));
+            event -> player.performCommand("battlepass")));
 
     bingoCard
         .getObjectives()

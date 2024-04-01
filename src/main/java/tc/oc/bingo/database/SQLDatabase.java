@@ -86,7 +86,7 @@ public class SQLDatabase implements BingoDatabase {
   }
 
   private Connection getConnection() throws SQLException {
-    return Database.get().getConnectionPool().getPool().getConnection();
+    return Database.get().getSecondaryPool().getPool().getConnection();
   }
 
   private void createTables() {
@@ -173,7 +173,7 @@ public class SQLDatabase implements BingoDatabase {
     int nextPos = getCompletionCountImpl(conn, objectiveSlug) + 1;
 
     Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-    storePlayerCompletionsImpl(conn, players, objectiveSlug, nextPos + 1, timestamp);
+    storePlayerCompletionsImpl(conn, players, objectiveSlug, nextPos, timestamp);
 
     if (nextPos == 1) {
       UUID playerUUID = players.size() == 1 ? players.get(0) : null;
