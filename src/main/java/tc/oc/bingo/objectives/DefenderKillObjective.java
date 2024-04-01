@@ -3,11 +3,8 @@ package tc.oc.bingo.objectives;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -86,8 +83,8 @@ public class DefenderKillObjective extends ObjectiveTracker {
     Vector deathLocation = event.getPlayer().getBukkit().getEyeLocation().toVector();
 
     if (objectiveLocations.getOrDefault(killerPlayer.getCompetitor(), Collections.emptyList())
-            .stream()
-            .anyMatch(bounds -> bounds.contains(deathLocation))) {
+        .stream()
+        .anyMatch(bounds -> bounds.contains(deathLocation))) {
       reward(killerPlayer.getBukkit());
     }
   }

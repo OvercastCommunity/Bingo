@@ -28,7 +28,6 @@ import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.Messages;
-import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.util.inventory.ItemBuilder;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.player.PlayerComponent;
@@ -185,7 +184,6 @@ public class BingoCardMenu implements InventoryProvider {
     } else {
       displayedHints =
           new String[] {ChatColor.GRAY + "" + ChatColor.ITALIC + "No hints revealed yet."};
-      // TODO: remove extra line that gets added this scenario
     }
 
     List<String> loreList = new ArrayList<>();
@@ -240,22 +238,16 @@ public class BingoCardMenu implements InventoryProvider {
 
     // Add lore lines depending on the conditions
     if (objectiveItem.getDiscoveryTime() != null) {
+      if (!selfDiscovered) loreList.add("");
 
       if (objectiveItem.getDiscoveryUUID() != null) {
-        @Nullable
-        String username =
-            PGM.get().getDatastore().getUsername(objectiveItem.getDiscoveryUUID()).getNameLegacy();
-
         Component discoveryPlayer =
             PlayerComponent.player(objectiveItem.getDiscoveryUUID(), NameStyle.PLAIN)
                 .style(Style.style(NamedTextColor.GOLD));
-        String discoveryName = TextTranslations.translateLegacy(discoveryPlayer, viewer);
-
-        if (username != null) {
-          if (!selfDiscovered) loreList.add("");
-          // TODO: use online players getName
-          loreList.add(ChatColor.GRAY + "Discovered by: " + discoveryName);
-        }
+        loreList.add(
+            ChatColor.GRAY
+                + "Discovered by: "
+                + TextTranslations.translateLegacy(discoveryPlayer, viewer));
       } else {
         loreList.add(
             ChatColor.GRAY
