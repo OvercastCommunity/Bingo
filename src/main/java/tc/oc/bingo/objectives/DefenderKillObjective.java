@@ -1,7 +1,10 @@
 package tc.oc.bingo.objectives;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,7 +31,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
   private int objectiveMaxSize = 40;
 
   public GoalMatchModule goals = null;
-  public Map<Competitor, Set<Bounds>> objectiveLocations = new HashMap<>();
+  public Map<Competitor, List<Bounds>> objectiveLocations = new HashMap<>();
 
   @Override
   public void setConfig(ConfigurationSection config) {
@@ -72,7 +75,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
-    if (!event.isChallengeKill()) return;
+    if (!event.isChallengeKill() || objectiveLocations.isEmpty()) return;
 
     ParticipantState killer = event.getKiller();
     if (killer == null) return;
@@ -82,15 +85,15 @@ public class DefenderKillObjective extends ObjectiveTracker {
 
     Vector deathLocation = event.getPlayer().getBukkit().getEyeLocation().toVector();
 
-    Set<Bounds> teamBounds = objectiveLocations.get(killerPlayer.getCompetitor());
-    Optional<Bounds> first =
-        teamBounds.stream().filter(bounds -> bounds.contains(deathLocation)).findFirst();
-
-    if (first.isPresent()) reward(killerPlayer.getBukkit());
+    if (objectiveLocations.getOrDefault(killerPlayer.getCompetitor(), Collections.emptyList())
+            .stream()
+            .anyMatch(bounds -> bounds.contains(deathLocation))) {
+      reward(killerPlayer.getBukkit());
+    }
   }
 
   private void addTeamBounds(Team owner, FiniteBlockRegion blockRegion) {
-    Set<Bounds> teamBounds = objectiveLocations.computeIfAbsent(owner, c -> new HashSet<>());
+    List<Bounds> teamBounds = objectiveLocations.computeIfAbsent(owner, c -> new ArrayList<>());
 
     Bounds clonedRegion = blockRegion.getBounds().clone();
     teamBounds.add(expandBounds(clonedRegion, objectiveMaxRange));
