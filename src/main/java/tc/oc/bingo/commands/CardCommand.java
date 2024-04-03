@@ -121,7 +121,7 @@ public class CardCommand extends BaseCommand {
     sender.sendMessage("Reloading Bingo config file.");
     Bingo.get().reloadConfig();
     FileConfiguration config = Bingo.get().getConfig();
-    Config.create(config);
+    Config.load(config);
     Bingo.get().loadTrackerConfigs(config);
   }
 }

@@ -78,16 +78,21 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.4.1</version>
         <configuration>
           <createDependencyReducedPom>true</createDependencyReducedPom>
+          <minimizeJar>true</minimizeJar>
+          <artifactSet>
+            <includes>
+              <include>co.aikar:*:*</include>
+              <include>fr.mrmicky:*:*</include>
+            </includes>
+          </artifactSet>
           <filters>
             <filter>
               <artifact>*:*</artifact>
               <excludes>
-                <exclude>META-INF/*.SF</exclude>
-                <exclude>META-INF/*.DSA</exclude>
-                <exclude>META-INF/*.RSA</exclude>
+                <exclude>META-INF/**</exclude>
               </excludes>
             </filter>
           </filters>
@@ -98,13 +103,6 @@
             <goals>
               <goal>shade</goal>
             </goals>
-            <configuration>
-              <artifactSet>
-                <includes>
-                  <include>*:*</include>
-                </includes>
-              </artifactSet>
-            </configuration>
           </execution>
         </executions>
       </plugin>

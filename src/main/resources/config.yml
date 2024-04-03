@@ -1,6 +1,4 @@
 # Bingo Config
-enable: true
-debug: false
 grid-width: 5
 
 # Rewards based on unlock type
@@ -8,6 +6,27 @@ rewards:
   single: 100
   line: 250
   card: 5000
+
+# Database setup
+database:
+  # What type of datastore to use, one of:
+  # - mock: Runs an in-memory mock database, only useful for testing with no setup required
+  # - primary: Uses the primary database on your Database plugin configuration
+  # - secondary: Uses the primary database on your Database plugin configuration
+  # Database plugin (https://github.com/OvercastCommunity/Database) is required for the later 2 options-
+  type: mock
+  # If using mock database, this is the configured bingo card. Ignored for primary and secondary.
+  mock-data:
+    - slug: 'alphabet-killer'
+      name: 'Lexical Conquest'
+      description: 'Strike down foes forming a linguistic chain.;It''s easy as 1 2 3;Kill them in A B C.'
+      idx: 0
+      hintLevel: 0
+    - slug: 'anvil-killer'
+      name: 'Heavy Metal'
+      description: 'Crush your foe with gravity''s aid.'
+      idx: 1
+      hintLevel: 0
 
 # Objective config options
 big-fall:

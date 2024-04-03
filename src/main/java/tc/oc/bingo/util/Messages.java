@@ -7,12 +7,12 @@ import static net.kyori.adventure.text.event.HoverEvent.showText;
 
 import java.time.Duration;
 import java.util.Random;
-import javax.annotation.Nullable;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.card.RewardManager;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.pgm.util.named.NameStyle;

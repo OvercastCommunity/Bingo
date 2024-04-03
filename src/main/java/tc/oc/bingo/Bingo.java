@@ -25,7 +25,6 @@ import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoDatabase;
 import tc.oc.bingo.database.BingoPlayerCard;
-import tc.oc.bingo.database.SQLDatabase;
 import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
@@ -60,9 +59,9 @@ public class Bingo extends JavaPlugin {
   @Override
   public void onEnable() {
     saveDefaultConfig();
-    Config.create(getConfig());
+    Config.load(getConfig());
 
-    database = new SQLDatabase();
+    this.database = BingoDatabase.build(Config.get().getDatabase());
 
     this.cardRefresher = new CardRefresher();
 

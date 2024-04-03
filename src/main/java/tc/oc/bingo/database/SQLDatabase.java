@@ -10,14 +10,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import javax.annotation.Nullable;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.util.ExceptionHandlingExecutorService;
-import tc.oc.occ.database.Database;
+import tc.oc.occ.database.ConnectionPool;
 
 public class SQLDatabase implements BingoDatabase {
 
@@ -32,7 +33,6 @@ public class SQLDatabase implements BingoDatabase {
           + "name VARCHAR(255),"
           + "description TEXT,"
           + "idx INT,"
-          + "clue TEXT,"
           + "hint_level INT,"
           + "next_clue_unlock DATETIME,"
           + "discovery_uuid VARCHAR(255),"
@@ -81,12 +81,15 @@ public class SQLDatabase implements BingoDatabase {
   private static final ExceptionHandlingExecutorService EXECUTOR =
       new ExceptionHandlingExecutorService(Executors.newFixedThreadPool(5));
 
-  public SQLDatabase() {
+  private final ConnectionPool pool;
+
+  public SQLDatabase(ConnectionPool pool) {
+    this.pool = pool;
     createTables();
   }
 
   private Connection getConnection() throws SQLException {
-    return Database.get().getSecondaryPool().getPool().getConnection();
+    return Objects.requireNonNull(pool.getPool()).getConnection();
   }
 
   private void createTables() {
@@ -122,7 +125,6 @@ public class SQLDatabase implements BingoDatabase {
               resultSet.getString("name"),
               resultSet.getString("description"),
               resultSet.getInt("idx"),
-              resultSet.getString("clue"),
               resultSet.getInt("hint_level"),
               parseTimestamp(resultSet.getTimestamp("next_clue_unlock")),
               parseUuid(resultSet.getString("discovery_uuid")),

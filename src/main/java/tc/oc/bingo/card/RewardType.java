@@ -1,8 +1,8 @@
 package tc.oc.bingo.card;
 
-import javax.annotation.Nullable;
 import lombok.Getter;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.jetbrains.annotations.Nullable;
 
 @Getter
 public enum RewardType {

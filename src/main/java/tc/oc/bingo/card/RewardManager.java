@@ -2,20 +2,21 @@ package tc.oc.bingo.card;
 
 import static net.kyori.adventure.text.Component.text;
 
-import java.util.HashSet;
+import java.util.BitSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.BingoCard;
@@ -25,8 +26,7 @@ import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.Exceptions;
 import tc.oc.bingo.util.LocationUtils;
 import tc.oc.bingo.util.Messages;
-import tc.oc.occ.dispense.events.currency.CurrencyType;
-import tc.oc.occ.dispense.events.currency.PlayerEarnCurrencyEvent;
+import tc.oc.bingo.util.Raindrops;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -48,14 +48,6 @@ public class RewardManager implements Listener {
   public RewardManager(Bingo bingo) {
     this.bingo = bingo;
     Bukkit.getServer().getPluginManager().registerEvents(this, bingo);
-  }
-
-  @EventHandler
-  public void onRaindropEarn(PlayerEarnCurrencyEvent event) {
-    if (!Config.get().isDebug()) return;
-    event
-        .getPlayer()
-        .sendMessage(event.getCustomAmount() + " " + event.getReason() + " " + event.getReason());
   }
 
   public void rewardPlayers(String objectiveSlug, List<Player> players) {
@@ -129,7 +121,8 @@ public class RewardManager implements Listener {
           Player player = Bukkit.getPlayer(rewardedItem.getPlayerUUID());
           if (player == null) return;
 
-          Reward reward = issueRaindropRewards(player, bingo.getBingoCard(), rewardedItem);
+          Reward reward =
+              issueRaindropRewards(player, bingo.getBingoCard(), objectiveItem, rewardedItem);
 
           LocationUtils.spawnFirework(player.getLocation(), FIREWORK_EFFECT, ROCKET_POWER);
 
@@ -145,8 +138,8 @@ public class RewardManager implements Listener {
   }
 
   public Reward issueRaindropRewards(
-      Player player, BingoCard bingoCard, ProgressItem completedItem) {
-    Reward reward = getCompletionType(bingoCard, completedItem);
+      Player player, BingoCard bingoCard, ObjectiveItem objective, ProgressItem completedItem) {
+    Reward reward = getCompletionType(bingoCard, objective, completedItem);
     int rewardAmount = getRewardAmount(reward.type);
 
     if (rewardAmount == 0) return null;
@@ -155,14 +148,7 @@ public class RewardManager implements Listener {
 
     if (rewardAmount != 0) {
       String rewardExtra = reward.amount > 1 ? " x" + reward.amount : "";
-      Bukkit.getPluginManager()
-          .callEvent(
-              new PlayerEarnCurrencyEvent(
-                  player,
-                  CurrencyType.CUSTOM,
-                  true,
-                  rewardAmount,
-                  "Bingo Goal " + reward.type.getName() + rewardExtra));
+      Raindrops.reward(player, rewardAmount, "Bingo Goal " + reward.type.getName() + rewardExtra);
 
       return reward;
     }
@@ -182,30 +168,28 @@ public class RewardManager implements Listener {
     }
   }
 
-  public Reward getCompletionType(BingoCard bingoCard, ProgressItem completedItem) {
-    List<ObjectiveItem> bingoItems = bingoCard.getObjectives();
+  public Reward getCompletionType(
+      BingoCard bingoCard, ObjectiveItem objective, ProgressItem completedItem) {
+    List<@Nullable ObjectiveItem> bingoItems = bingoCard.getObjectives();
     Map<String, ProgressItem> playerItems = completedItem.getCard().getProgressMap();
 
     // Map to store the completion status of each item in the player's card
-    int completedIndex = -1;
-    Set<Integer> completed = new HashSet<>(25);
+    BitSet completed = new BitSet(25);
     for (ObjectiveItem item : bingoItems) {
+      if (item == null) continue;
       ProgressItem progressItem = playerItems.get(item.getSlug());
-      if (item.getSlug().equals(completedItem.getObjectiveSlug())) {
-        completedIndex = item.getIndex();
-      }
-      if (progressItem != null && progressItem.isCompleted()) completed.add(item.getIndex());
+      if (progressItem != null && progressItem.isCompleted()) completed.set(item.getIndex());
     }
 
     // TODO: check logic with gridWidth added
     int gridWidth = Config.get().getGridWidth();
-    int completedX = completedIndex / gridWidth;
-    int completedY = completedIndex % gridWidth;
+    int completedX = objective.getIndex() / gridWidth;
+    int completedY = objective.getIndex() % gridWidth;
 
     // Check for horizontal line containing the completed item
     boolean horizontalLine = true;
     for (int j = 0; j < gridWidth; j++) {
-      if (!completed.contains(completedX * gridWidth + j)) {
+      if (!completed.get(completedX * gridWidth + j)) {
         horizontalLine = false;
         break;
       }
@@ -214,7 +198,7 @@ public class RewardManager implements Listener {
     // Check for vertical line containing the completed item
     boolean verticalLine = true;
     for (int i = 0; i < gridWidth; i++) {
-      if (!completed.contains(i * gridWidth + completedY)) {
+      if (!completed.get(i * gridWidth + completedY)) {
         verticalLine = false;
         break;
       }
@@ -227,10 +211,10 @@ public class RewardManager implements Listener {
 
     if (diagonal1Line || diagonal2Line) {
       for (int i = 0; i < gridWidth; i++) {
-        if (!completed.contains(i * gridWidth + i)) {
+        if (!completed.get(i * gridWidth + i)) {
           diagonal1Line = false;
         }
-        if (!completed.contains(i * gridWidth + ((gridWidth - 1) - i))) {
+        if (!completed.get(i * gridWidth + ((gridWidth - 1) - i))) {
           diagonal2Line = false;
         }
       }
@@ -258,27 +242,14 @@ public class RewardManager implements Listener {
     return new Reward(RewardType.SINGLE);
   }
 
+  @Data
+  @AllArgsConstructor
   public static class Reward {
-
     private final RewardType type;
     private final int amount;
 
     public Reward(RewardType type) {
-      this.type = type;
-      this.amount = 1;
-    }
-
-    public Reward(RewardType type, int amount) {
-      this.type = type;
-      this.amount = amount;
-    }
-
-    public RewardType getType() {
-      return type;
-    }
-
-    public int getAmount() {
-      return amount;
+      this(type, 1);
     }
   }
 }

@@ -10,13 +10,14 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.java.Log;
+import org.jetbrains.annotations.Nullable;
 
 @Data
 @Log
 public class BingoCard {
   private static final int SIZE = 5 * 5;
 
-  private final List<ObjectiveItem> objectives;
+  private final List<@Nullable ObjectiveItem> objectives;
 
   @Getter(AccessLevel.NONE)
   private final Map<String, ObjectiveItem> bySlug;
@@ -48,11 +49,11 @@ public class BingoCard {
     }
   }
 
-  public ObjectiveItem getObjectiveBySlug(String slug) {
+  public @Nullable ObjectiveItem getObjectiveBySlug(String slug) {
     return bySlug.get(slug);
   }
 
-  public ObjectiveItem getObjectiveByIndex(int index) {
+  public @Nullable ObjectiveItem getObjectiveByIndex(int index) {
     return objectives.get(index);
   }
 }
