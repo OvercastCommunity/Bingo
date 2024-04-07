@@ -30,7 +30,7 @@ public class FlowerPotObjective extends ObjectiveTracker {
     Block block = event.getClickedBlock();
     if (block.getType().equals(Material.FLOWER_POT)) {
       ItemStack itemInHand = player.getItemInHand();
-      if (isFlower(itemInHand.getType())) {
+      if (allowAny || isFlower(itemInHand.getType())) {
         Match match = getMatch(event.getWorld());
         if (match == null) return;
         reward(event.getPlayer());
@@ -39,6 +39,17 @@ public class FlowerPotObjective extends ObjectiveTracker {
   }
 
   public boolean isFlower(Material material) {
-    return allowAny || material == Material.RED_ROSE || material == Material.YELLOW_FLOWER;
+    switch (material) {
+      case RED_ROSE:
+      case YELLOW_FLOWER:
+      case CACTUS:
+      case SAPLING:
+      case RED_MUSHROOM:
+      case BROWN_MUSHROOM:
+      case DEAD_BUSH:
+        return true;
+      default:
+        return false;
+    }
   }
 }
