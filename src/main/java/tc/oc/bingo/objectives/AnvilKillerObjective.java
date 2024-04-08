@@ -29,7 +29,7 @@ public class AnvilKillerObjective extends ObjectiveTracker {
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onMatchLoad(MatchLoadEvent event) { // TODO: switch to match after load event
+  public void onMatchLoad(MatchLoadEvent event) {
     tracker = event.getMatch().needModule(TrackerMatchModule.class);
   }
 

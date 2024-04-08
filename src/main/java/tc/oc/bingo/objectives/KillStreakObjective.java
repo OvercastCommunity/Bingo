@@ -5,7 +5,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.killreward.KillRewardMatchModule;
 
@@ -31,13 +30,10 @@ public class KillStreakObjective extends ObjectiveTracker {
 
     if (!event.isChallengeKill()) return;
 
-    ParticipantState killer = event.getKiller();
-    if (killer == null) return;
-
-    MatchPlayer player = killer.getPlayer().orElse(null);
+    MatchPlayer player = getStatePlayer(event.getKiller());
     if (player == null) return;
 
-    int streak = killRewardModule.getKillStreak(killer.getId());
+    int streak = killRewardModule.getKillStreak(player.getId());
     if (streak >= requiredStreak) {
       reward(player.getBukkit());
     }

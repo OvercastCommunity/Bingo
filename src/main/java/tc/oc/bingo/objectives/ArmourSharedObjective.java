@@ -9,7 +9,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
-import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -19,7 +18,7 @@ import tc.oc.pgm.api.player.MatchPlayerState;
 public class ArmourSharedObjective extends ObjectiveTracker {
 
   public Map<Integer, MatchPlayerState> itemThrowers = new HashMap<>();
-  public Map<UUID, boolean[]> equippedPieces = new HashMap<>();
+  public Map<UUID, boolean[]> equippedPieces = useState(Scope.LIFE);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {
@@ -31,10 +30,7 @@ public class ArmourSharedObjective extends ObjectiveTracker {
   public void onPlayerDropItem(PlayerDropItemEvent event) {
     if (!isIronArmor(event.getItemDrop())) return;
 
-    Match match = getMatch(event.getWorld());
-    if (match == null) return;
-
-    MatchPlayer player = match.getPlayer(event.getPlayer());
+    MatchPlayer player = getPlayer(event.getPlayer());
     if (player == null) return;
 
     itemThrowers.put(event.getItemDrop().getEntityId(), player.getState());
@@ -48,10 +44,7 @@ public class ArmourSharedObjective extends ObjectiveTracker {
     if (thrower == null) return;
     itemThrowers.remove(event.getItem().getEntityId());
 
-    Match match = getMatch(event.getWorld());
-    if (match == null) return;
-
-    MatchPlayer picker = match.getPlayer(event.getPlayer());
+    MatchPlayer picker = getPlayer(event.getPlayer());
     if (picker == null || picker.getId().equals(thrower.getId())) return;
 
     // Same team check

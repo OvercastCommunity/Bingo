@@ -4,7 +4,6 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.tracker.info.BlockInfo;
 
@@ -15,10 +14,7 @@ public class CactusKillerObjective extends ObjectiveTracker {
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;
 
-    ParticipantState killer = event.getKiller();
-    if (killer == null) return;
-
-    MatchPlayer player = killer.getPlayer().orElse(null);
+    MatchPlayer player = getStatePlayer(event.getKiller());
     if (player == null) return;
 
     if (event.getDamageInfo() instanceof BlockInfo) {

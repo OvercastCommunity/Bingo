@@ -12,7 +12,6 @@ import org.bukkit.util.Vector;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.core.Core;
 import tc.oc.pgm.destroyable.Destroyable;
@@ -74,18 +73,14 @@ public class DefenderKillObjective extends ObjectiveTracker {
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill() || objectiveLocations.isEmpty()) return;
 
-    ParticipantState killer = event.getKiller();
-    if (killer == null) return;
-
-    MatchPlayer killerPlayer = killer.getPlayer().orElse(null);
-    if (killerPlayer == null) return;
+    MatchPlayer player = getStatePlayer(event.getKiller());
+    if (player == null) return;
 
     Vector deathLocation = event.getPlayer().getBukkit().getEyeLocation().toVector();
 
-    if (objectiveLocations.getOrDefault(killerPlayer.getCompetitor(), Collections.emptyList())
-        .stream()
+    if (objectiveLocations.getOrDefault(player.getCompetitor(), Collections.emptyList()).stream()
         .anyMatch(bounds -> bounds.contains(deathLocation))) {
-      reward(killerPlayer.getBukkit());
+      reward(player.getBukkit());
     }
   }
 

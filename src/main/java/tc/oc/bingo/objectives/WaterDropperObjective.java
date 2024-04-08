@@ -1,6 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.bukkit.Location;
@@ -23,7 +22,7 @@ import tc.oc.pgm.util.material.Materials;
 @Tracker("water-dropper")
 public class WaterDropperObjective extends ObjectiveTracker {
 
-  public Map<UUID, Vector> placedWater = new HashMap<>();
+  public Map<UUID, Vector> placedWater = useState(Scope.LIFE);
 
   private int minFallHeight = 100;
   private TrackerMatchModule tracker = null;
@@ -66,7 +65,7 @@ public class WaterDropperObjective extends ObjectiveTracker {
     UUID playerId = event.getPlayer().getUniqueId();
     Location location = event.getPlayer().getLocation();
 
-    Vector lastWaterVector = placedWater.getOrDefault(playerId, null);
+    Vector lastWaterVector = placedWater.get(playerId);
     if (lastWaterVector == null) return;
 
     double distanceFromWater = location.toVector().distance(lastWaterVector);

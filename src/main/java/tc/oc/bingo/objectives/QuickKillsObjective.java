@@ -1,16 +1,14 @@
 package tc.oc.bingo.objectives;
 
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("quick-kills")
@@ -19,7 +17,7 @@ public class QuickKillsObjective extends ObjectiveTracker {
   public int killsRequired = 3;
   public long timeThresholdSeconds = 5;
 
-  private final Map<UUID, Set<Long>> lastKillTimes = new HashMap<>();
+  private final Map<UUID, List<Long>> lastKillTimes = useState(Scope.LIFE);
 
   @Override
   public void setConfig(ConfigurationSection config) {
@@ -36,10 +34,7 @@ public class QuickKillsObjective extends ObjectiveTracker {
   public void onPlayerKill(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;
 
-    ParticipantState killer = event.getKiller();
-    if (killer == null) return;
-
-    MatchPlayer player = killer.getPlayer().orElse(null);
+    MatchPlayer player = getStatePlayer(event.getKiller());
     if (player == null) return;
 
     // Update kill count and check if the goal is reached
@@ -54,7 +49,7 @@ public class QuickKillsObjective extends ObjectiveTracker {
     long longestTimeAllowed = currentTime - (timeThresholdSeconds * 1000);
 
     // Get the set of timestamps for the current player
-    Set<Long> timestamps = lastKillTimes.computeIfAbsent(playerUUID, uuid -> new HashSet<>());
+    List<Long> timestamps = lastKillTimes.computeIfAbsent(playerUUID, uuid -> new ArrayList<>());
 
     // Remove timestamps older than longestTimeAllowed
     timestamps.removeIf(timestamp -> timestamp < longestTimeAllowed);

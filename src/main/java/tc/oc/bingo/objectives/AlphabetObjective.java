@@ -6,7 +6,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("alphabet-killer")
@@ -19,12 +18,7 @@ public class AlphabetObjective extends ObjectiveTracker.Stateful<Character> {
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;
 
-    // TODO: permission checks here too?
-
-    ParticipantState killer = event.getKiller();
-    if (killer == null) return;
-
-    MatchPlayer player = killer.getPlayer().orElse(null);
+    MatchPlayer player = getStatePlayer(event.getKiller());
     if (player == null) return;
 
     UUID playerId = player.getId();

@@ -5,32 +5,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.java.Log;
-import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ProgressItem;
-import tc.oc.pgm.api.PGM;
-import tc.oc.pgm.api.match.Match;
+import tc.oc.bingo.util.ManagedListener;
+import tc.oc.bingo.util.PGMUtils;
+import tc.oc.bingo.util.StateHandler;
 
 @Data
 @Log
-public class ObjectiveTracker implements Listener {
+public class ObjectiveTracker implements ManagedListener, PGMUtils {
 
   private final String objectiveSlug;
+  private final StateHandler state = new StateHandler();
 
   public ObjectiveTracker() {
     this.objectiveSlug = getClass().getDeclaredAnnotation(Tracker.class).value();
+  }
+
+  @Override
+  public Stream<ManagedListener> children() {
+    return Stream.of(state);
   }
 
   public void setConfig(ConfigurationSection config) {}
@@ -43,14 +45,15 @@ public class ObjectiveTracker implements Listener {
     reward(Collections.singletonList(player));
   }
 
-  public @Nullable Match getMatch(World world) {
-    return PGM.get().getMatchManager().getMatch(world);
+  protected <T> Map<UUID, T> useState(Scope scope) {
+    Map<UUID, T> result = new HashMap<>();
+    state.registerState(scope, result);
+    return result;
   }
 
   @Getter
   public abstract static class Stateful<T> extends ObjectiveTracker {
-
-    private final Map<UUID, T> progress = new HashMap<>();
+    private final Map<UUID, T> progress = useState(Scope.SESSION);
 
     public abstract @NotNull T initial();
 
@@ -95,11 +98,6 @@ public class ObjectiveTracker implements Listener {
       }
 
       return data;
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPlayerQuit(PlayerQuitEvent event) {
-      progress.remove(event.getPlayer().getUniqueId());
     }
   }
 }
