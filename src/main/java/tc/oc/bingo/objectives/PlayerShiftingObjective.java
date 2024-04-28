@@ -3,8 +3,8 @@ package tc.oc.bingo.objectives;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,18 +17,11 @@ import tc.oc.pgm.api.player.MatchPlayer;
 public class PlayerShiftingObjective extends ObjectiveTracker {
 
   // Due to the algorithm used, the actual max distance is twice this range
-  public int radius = 4;
-  public int minShifters = 4;
-  public int sameTeamCount = 1;
-  public int otherTeamCount = 2;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    radius = config.getInt("radius", 4);
-    sameTeamCount = config.getInt("same-team-count", 1);
-    otherTeamCount = config.getInt("other-team-count", 2);
-    minShifters = sameTeamCount + otherTeamCount;
-  }
+  private final Supplier<Integer> RADIUS = useConfig("radius", 4);
+  private final Supplier<Integer> SAME_TEAM_COUNT = useConfig("same-team-count", 1);
+  private final Supplier<Integer> OTHER_TEAM_COUNT = useConfig("other-team-count", 2);
+  private final Supplier<Integer> MIN_SHIFTERS =
+      useComputedConfig(() -> SAME_TEAM_COUNT.get() + OTHER_TEAM_COUNT.get());
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -38,8 +31,7 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
     if (match == null) return;
 
     Player player = event.getPlayer();
-    Collection<Player> nearbyPlayers =
-        player.getWorld().getNearbyPlayers(player.getLocation(), radius);
+    Collection<Player> nearbyPlayers = player.getLocation().getNearbyPlayers(RADIUS.get());
 
     Collection<MatchPlayer> players =
         nearbyPlayers.stream()
@@ -48,7 +40,7 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
             .filter(mp -> mp != null && mp.canInteract())
             .collect(Collectors.toList());
 
-    if (players.size() < minShifters) return;
+    if (players.size() < MIN_SHIFTERS.get()) return;
 
     // Create map for count of each team's players
     Map<Competitor, Long> teamCounts =
@@ -63,8 +55,8 @@ public class PlayerShiftingObjective extends ObjectiveTracker {
                   Competitor playerTeam = mp.getCompetitor();
                   long sameTeamCount = teamCounts.getOrDefault(playerTeam, 0L) - 1;
                   long differentTeamCount = players.size() - sameTeamCount - 1;
-                  return sameTeamCount >= this.sameTeamCount
-                      && differentTeamCount >= otherTeamCount;
+                  return sameTeamCount >= this.SAME_TEAM_COUNT.get()
+                      && differentTeamCount >= OTHER_TEAM_COUNT.get();
                 })
             .map(MatchPlayer::getBukkit)
             .collect(Collectors.toList());

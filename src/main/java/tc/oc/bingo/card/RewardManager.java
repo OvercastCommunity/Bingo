@@ -3,6 +3,7 @@ package tc.oc.bingo.card;
 import static net.kyori.adventure.text.Component.text;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,7 +51,7 @@ public class RewardManager implements Listener {
     Bukkit.getServer().getPluginManager().registerEvents(this, bingo);
   }
 
-  public void rewardPlayers(String objectiveSlug, List<Player> players) {
+  public void rewardPlayers(String objectiveSlug, Collection<Player> players) {
     List<ProgressItem> filteredCardItems =
         players.stream()
             .map(player -> tryComplete(player, objectiveSlug))

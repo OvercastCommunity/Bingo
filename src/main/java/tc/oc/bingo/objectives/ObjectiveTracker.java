@@ -1,8 +1,8 @@
 package tc.oc.bingo.objectives;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -13,6 +13,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import tc.oc.bingo.Bingo;
+import tc.oc.bingo.config.ConfigHandler;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.ManagedListener;
@@ -21,10 +22,11 @@ import tc.oc.bingo.util.StateHandler;
 
 @Data
 @Log
-public class ObjectiveTracker implements ManagedListener, PGMUtils {
+public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensions, PGMUtils {
 
   private final String objectiveSlug;
   private final StateHandler state = new StateHandler();
+  private final ConfigHandler config = new ConfigHandler();
 
   public ObjectiveTracker() {
     this.objectiveSlug = getClass().getDeclaredAnnotation(Tracker.class).value();
@@ -35,17 +37,19 @@ public class ObjectiveTracker implements ManagedListener, PGMUtils {
     return Stream.of(state);
   }
 
-  public void setConfig(ConfigurationSection config) {}
+  public final void setConfig(ConfigurationSection config) {
+    this.config.reload(config);
+  }
 
-  public void reward(List<Player> players) {
+  protected final void reward(Collection<Player> players) {
     Bingo.get().getRewards().rewardPlayers(objectiveSlug, players);
   }
 
-  public void reward(Player player) {
+  protected final void reward(Player player) {
     reward(Collections.singletonList(player));
   }
 
-  protected <T> Map<UUID, T> useState(Scope scope) {
+  protected final <T> Map<UUID, T> useState(Scope scope) {
     Map<UUID, T> result = new HashMap<>();
     state.registerState(scope, result);
     return result;

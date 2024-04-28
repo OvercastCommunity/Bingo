@@ -1,8 +1,8 @@
 package tc.oc.bingo.objectives;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
@@ -15,16 +15,11 @@ import tc.oc.pgm.goals.TouchableGoal;
 @Tracker("clean-match")
 public class CleanMatchObjective extends ObjectiveTracker {
 
-  private int minParticipants;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    minParticipants = config.getInt("min-participants", 10);
-  }
+  private final Supplier<Integer> MIN_PARTICIPANTS = useConfig("min-participants", 10);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchFinish(MatchFinishEvent event) {
-    if (event.getMatch().getParticipants().size() < minParticipants) return;
+    if (event.getMatch().getParticipants().size() < MIN_PARTICIPANTS.get()) return;
 
     Collection<Competitor> winners = event.getMatch().getWinners();
     if (winners.size() != 1) return;

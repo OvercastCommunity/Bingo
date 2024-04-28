@@ -17,8 +17,8 @@ import tc.oc.pgm.api.player.MatchPlayerState;
 @Tracker("armour-shared")
 public class ArmourSharedObjective extends ObjectiveTracker {
 
-  public Map<Integer, MatchPlayerState> itemThrowers = new HashMap<>();
-  public Map<UUID, boolean[]> equippedPieces = useState(Scope.LIFE);
+  private final Map<Integer, MatchPlayerState> itemThrowers = new HashMap<>();
+  private final Map<UUID, boolean[]> equippedPieces = useState(Scope.LIFE);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {

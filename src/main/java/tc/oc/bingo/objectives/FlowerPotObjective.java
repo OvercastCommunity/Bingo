@@ -1,8 +1,8 @@
 package tc.oc.bingo.objectives;
 
+import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,12 +15,7 @@ import tc.oc.pgm.api.match.Match;
 public class FlowerPotObjective extends ObjectiveTracker {
 
   // Bypass the flower-only restriction, allow bush, mushroom to work
-  private boolean allowAny = false;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    allowAny = config.getBoolean("allow-any", false);
-  }
+  private final Supplier<Boolean> ALLOW_ANY = useConfig("allow-any", false);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
@@ -30,7 +25,7 @@ public class FlowerPotObjective extends ObjectiveTracker {
     Block block = event.getClickedBlock();
     if (block.getType().equals(Material.FLOWER_POT)) {
       ItemStack itemInHand = player.getItemInHand();
-      if (allowAny || isFlower(itemInHand.getType())) {
+      if (ALLOW_ANY.get() || isFlower(itemInHand.getType())) {
         Match match = getMatch(event.getWorld());
         if (match == null) return;
         reward(event.getPlayer());

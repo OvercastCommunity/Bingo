@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,16 +17,10 @@ import tc.oc.pgm.rotation.vote.events.MatchPlayerVoteEvent;
 @Tracker("picky-voter")
 public class PickyVoterObjective extends ObjectiveTracker {
 
-  public Map<UUID, List<String>> playerVotes = useState(Scope.FULL_MATCH);
+  private final Supplier<Integer> MIN_MAP_VOTES = useConfig("min-map-votes", 4);
+  private final Supplier<Integer> MAX_MAP_VOTES = useConfig("max-map-votes", 4);
 
-  private int minMapVotes = 4;
-  private int maxMapVotes = 4;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    minMapVotes = config.getInt("min-map-votes", 4);
-    maxMapVotes = config.getInt("max-map-votes", 4);
-  }
+  private final Map<UUID, List<String>> playerVotes = useState(Scope.FULL_MATCH);
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerVote(MatchPlayerVoteEvent event) {
@@ -49,7 +43,7 @@ public class PickyVoterObjective extends ObjectiveTracker {
             .filter(
                 entry -> {
                   int voteCount = entry.getValue().size();
-                  return voteCount >= minMapVotes && voteCount <= maxMapVotes;
+                  return voteCount >= MIN_MAP_VOTES.get() && voteCount <= MAX_MAP_VOTES.get();
                 })
             .map(Map.Entry::getKey)
             .map(uuid -> Bukkit.getServer().getPlayer(uuid))

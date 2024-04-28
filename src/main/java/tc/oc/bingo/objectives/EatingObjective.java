@@ -4,8 +4,8 @@ import java.util.EnumSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -13,14 +13,9 @@ import org.bukkit.event.player.PlayerItemConsumeEvent;
 @Tracker("eating")
 public class EatingObjective extends ObjectiveTracker {
 
-  public int foodsRequired = 3;
+  private final Supplier<Integer> FOODS_REQUIRED = useConfig("foods-required", 3);
 
   private final Map<UUID, Set<Material>> consumedIds = useState(Scope.LIFE);
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    foodsRequired = config.getInt("foods-required", 3);
-  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerConsume(PlayerItemConsumeEvent event) {
@@ -31,7 +26,7 @@ public class EatingObjective extends ObjectiveTracker {
       Set<Material> consumedItems =
           consumedIds.computeIfAbsent(playerUUID, id -> EnumSet.noneOf(Material.class));
 
-      if (consumedItems.add(item) && consumedItems.size() >= foodsRequired)
+      if (consumedItems.add(item) && consumedItems.size() >= FOODS_REQUIRED.get())
         reward(event.getPlayer());
     }
   }

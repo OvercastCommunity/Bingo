@@ -5,7 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.bukkit.configuration.ConfigurationSection;
+import java.util.function.Supplier;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.util.Vector;
@@ -23,24 +23,15 @@ import tc.oc.pgm.teams.Team;
 @Tracker("defender-kill")
 public class DefenderKillObjective extends ObjectiveTracker {
 
-  private int objectiveMaxRange = 5;
-  private int objectiveMaxSize = 40;
+  private final Supplier<Integer> OBJECTIVE_MAX_RANGE = useConfig("objective-max-range", 5);
+  private final Supplier<Integer> OBJECTIVE_MAX_SIZE = useConfig("objective-max-size", 40);
 
-  public GoalMatchModule goals = null;
-  public Map<Competitor, List<Bounds>> objectiveLocations = new HashMap<>();
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    // TODO: figure out distances
-    objectiveMaxRange = config.getInt("objective-max-range", 5);
-    objectiveMaxSize = config.getInt("objective-max-size", 40);
-  }
+  private final Map<Competitor, List<Bounds>> objectiveLocations = new HashMap<>();
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
-    goals = event.getMatch().getModule(GoalMatchModule.class);
     objectiveLocations.clear();
-
+    GoalMatchModule goals = event.getMatch().getModule(GoalMatchModule.class);
     if (goals == null) return;
 
     event
@@ -55,7 +46,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
                         if (goal instanceof Destroyable) {
                           Destroyable destroyable = (Destroyable) goal;
                           FiniteBlockRegion blockRegion = destroyable.getBlockRegion();
-                          if (blockRegion.getBlockVolume() > objectiveMaxSize) {
+                          if (blockRegion.getBlockVolume() > OBJECTIVE_MAX_SIZE.get()) {
                             return;
                           }
                           addTeamBounds(destroyable.getOwner(), blockRegion);
@@ -88,7 +79,7 @@ public class DefenderKillObjective extends ObjectiveTracker {
     List<Bounds> teamBounds = objectiveLocations.computeIfAbsent(owner, c -> new ArrayList<>());
 
     Bounds clonedRegion = blockRegion.getBounds().clone();
-    teamBounds.add(expandBounds(clonedRegion, objectiveMaxRange));
+    teamBounds.add(expandBounds(clonedRegion, OBJECTIVE_MAX_RANGE.get()));
   }
 
   private Bounds expandBounds(Bounds bounds, int increase) {

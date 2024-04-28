@@ -1,25 +1,25 @@
 package tc.oc.bingo.objectives;
 
+import com.google.common.base.Objects;
+import java.util.function.Supplier;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.CraftItemEvent;
+import tc.oc.bingo.config.ConfigReader;
 
 @Tracker("player-craft")
 public class PlayerCraftObjective extends ObjectiveTracker {
 
-  public Material materialRequired = Material.PISTON_BASE;
+  private static final ConfigReader<Material> MATERIAL_READER =
+      (cfg, key, def) -> Objects.firstNonNull(Material.getMaterial(cfg.getString(key)), def);
 
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    Material material = Material.getMaterial(config.getString("material-name", "PISTON_BASE"));
-    if (material != null) materialRequired = material;
-  }
+  private final Supplier<Material> MATERIAL_REQUIRED =
+      useConfig("material-name", Material.PISTON_BASE, MATERIAL_READER);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerCraftEvent(CraftItemEvent event) {
-    if (event.getRecipe().getResult().getType().equals(materialRequired)) {
+    if (event.getRecipe().getResult().getType().equals(MATERIAL_REQUIRED.get())) {
       reward(event.getActor().getPlayer());
     }
   }

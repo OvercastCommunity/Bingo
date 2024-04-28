@@ -2,9 +2,9 @@ package tc.oc.bingo.objectives;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
@@ -21,16 +21,9 @@ import tc.oc.pgm.util.material.Materials;
 
 @Tracker("water-dropper")
 public class WaterDropperObjective extends ObjectiveTracker {
-
-  public Map<UUID, Vector> placedWater = useState(Scope.LIFE);
-
-  private int minFallHeight = 100;
-  private TrackerMatchModule tracker = null;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    minFallHeight = config.getInt("min-fall-height", 100);
-  }
+  private final Supplier<Integer> MIN_FALL_HEIGHT = useConfig("min-fall-height", 100);
+  private final Map<UUID, Vector> placedWater = useState(Scope.LIFE);
+  private TrackerMatchModule tracker;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
@@ -82,7 +75,7 @@ public class WaterDropperObjective extends ObjectiveTracker {
       GenericFallInfo info = (GenericFallInfo) damageInfo;
       double distance = Trackers.distanceFromRanged(info, event.getPlayer().getLocation());
 
-      if (!Double.isNaN(distance) && distance >= minFallHeight) {
+      if (!Double.isNaN(distance) && distance >= MIN_FALL_HEIGHT.get()) {
         reward(event.getPlayer());
       }
     }

@@ -1,7 +1,7 @@
 package tc.oc.bingo.objectives;
 
+import java.util.function.Supplier;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
@@ -19,14 +19,9 @@ import tc.oc.pgm.tracker.info.BlockInfo;
 @Tracker("anvil-killer")
 public class AnvilKillerObjective extends ObjectiveTracker {
 
-  boolean requiresKill = false;
+  private final Supplier<Boolean> REQUIRES_KILL = useConfig("requires-kill", false);
 
   private TrackerMatchModule tracker;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    requiresKill = config.getBoolean("requires-kill", false);
-  }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {
@@ -35,7 +30,7 @@ public class AnvilKillerObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDamage(EntityDamageByEntityEvent event) {
-    if (requiresKill || tracker == null) return;
+    if (REQUIRES_KILL.get() || tracker == null) return;
 
     if (!(event.getEntity() instanceof Player)) return;
 
