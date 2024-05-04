@@ -15,8 +15,6 @@ import lombok.SneakyThrows;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.event.Listener;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import tc.oc.bingo.card.CardRefresher;
 import tc.oc.bingo.card.RewardManager;
@@ -29,6 +27,7 @@ import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
 import tc.oc.bingo.util.Exceptions;
+import tc.oc.bingo.util.ManagedListener;
 import tc.oc.bingo.util.Reflections;
 
 @Getter
@@ -82,10 +81,9 @@ public class Bingo extends JavaPlugin {
     //  Don't recreate if they already exist
     //  Remove ones that are no longer needed etc
 
-    PluginManager plMan = Bukkit.getServer().getPluginManager();
-    getTrackersOfType(Listener.class).forEach(listener -> plMan.registerEvents(listener, this));
+    getTrackersOfType(ManagedListener.class).forEach(ManagedListener::enable);
 
-    plMan.registerEvents(new PlayerJoinListener(this), this);
+    Bukkit.getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
     this.rewards = new RewardManager(this);
 
     // Set up the command manager and register all commands

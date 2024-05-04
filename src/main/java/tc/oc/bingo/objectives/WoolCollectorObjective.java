@@ -29,12 +29,10 @@ public class WoolCollectorObjective extends ObjectiveTracker.Stateful<Set<Intege
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onPlayerPickUpItem(
-      final PlayerPickupItemEvent event) { // TODO: add other events for pickups
+  public void onPlayerPickUpItem(final PlayerPickupItemEvent event) {
     validateWoolPickUp(event.getPlayer(), event.getItem().getItemStack());
   }
 
-  // TODO: test these
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onItemTransfer(InventoryMoveItemEvent event) {
     if (event.getActor() instanceof Player) {
@@ -50,8 +48,6 @@ public class WoolCollectorObjective extends ObjectiveTracker.Stateful<Set<Intege
   private void validateWoolPickUp(Player player, ItemStack itemStack) {
     Integer woolId = getWoolId(itemStack);
     if (woolId == null) return;
-
-    // TODO: permission checks here too?
 
     UUID playerId = player.getUniqueId();
     Set<Integer> indexes = getObjectiveData(playerId);
