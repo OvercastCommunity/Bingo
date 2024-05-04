@@ -5,9 +5,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,12 +21,7 @@ import org.jetbrains.annotations.Nullable;
 @Tracker("wool-collector")
 public class WoolCollectorObjective extends ObjectiveTracker.Stateful<Set<Integer>> {
 
-  private int minWoolCount = 5;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    minWoolCount = config.getInt("min-wool-count", 5);
-  }
+  private final Supplier<Integer> MIN_WOOL_COUNT = useConfig("min-wool-count", 8);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerPickUpItem(final PlayerPickupItemEvent event) {
@@ -53,7 +48,7 @@ public class WoolCollectorObjective extends ObjectiveTracker.Stateful<Set<Intege
     Set<Integer> indexes = getObjectiveData(playerId);
     if (indexes.add(woolId)) {
       storeObjectiveData(playerId, indexes);
-      if (indexes.size() >= minWoolCount) {
+      if (indexes.size() >= MIN_WOOL_COUNT.get()) {
         reward(player);
       }
     }

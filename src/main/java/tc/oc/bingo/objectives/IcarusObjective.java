@@ -1,7 +1,7 @@
 package tc.oc.bingo.objectives;
 
+import java.util.function.Supplier;
 import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
@@ -16,17 +16,11 @@ import tc.oc.pgm.api.player.MatchPlayer;
 @Tracker("icarus-height")
 public class IcarusObjective extends ObjectiveTracker {
 
-  private double minVerticalVelocity = 6d;
+  private final Supplier<Double> minVerticalVelocity = useConfig("min-vertical-velocity", 6d);
   // This delay may be affected by ping, so keep configurable
-  private int delayTicks = 2;
+  private final Supplier<Integer> delayTicks = useConfig("delay-ticks", 2);
 
-  private Match match = null;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    minVerticalVelocity = config.getDouble("min-vertical-velocity", 6d);
-    delayTicks = config.getInt("delay-ticks", 2);
-  }
+  private Match match;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
@@ -52,11 +46,11 @@ public class IcarusObjective extends ObjectiveTracker {
                 if (matchPlayer.isDead()) return;
 
                 Vector velocity = player.getVelocity();
-                if (velocity.getY() >= minVerticalVelocity) {
+                if (velocity.getY() >= minVerticalVelocity.get()) {
                   reward(player);
                 }
               },
-              delayTicks);
+              delayTicks.get());
     }
   }
 }

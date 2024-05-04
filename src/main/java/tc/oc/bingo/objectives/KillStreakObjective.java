@@ -1,6 +1,6 @@
 package tc.oc.bingo.objectives;
 
-import org.bukkit.configuration.ConfigurationSection;
+import java.util.function.Supplier;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
@@ -11,13 +11,8 @@ import tc.oc.pgm.killreward.KillRewardMatchModule;
 @Tracker("kill-streak")
 public class KillStreakObjective extends ObjectiveTracker {
 
-  public int requiredStreak = 10;
-  private KillRewardMatchModule killRewardModule = null;
-
-  @Override
-  public void setConfig(ConfigurationSection config) {
-    requiredStreak = config.getInt("required-streak", 10);
-  }
+  private final Supplier<Integer> REQUIRED_STREAK = useConfig("required-streak", 10);
+  private KillRewardMatchModule killRewardModule;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
@@ -34,7 +29,7 @@ public class KillStreakObjective extends ObjectiveTracker {
     if (player == null) return;
 
     int streak = killRewardModule.getKillStreak(player.getId());
-    if (streak >= requiredStreak) {
+    if (streak >= REQUIRED_STREAK.get()) {
       reward(player.getBukkit());
     }
   }
