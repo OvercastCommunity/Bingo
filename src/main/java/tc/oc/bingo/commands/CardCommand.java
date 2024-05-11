@@ -8,11 +8,13 @@ import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import java.util.Collections;
+import java.util.Objects;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
+import tc.oc.bingo.database.MockDatabase;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.menu.BingoCardMenu;
 import tc.oc.bingo.util.Exceptions;
@@ -85,6 +87,36 @@ public class CardCommand extends BaseCommand {
     Bingo.get()
         .getRewards()
         .rewardPlayers(objectiveItem.getSlug(), Collections.singletonList(target.getPlayer()));
+  }
+
+  @Subcommand("uncomplete")
+  @CommandPermission("bingo.uncomplete")
+  public void bingoCardUncomplete(
+      CommandSender sender, OnlinePlayer target, @Optional Integer index) {
+    if (!(Bingo.get().getBingoDatabase() instanceof MockDatabase)) {
+      sender.sendMessage("This command is only available when using a mocked database");
+      return;
+    }
+
+    Bingo.get()
+        .getPlayerCard(target.getPlayer().getUniqueId())
+        .whenComplete(
+            (c, t) -> {
+              if (Objects.isNull(c)) {
+                sender.sendMessage("Unable to find card for the specified player.");
+                return;
+              }
+              if (Objects.isNull(index)) {
+                c.getProgressMap().values().forEach(i -> i.setCompleted(false));
+              } else {
+                ObjectiveItem objectiveItem = Bingo.get().getBingoCard().getObjectiveByIndex(index);
+                if (objectiveItem == null) {
+                  sender.sendMessage("Unable to find an objective with that index.");
+                  return;
+                }
+                c.getProgress(objectiveItem.getSlug()).setCompleted(false);
+              }
+            });
   }
 
   @Subcommand("refresh")
