@@ -102,11 +102,11 @@ public class CardCommand extends BaseCommand {
         .getPlayerCard(target.getPlayer().getUniqueId())
         .whenComplete(
             (card, throwable) -> {
-              if (Objects.isNull(card)) {
+              if (card == null) {
                 sender.sendMessage("Unable to find card for the specified player.");
                 return;
               }
-              if (Objects.isNull(index)) {
+              if (index == null) {
                 card.getProgressMap().values().forEach(i -> i.setCompleted(false));
               } else {
                 ObjectiveItem objectiveItem = Bingo.get().getBingoCard().getObjectiveByIndex(index);
