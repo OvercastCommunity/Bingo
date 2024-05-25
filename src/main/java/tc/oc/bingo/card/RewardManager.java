@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -133,8 +134,9 @@ public class RewardManager implements Listener {
         });
   }
 
-  public void storeObjectiveData(UUID uuid, String objectiveSlug, String dataAsString) {
-    Exceptions.handle(
+  public CompletableFuture<Void> storeObjectiveData(
+      UUID uuid, String objectiveSlug, String dataAsString) {
+    return Exceptions.handle(
         bingo.getBingoDatabase().storePlayerProgress(uuid, objectiveSlug, dataAsString));
   }
 
