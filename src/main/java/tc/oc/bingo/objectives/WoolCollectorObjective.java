@@ -74,4 +74,9 @@ public class WoolCollectorObjective extends ObjectiveTracker.Stateful<Set<Intege
   public @NotNull String serialize(@NotNull Set<Integer> data) {
     return String.join(",", Iterables.transform(data, Object::toString));
   }
+
+  @Override
+  public double progress(Set<Integer> data) {
+    return (double) data.size() / MIN_WOOL_COUNT.get();
+  }
 }

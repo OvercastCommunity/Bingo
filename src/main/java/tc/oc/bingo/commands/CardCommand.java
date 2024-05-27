@@ -9,7 +9,6 @@ import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import java.util.Collections;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
@@ -120,8 +119,7 @@ public class CardCommand extends BaseCommand {
   public void bingoReload(CommandSender sender) {
     sender.sendMessage("Reloading Bingo config file.");
     Bingo.get().reloadConfig();
-    FileConfiguration config = Bingo.get().getConfig();
-    Config.load(config);
-    Bingo.get().loadTrackerConfigs(config);
+    Config.load(Bingo.get().getConfig());
+    Bingo.get().reloadTrackerConfigs();
   }
 }

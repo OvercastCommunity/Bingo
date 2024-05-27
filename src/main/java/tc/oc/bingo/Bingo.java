@@ -2,23 +2,19 @@ package tc.oc.bingo;
 
 import co.aikar.commands.BukkitCommandManager;
 import fr.minuskube.inv.InventoryManager;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.java.Log;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import tc.oc.bingo.card.CardRefresher;
 import tc.oc.bingo.card.RewardManager;
@@ -32,17 +28,17 @@ import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
 import tc.oc.bingo.util.Exceptions;
-import tc.oc.bingo.util.ManagedListener;
 import tc.oc.bingo.util.Reflections;
 import tc.oc.pgm.api.PGM;
 
+@Log
 @Getter
 public class Bingo extends JavaPlugin {
 
   private static Bingo INSTANCE;
 
   private BukkitCommandManager commands;
-  private final List<ObjectiveTracker> trackers = new ArrayList<>(25);
+  private final Map<String, ObjectiveTracker> trackers = new HashMap<>(25);
 
   @Getter(AccessLevel.NONE)
   private BingoDatabase database;
@@ -81,16 +77,15 @@ public class Bingo extends JavaPlugin {
     inventoryManager.init();
   }
 
-  public void loadTrackerConfigs(FileConfiguration config) {
-    trackers.forEach(
-        tracker -> {
-          ConfigurationSection section = config.getConfigurationSection(tracker.getObjectiveSlug());
-          if (section != null) tracker.setConfig(section);
-        });
+  public void reloadTrackerConfigs() {
+    trackers.values().forEach(this::reloadTrackerConfig);
   }
 
-  private <T> Stream<T> getTrackersOfType(Class<T> type) {
-    return trackers.stream().filter(type::isInstance).map(type::cast);
+  private void reloadTrackerConfig(ObjectiveTracker tracker) {
+    ConfigurationSection section = getConfig().getConfigurationSection(tracker.getObjectiveSlug());
+    if (section != null) tracker.setConfig(section);
+    else if (tracker.hasConfig())
+      log.warning("Config key for tracker '" + tracker.getObjectiveSlug() + "' not found");
   }
 
   @SneakyThrows
@@ -142,47 +137,30 @@ public class Bingo extends JavaPlugin {
             .map(ObjectiveItem::getSlug)
             .collect(Collectors.toSet());
 
-    Map<String, ObjectiveTracker> objectivesToRemove =
-        trackers.stream()
-            .collect(Collectors.toMap(ObjectiveTracker::getObjectiveSlug, Function.identity()));
-
+    Map<String, ObjectiveTracker> objectivesToRemove = new HashMap<>(trackers);
     objectivesToCreate.removeIf(string -> objectivesToRemove.remove(string) != null);
 
-    objectivesToRemove
-        .values()
-        .forEach(
-            tracker -> {
-              tracker.disable();
-              trackers.remove(tracker);
-            });
-
-    List<ObjectiveTracker> newTrackers = new ArrayList<>();
-    if (!objectivesToCreate.isEmpty()) {
-      // Find trackers that are not present in the current list and create
-      newTrackers =
-          Reflections.findClasses(
-                  ObjectiveTracker.class.getPackage().getName(),
-                  ObjectiveTracker.class,
-                  Tracker.class)
-              .stream()
-              .filter(
-                  trackerClass -> {
-                    Tracker annotation = trackerClass.getAnnotation(Tracker.class);
-                    return annotation != null && objectivesToCreate.contains(annotation.value());
-                  })
-              .map(this::buildTracker)
-              .collect(Collectors.toList());
-    }
-
-    newTrackers.forEach(
-        tracker -> {
-          ConfigurationSection section =
-              getConfig().getConfigurationSection(tracker.getObjectiveSlug());
-          if (section != null) tracker.setConfig(section);
+    objectivesToRemove.forEach(
+        (slug, tracker) -> {
+          tracker.disable();
+          trackers.remove(slug);
         });
 
-    newTrackers.forEach(ManagedListener::enable);
+    if (!objectivesToCreate.isEmpty()) {
+      // Find tracker classes not present in current map, and create them
+      Reflections.findClasses(
+              ObjectiveTracker.class.getPackage().getName(), ObjectiveTracker.class, Tracker.class)
+          .forEach(
+              trackerClass -> {
+                Tracker annotation = trackerClass.getAnnotation(Tracker.class);
+                String slug = annotation != null ? annotation.value() : null;
+                if (slug == null || !objectivesToCreate.contains(slug)) return;
 
-    trackers.addAll(newTrackers);
+                ObjectiveTracker tracker = buildTracker(trackerClass);
+                reloadTrackerConfig(tracker);
+                tracker.enable();
+                trackers.put(slug, tracker);
+              });
+    }
   }
 }

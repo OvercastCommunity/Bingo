@@ -1,6 +1,11 @@
 package tc.oc.bingo.menu;
 
 import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.Style.*;
+import static org.bukkit.ChatColor.*;
+import static tc.oc.pgm.util.named.NameStyle.PLAIN;
+import static tc.oc.pgm.util.player.PlayerComponent.player;
+import static tc.oc.pgm.util.text.TextTranslations.translateLegacy;
 
 import fr.minuskube.inv.ClickableItem;
 import fr.minuskube.inv.SmartInventory;
@@ -11,16 +16,17 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import net.kyori.adventure.text.Component;
+import java.util.Objects;
+import java.util.UUID;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.Style;
-import org.bukkit.ChatColor;
+import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.database.BingoCard;
@@ -29,9 +35,6 @@ import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.util.inventory.ItemBuilder;
-import tc.oc.pgm.util.named.NameStyle;
-import tc.oc.pgm.util.player.PlayerComponent;
-import tc.oc.pgm.util.text.TextTranslations;
 
 public class BingoCardMenu implements InventoryProvider {
 
@@ -102,42 +105,19 @@ public class BingoCardMenu implements InventoryProvider {
     ItemStack itemStack = new ItemStack(Material.REDSTONE_TORCH_ON, 1);
     ItemMeta itemMeta = itemStack.getItemMeta();
 
-    itemMeta.setDisplayName(
-        ChatColor.YELLOW
-            + "What is "
-            + ChatColor.GOLD
-            + ChatColor.BOLD
-            + "Bingo"
-            + ChatColor.RESET
-            + ChatColor.YELLOW
-            + "?");
+    itemMeta.setDisplayName(YELLOW + "What is " + GOLD + BOLD + "Bingo" + RESET + YELLOW + "?");
 
     itemMeta.setLore(
         Arrays.asList(
-            ChatColor.GRAY + "Complete mystery objectives on",
-            ChatColor.GRAY
-                + "the Bingo Card to earn "
-                + ChatColor.AQUA
-                + "raindrops"
-                + ChatColor.GRAY
-                + ".",
-            ChatColor.GRAY + "",
-            ChatColor.GRAY + "Get bonuses for lines and a full",
-            ChatColor.GRAY
-                + "house. "
-                + ChatColor.DARK_PURPLE
-                + "Clues"
-                + ChatColor.GRAY
-                + " will be revealed over",
-            ChatColor.GRAY + "time to help you out.",
-            ChatColor.GRAY + "",
-            ChatColor.GRAY + "Join the Discord to share your",
-            ChatColor.GOLD
-                + "#bingo"
-                + ChatColor.GRAY
-                + " discoveries: "
-                + ChatColor.BLUE
-                + "oc.tc/discord"));
+            GRAY + "Complete mystery objectives on",
+            GRAY + "the Bingo Card to earn " + AQUA + "raindrops" + GRAY + ".",
+            GRAY + "",
+            GRAY + "Get bonuses for lines and a full",
+            GRAY + "house. " + DARK_PURPLE + "Clues" + GRAY + " will be revealed over",
+            GRAY + "time to help you out.",
+            GRAY + "",
+            GRAY + "Join the Discord to share your",
+            GOLD + "#bingo" + GRAY + " discoveries: " + BLUE + "oc.tc/discord"));
 
     itemStack.setItemMeta(itemMeta);
     return itemStack;
@@ -145,127 +125,110 @@ public class BingoCardMenu implements InventoryProvider {
 
   private ItemStack makeIconFor(
       Player viewer,
-      ObjectiveItem objectiveItem,
+      ObjectiveItem objective,
       BingoPlayerCard playerCard,
-      @Nullable Integer requestedObjectiveIndex) {
+      @Nullable Integer requestedIdx) {
+    @Nullable ProgressItem progressItem = playerCard.getProgressMap().get(objective.getSlug());
 
-    ProgressItem progressItem = playerCard.getProgressMap().get(objectiveItem.getSlug());
+    List<String> loreList = new ArrayList<>();
 
     boolean completed = progressItem != null && progressItem.isCompleted();
-    short itemDamage = (short) (completed ? 10 : 8);
-    boolean hightlight =
-        requestedObjectiveIndex != null && (requestedObjectiveIndex == objectiveItem.getIndex());
+    if (completed) {
+      loreList.add(GREEN + "Objective Complete" + DARK_GREEN + " ✔");
+    }
 
-    ItemStack itemStack = new ItemStack(Material.INK_SACK, 1, itemDamage);
+    HintDisplay hints = new HintDisplay(objective);
+
+    // Add all visible hints
+    addSpaced(loreList, hints.revealed);
+
+    // Add "Clue revealed in X"
+    if (hints.hasHidden) addNextUnlock(objective.getNextClueUnlock(), loreList);
+
+    // Add "You placed #x", or "Progress: X%" (for stateful objectives)
+    addProgress(progressItem, loreList);
+
+    // Add "Discovered by: X"
+    if (objective.getDiscoveryTime() != null) {
+      UUID uuid = objective.getDiscoveryUUID();
+      String by;
+      if (uuid == null) by = "" + GOLD + ITALIC + "Several Players";
+      else by = translateLegacy(player(uuid, PLAIN).style(style(NamedTextColor.GOLD)), viewer);
+      addSpaced(loreList, GRAY + "Discovered by: " + by);
+    }
+
+    String name = hints.unlocked > 0 ? objective.getName() : MAGIC + "NiceTry";
+    return createIconItem(
+        completed, Objects.equals(requestedIdx, objective.getIndex()), name, loreList);
+  }
+
+  private static @NotNull ItemStack createIconItem(
+      boolean completed, boolean highlight, String name, List<String> lore) {
+    @SuppressWarnings("deprecation")
+    short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
+    ItemStack itemStack = new ItemStack(Material.INK_SACK, 1, color);
     ItemMeta itemMeta = itemStack.getItemMeta();
-
-    if (hightlight) {
+    if (highlight) {
       itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
       itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
     }
 
-    int hintLevel = objectiveItem.getHintLevel();
-
-    // When the next clue timestamp passes bump the hint level by 1
-    if (objectiveItem.hasNextCluePassed()) {
-      hintLevel++;
-    }
-
-    String objectiveItemName =
-        hintLevel > 0 ? objectiveItem.getName() : ChatColor.MAGIC + "NiceTry";
-
-    itemMeta.setDisplayName("" + ChatColor.AQUA + ChatColor.BOLD + objectiveItemName);
-
-    String[] displayedHints;
-    String[] splitHints = objectiveItem.getDescription().split(";");
-    if (hintLevel > 1) {
-      displayedHints =
-          Arrays.copyOfRange(splitHints, 0, Math.min(hintLevel - 1, splitHints.length));
-    } else {
-      displayedHints =
-          new String[] {ChatColor.GRAY + "" + ChatColor.ITALIC + "No hints revealed yet."};
-    }
-
-    List<String> loreList = new ArrayList<>();
-
-    if (completed) {
-      loreList.add(ChatColor.GREEN + "Objective Complete" + ChatColor.DARK_GREEN + " ✔");
-      loreList.add("");
-    }
-
-    int i = 0;
-    for (String displayedHint : displayedHints) {
-      if (i != 0) loreList.add("");
-      loreList.add(ChatColor.GRAY + displayedHint);
-      i++;
-    }
-
-    // Add a "Clue revealed in 5 hours." line if the hint level is less than the total number of
-    // splitHints
-    // The 5 hours should come from the objectiveItem.getNextClueUnlock() which is a LocalDateTime
-    LocalDateTime nextClueUnlock = objectiveItem.getNextClueUnlock();
-    if (nextClueUnlock != null && hintLevel <= splitHints.length) {
-      LocalDateTime now = LocalDateTime.now();
-
-      Duration remaining = Duration.between(now, nextClueUnlock);
-      String durationRemaining = Messages.getDurationRemaining(remaining);
-
-      if (durationRemaining != null) {
-        loreList.add("");
-        loreList.add(
-            ChatColor.ITALIC
-                + ""
-                + ChatColor.DARK_PURPLE
-                + "Clue revealed in "
-                + durationRemaining
-                + ".");
-      }
-    }
-
-    boolean selfDiscovered =
-        progressItem != null
-            && progressItem.isCompleted()
-            && progressItem.getPlacedPosition() != null;
-    if (selfDiscovered) {
-      loreList.add("");
-      loreList.add(
-          ChatColor.GRAY
-              + "Your position: "
-              + ChatColor.GOLD
-              + "#"
-              + progressItem.getPlacedPosition());
-    }
-
-    // Add lore lines depending on the conditions
-    if (objectiveItem.getDiscoveryTime() != null) {
-      if (!selfDiscovered) loreList.add("");
-
-      if (objectiveItem.getDiscoveryUUID() != null) {
-        Component discoveryPlayer =
-            PlayerComponent.player(objectiveItem.getDiscoveryUUID(), NameStyle.PLAIN)
-                .style(Style.style(NamedTextColor.GOLD));
-        loreList.add(
-            ChatColor.GRAY
-                + "Discovered by: "
-                + TextTranslations.translateLegacy(discoveryPlayer, viewer));
-      } else {
-        loreList.add(
-            ChatColor.GRAY
-                + "Discovered by: "
-                + ChatColor.GOLD
-                + ChatColor.ITALIC
-                + "Several Players");
-      }
-    }
-
-    itemMeta.setLore(loreList);
+    itemMeta.setDisplayName("" + AQUA + BOLD + name);
+    itemMeta.setLore(lore);
 
     itemStack.setItemMeta(itemMeta);
     return itemStack;
   }
 
+  private static void addProgress(ProgressItem progress, List<String> loreList) {
+    if (progress == null) return;
+
+    if (progress.isCompleted()) {
+      Integer placed = progress.getPlacedPosition();
+      if (placed != null) addSpaced(loreList, GRAY + "Your position: " + GOLD + "#" + placed);
+      return;
+    }
+
+    Double cmp = progress.getCompletion();
+    if (cmp == null) return;
+
+    String pct = cmp <= 0 ? "0%" : cmp >= 1 ? ">99%" : ">=" + Math.floor(cmp * 10) * 10 + "%";
+    addSpaced(loreList, GRAY + "Progress: " + GOLD + pct);
+  }
+
+  private static void addNextUnlock(LocalDateTime unlockAt, List<String> loreList) {
+    if (unlockAt == null) return;
+    String nextIn = Messages.getDurationRemaining(Duration.between(LocalDateTime.now(), unlockAt));
+    if (nextIn != null)
+      addSpaced(loreList, "" + ITALIC + DARK_PURPLE + "Clue revealed in " + nextIn + ".");
+  }
+
+  private static void addSpaced(List<String> lore, String... txt) {
+    if (lore.isEmpty() || !lore.get(lore.size() - 1).isEmpty()) lore.add("");
+    lore.addAll(Arrays.asList(txt));
+  }
+
   @Override
-  public void update(Player player, InventoryContents inventoryContents) {
-    return;
+  public void update(Player player, InventoryContents inventoryContents) {}
+
+  private static class HintDisplay {
+    private final int unlocked;
+    private final String[] revealed;
+    private final boolean hasHidden;
+
+    public HintDisplay(ObjectiveItem objective) {
+      unlocked = objective.getHintLevel() + (objective.hasNextCluePassed() ? 1 : 0);
+
+      String[] splitHints = objective.getDescription().split(";");
+      if (unlocked > 1) {
+        revealed = Arrays.copyOfRange(splitHints, 0, Math.min(unlocked - 1, splitHints.length));
+        for (int i = 0; i < revealed.length; i++) {
+          revealed[i] = GRAY + revealed[i];
+        }
+      } else {
+        revealed = new String[] {GRAY + "" + ITALIC + "No hints revealed yet."};
+      }
+      this.hasHidden = unlocked <= splitHints.length;
+    }
   }
 }

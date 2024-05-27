@@ -60,5 +60,9 @@ public class ConfigHandler {
     default <T> Supplier<T> useComputedConfig(Supplier<T> value) {
       return getConfig().register(new ConfigSetting<>(null, value.get(), (f, k, d) -> value.get()));
     }
+
+    default boolean hasConfig() {
+      return !getConfig().configs.isEmpty();
+    }
   }
 }

@@ -55,6 +55,10 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
     return result;
   }
 
+  public Double getProgress(UUID uuid) {
+    return null;
+  }
+
   @Getter
   public abstract static class Stateful<T> extends ObjectiveTracker {
     private final Map<UUID, T> progress = useState(Scope.SESSION);
@@ -64,6 +68,14 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
     public abstract @NotNull T deserialize(@NotNull String string);
 
     public abstract @NotNull String serialize(@NotNull T data);
+
+    public abstract double progress(T data);
+
+    @Override
+    public Double getProgress(UUID uuid) {
+      T state = progress.get(uuid);
+      return state == null ? null : progress(state);
+    }
 
     public void storeObjectiveData(UUID playerId, T data) {
       if (!progress.containsKey(playerId)) {

@@ -59,4 +59,9 @@ public class AlphabetObjective extends ObjectiveTracker.Stateful<Character> {
   public @NotNull String serialize(@NotNull Character data) {
     return data + "";
   }
+
+  @Override
+  public double progress(Character data) {
+    return (double) (data - FIRST_CHAR) / (LAST_CHAR - FIRST_CHAR);
+  }
 }

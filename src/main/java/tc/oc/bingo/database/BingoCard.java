@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -44,9 +45,13 @@ public class BingoCard {
       }
       arr[idx] = objective;
     }
-    for (int i = 0; i < SIZE; i++) {
-      if (arr[i] == null) log.warning("[Bingo] Index " + i + " has no associated objective");
-    }
+    String unused =
+        IntStream.range(0, SIZE)
+            .filter(i -> arr[i] == null)
+            .mapToObj(String::valueOf)
+            .collect(Collectors.joining(","));
+    if (!unused.isEmpty())
+      log.warning("[Bingo] Index(es) " + unused + " have no associated objective");
   }
 
   public @Nullable ObjectiveItem getObjectiveBySlug(String slug) {
