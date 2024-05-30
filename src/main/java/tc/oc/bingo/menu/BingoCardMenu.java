@@ -157,7 +157,10 @@ public class BingoCardMenu implements InventoryProvider {
       addSpaced(loreList, GRAY + "Discovered by: " + by);
     }
 
-    String name = hints.unlocked > 0 ? objective.getName() : MAGIC + "NiceTry";
+    String name =
+        hints.unlocked > 0
+            ? objective.getName()
+            : MAGIC + "NiceTry" + AQUA + "(" + objective.getGridPosition() + ")";
     return createIconItem(
         completed, Objects.equals(requestedIdx, objective.getIndex()), name, loreList);
   }
@@ -192,7 +195,8 @@ public class BingoCardMenu implements InventoryProvider {
     Double cmp = progress.getCompletion();
     if (cmp == null) return;
 
-    String pct = cmp <= 0 ? "0%" : cmp >= 1 ? ">99%" : ">=" + Math.floor(cmp * 10) * 10 + "%";
+    String pct =
+        cmp <= 0 ? "0%" : cmp >= 1 ? "~99%" : "~" + (int) ((Math.floor(cmp * 10) * 10) + 5) + "%";
     addSpaced(loreList, GRAY + "Progress: " + GOLD + pct);
   }
 

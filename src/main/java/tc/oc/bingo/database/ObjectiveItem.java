@@ -62,6 +62,10 @@ public class ObjectiveItem {
     return index / Config.get().getGridWidth();
   }
 
+  public String getGridPosition() {
+    return (char) ('A' + getY()) + Integer.toString(getX() + 1);
+  }
+
   public @Nullable LocalDateTime getNextClueUnlock() {
     return nextClueUnlock;
   }

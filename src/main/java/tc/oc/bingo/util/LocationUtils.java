@@ -67,6 +67,6 @@ public class LocationUtils {
     Firework firework = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
     firework.setFireworkMeta(meta);
 
-    NMSHacks.INSTANCE.skipFireworksLaunch(firework);
+    NMSHacks.skipFireworksLaunch(firework);
   }
 }
