@@ -160,7 +160,7 @@ public class BingoCardMenu implements InventoryProvider {
     String name =
         hints.unlocked > 0
             ? objective.getName()
-            : MAGIC + "NiceTry" + AQUA + "(" + objective.getGridPosition() + ")";
+            : MAGIC + "NiceTry" + AQUA + " (" + objective.getGridPosition() + ")";
     return createIconItem(
         completed, Objects.equals(requestedIdx, objective.getIndex()), name, loreList);
   }

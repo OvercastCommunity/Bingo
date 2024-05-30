@@ -103,7 +103,8 @@ public class Messages {
     TextComponent objectiveName =
         objectiveItem.shouldShowName()
             ? text(objectiveItem.getName(), NamedTextColor.AQUA)
-            : text("NiceTry", NamedTextColor.AQUA, TextDecoration.OBFUSCATED)
+            : text("")
+                .append(text("NiceTry", NamedTextColor.AQUA, TextDecoration.OBFUSCATED))
                 .append(text(" (" + objectiveItem.getGridPosition() + ")", NamedTextColor.AQUA));
 
     return Messages.getBingoPrefix()
