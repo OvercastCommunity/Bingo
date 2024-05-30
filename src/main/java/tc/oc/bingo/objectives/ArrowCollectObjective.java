@@ -11,7 +11,7 @@ import tc.oc.pgm.util.nms.NMSHacks;
 @Tracker("arrow-collect")
 public class ArrowCollectObjective extends ObjectiveTracker.Stateful<Integer> {
 
-  private final Supplier<Integer> ARROWS_TO_PICK_UP = useConfig("arrow-pickups", 1000);
+  private final Supplier<Integer> ARROWS_TO_PICK_UP = useConfig("arrow-pickups", 384);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onStrayArrowPickup(PlayerPickupItemEvent event) {

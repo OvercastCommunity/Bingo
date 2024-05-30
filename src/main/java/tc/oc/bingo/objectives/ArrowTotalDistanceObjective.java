@@ -21,7 +21,7 @@ public class ArrowTotalDistanceObjective extends ObjectiveTracker.Stateful<Doubl
   private TrackerMatchModule tracker;
 
   private final Supplier<Integer> MIN_ARROW_DISTANCE_COUNT =
-      useConfig("min-arrow-distance-count", 100);
+      useConfig("min-arrow-distance-count", 10000);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {

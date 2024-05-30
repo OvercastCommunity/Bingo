@@ -67,7 +67,7 @@ public class Config {
   public void init(Configuration config) {
     this.gridWidth = config.getInt("grid-width", 5);
 
-    this.seasonId = config.getInt("season_id", 1);
+    this.seasonId = config.getInt("season-id", 1);
 
     this.rewardSingle = config.getInt("rewards.single", 100);
     this.rewardLine = config.getInt("rewards.line", 250);

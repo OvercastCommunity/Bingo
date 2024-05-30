@@ -1,6 +1,6 @@
 # Bingo Config
 grid-width: 5
-season_id: 1
+season-id: 1
 
 # Rewards based on unlock type
 rewards:
@@ -35,9 +35,9 @@ anvil-smasher:
 armour-sets-crafted:
   required-count: 9
 arrow-collect:
-  arrow-pickups: 1000
+  arrow-pickups: 384
 arrow-total-distance:
-  min-arrow-distance-count: 100
+  min-arrow-distance-count: 10000
 big-fall:
   min-fall-height: 100
 block-break:
