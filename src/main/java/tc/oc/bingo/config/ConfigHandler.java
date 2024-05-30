@@ -53,6 +53,11 @@ public class ConfigHandler {
           .register(new ConfigSetting<>(key, defaultValue, ConfigReader.DOUBLE_READER));
     }
 
+    default Supplier<String> useConfig(String key, String defaultValue) {
+      return getConfig()
+          .register(new ConfigSetting<>(key, defaultValue, ConfigReader.STRING_READER));
+    }
+
     default <T> Supplier<T> useConfig(String key, T def, ConfigReader<T> reader) {
       return getConfig().register(new ConfigSetting<>(key, def, reader));
     }

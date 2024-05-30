@@ -30,24 +30,52 @@ database:
       hintLevel: 0
 
 # Objective config options
+anvil-smasher:
+  falling-block-name: "ANVIL"
+armour-sets-crafted:
+  required-count: 9
+arrow-collect:
+  arrow-pickups: 1000
+arrow-total-distance:
+  min-arrow-distance-count: 100
 big-fall:
   min-fall-height: 100
+block-break:
+  material-name: null
+  block-data: -1
+  block-break-count: 1000
+cactus-hugger:
+  cactus-height: 5
+chat-message:
+  required-text: "UwU"
+  ignore-case: true
 defender-kill:
   objective-max-range: 5
   objective-max-size: 40
 eating:
   foods-required: 3
+fall-damage-taken:
+  min-fall-height: 20
+  max-fall-health-remaining: 1
 flower-pot:
   allow-any: false
+golden-apple-full:
+  min-absorption-health: 4
 hedgehog:
   min-arrows: 25
+high-killer:
+  required-kills: 100
 icarus-height:
   min-vertical-velocity: 6 # About 100 blocks in the air
   delay-ticks: 2
+kill-assist-streak:
+  min-assist-count: 5
 kill-streak:
   required-streak: 10
 match-length:
   required-mins: 60
+kill-messages:
+  min-death-message-types: 35
 picky-voter:
   min-map-votes: 4
   max-map-votes: 4
@@ -60,7 +88,20 @@ player-shifting:
 quick-kills:
   kills-required: 3
   time-threshold-seconds: 5
+ride-time:
+  riding-seconds: 30
+  entity-type: "MINECART"
+shared-monument:
+  difficulty-multiplier: 0.7
+  min-required-players: 3
 water-dropper:
   min-fall-height: 100
+support-capper:
+  nearby-player-distance: 6
+tnt-launcher:
+  min-tnt-distance: 70
+void-eating:
+  max-height: 0
+  food-name: "GOLDEN_APPLE"
 wool-collector:
   min-wool-count: 5
