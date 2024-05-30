@@ -25,6 +25,7 @@ public class TNTLauncherObjective extends ObjectiveTracker {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {
     tracker = event.getMatch().needModule(TrackerMatchModule.class);
+    primedLocations.clear();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
