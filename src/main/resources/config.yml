@@ -1,5 +1,6 @@
 # Bingo Config
 grid-width: 5
+season_id: 1
 
 # Rewards based on unlock type
 rewards:

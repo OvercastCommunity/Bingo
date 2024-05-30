@@ -17,6 +17,7 @@ import java.util.concurrent.Executors;
 import lombok.Cleanup;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.Nullable;
+import tc.oc.bingo.config.Config;
 import tc.oc.bingo.util.ExceptionHandlingExecutorService;
 import tc.oc.occ.database.ConnectionPool;
 
@@ -29,14 +30,16 @@ public class SQLDatabase implements BingoDatabase {
       "CREATE TABLE IF NOT EXISTS "
           + BINGO_OBJECTIVES
           + " ("
-          + "slug VARCHAR(255) PRIMARY KEY,"
+          + "slug VARCHAR(255),"
           + "name VARCHAR(255),"
+          + "season_id INT,"
           + "description TEXT,"
           + "idx INT,"
           + "hint_level INT,"
           + "next_clue_unlock DATETIME,"
           + "discovery_uuid VARCHAR(255),"
-          + "discovery_time DATETIME"
+          + "discovery_time DATETIME, "
+          + "PRIMARY KEY (slug, season_id)"
           + ")";
 
   public static final String CREATE_PROGRESS_TABLE_SQL =
@@ -45,38 +48,43 @@ public class SQLDatabase implements BingoDatabase {
           + " ("
           + "player_uuid VARCHAR(255),"
           + "objective_slug VARCHAR(255),"
+          + "season_id INT,"
           + "completed BOOLEAN DEFAULT FALSE,"
           + "completed_at DATETIME,"
           + "placed_position INT,"
           + "data TEXT,"
-          + "PRIMARY KEY (player_uuid, objective_slug)"
+          + "PRIMARY KEY (player_uuid, objective_slug, season_id)"
           + ")";
 
   private static final String SELECT_CARD_SQL =
-      "SELECT * FROM " + BINGO_OBJECTIVES + " WHERE idx != -1";
+      "SELECT * FROM " + BINGO_OBJECTIVES + " WHERE idx != -1 AND season_id = ?";
 
   private static final String SELECT_PROGRESS_SQL =
-      "SELECT * FROM " + BINGO_PROGRESS + " WHERE player_uuid = ?";
+      "SELECT * FROM " + BINGO_PROGRESS + " WHERE player_uuid = ? AND season_id = ?";
 
   private static final String COUNT_COMPLETED_SQL =
-      "SELECT COUNT(*) FROM " + BINGO_PROGRESS + " WHERE objective_slug = ? AND completed";
+      "SELECT COUNT(*) FROM "
+          + BINGO_PROGRESS
+          + " WHERE objective_slug = ? AND completed AND season_id = ?";
 
   private static final String UPSERT_COMPLETED_SQL =
       "INSERT INTO "
           + BINGO_PROGRESS
-          + " (player_uuid, objective_slug, completed, completed_at, placed_position) "
-          + "VALUES (?, ?, ?, ?, ?) "
+          + " (player_uuid, objective_slug, season_id, completed, completed_at, placed_position) "
+          + "VALUES (?, ?, ?, ?, ?, ?) "
           + "ON DUPLICATE KEY UPDATE completed = VALUES(completed), completed_at = VALUES(completed_at), placed_position = VALUES(placed_position)";
 
   private static final String UPSERT_PROGRESS_SQL =
       "INSERT INTO "
           + BINGO_PROGRESS
-          + " (player_uuid, objective_slug, data) "
-          + "VALUES (?, ?, ?) "
+          + " (player_uuid, objective_slug, season_id, data) "
+          + "VALUES (?, ?, ?, ?) "
           + "ON DUPLICATE KEY UPDATE data = VALUES(data)";
 
   private static final String UPDATE_OBJECTIVE_DISCOVERY_SQL =
-      "UPDATE " + BINGO_OBJECTIVES + " SET discovery_uuid = ?, discovery_time = ? WHERE slug = ?";
+      "UPDATE "
+          + BINGO_OBJECTIVES
+          + " SET discovery_uuid = ?, discovery_time = ? WHERE slug = ? and season_id = ?";
 
   private static final ExceptionHandlingExecutorService EXECUTOR =
       new ExceptionHandlingExecutorService(Executors.newFixedThreadPool(5));
@@ -114,8 +122,9 @@ public class SQLDatabase implements BingoDatabase {
   @SneakyThrows
   private BingoCard getBingoCardImpl() {
     @Cleanup Connection connection = getConnection();
-    @Cleanup PreparedStatement preparedStatement = connection.prepareStatement(SELECT_CARD_SQL);
-    @Cleanup ResultSet resultSet = preparedStatement.executeQuery();
+    @Cleanup PreparedStatement stm = connection.prepareStatement(SELECT_CARD_SQL);
+    stm.setInt(1, Config.get().getSeasonId());
+    @Cleanup ResultSet resultSet = stm.executeQuery();
 
     List<ObjectiveItem> objectives = new ArrayList<>(25);
     while (resultSet.next()) {
@@ -143,10 +152,11 @@ public class SQLDatabase implements BingoDatabase {
   @SneakyThrows
   private BingoPlayerCard getCardImpl(UUID playerId) {
     @Cleanup Connection connection = getConnection();
-    @Cleanup PreparedStatement preparedStatement = connection.prepareStatement(SELECT_PROGRESS_SQL);
-    preparedStatement.setString(1, playerId.toString());
+    @Cleanup PreparedStatement stm = connection.prepareStatement(SELECT_PROGRESS_SQL);
+    stm.setString(1, playerId.toString());
+    stm.setInt(2, Config.get().getSeasonId());
 
-    @Cleanup ResultSet resultSet = preparedStatement.executeQuery();
+    @Cleanup ResultSet resultSet = stm.executeQuery();
 
     Map<String, ProgressItem> progresses = new HashMap<>();
     BingoPlayerCard card = new BingoPlayerCard(playerId, progresses);
@@ -189,6 +199,7 @@ public class SQLDatabase implements BingoDatabase {
   private int getCompletionCountImpl(Connection conn, String objectiveSlug) {
     @Cleanup PreparedStatement stmt = conn.prepareStatement(COUNT_COMPLETED_SQL);
     stmt.setString(1, objectiveSlug);
+    stmt.setInt(2, Config.get().getSeasonId());
 
     @Cleanup ResultSet resultSet = stmt.executeQuery();
     int numCompleted = 0;
@@ -212,7 +223,8 @@ public class SQLDatabase implements BingoDatabase {
     @Cleanup PreparedStatement stmt = conn.prepareStatement(UPSERT_PROGRESS_SQL);
     stmt.setString(1, playerId.toString());
     stmt.setString(2, objectiveSlug);
-    stmt.setString(3, dataAsString);
+    stmt.setInt(3, Config.get().getSeasonId());
+    stmt.setString(4, dataAsString);
     stmt.executeUpdate();
   }
 
@@ -230,9 +242,10 @@ public class SQLDatabase implements BingoDatabase {
     for (UUID uuid : uuids) {
       stmt.setString(1, uuid.toString());
       stmt.setString(2, objectiveSlug);
-      stmt.setBoolean(3, true);
-      stmt.setTimestamp(4, timestamp);
-      stmt.setInt(5, position);
+      stmt.setInt(3, Config.get().getSeasonId());
+      stmt.setBoolean(4, true);
+      stmt.setTimestamp(5, timestamp);
+      stmt.setInt(6, position);
 
       if (isBatch) stmt.addBatch();
     }
@@ -249,6 +262,7 @@ public class SQLDatabase implements BingoDatabase {
     stmt.setString(1, (uuid != null) ? uuid.toString() : null);
     stmt.setTimestamp(2, timestamp);
     stmt.setString(3, objectiveSlug);
+    stmt.setInt(4, Config.get().getSeasonId());
     stmt.executeUpdate();
   }
 

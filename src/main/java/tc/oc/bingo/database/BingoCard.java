@@ -12,11 +12,12 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import org.jetbrains.annotations.Nullable;
+import tc.oc.bingo.config.Config;
 
 @Data
 @Log
 public class BingoCard {
-  private static final int SIZE = 5 * 5;
+  private static final int SIZE = Config.get().getGridWidth() * Config.get().getGridWidth();
 
   private final List<@Nullable ObjectiveItem> objectives;
 
