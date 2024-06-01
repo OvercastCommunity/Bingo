@@ -12,7 +12,6 @@ import java.util.stream.Stream;
 import lombok.Data;
 import lombok.Getter;
 import lombok.extern.java.Log;
-import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -26,7 +25,6 @@ import tc.oc.bingo.database.ProgressItem;
 import tc.oc.bingo.util.ManagedListener;
 import tc.oc.bingo.util.PGMUtils;
 import tc.oc.bingo.util.StateHandler;
-import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 
 @Data
@@ -132,27 +130,16 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
       return objectiveData;
     }
 
-    private void persistObjectiveData(UUID playerId) {
-      if (!dirtyProgress.remove(playerId)) return;
+    private void persistObjectiveData(UUID playerId, boolean remove) {
+      T data = remove ? progress.remove(playerId) : progress.get(playerId);
+      if (!dirtyProgress.remove(playerId) || data == null) return;
 
-      T data = progress.get(playerId);
-      if (data == null) return;
-
-      Bingo.get()
-          .getRewards()
-          .storeObjectiveData(playerId, getObjectiveSlug(), serialize(data))
-          .whenCompleteAsync(
-              (unused, throwable) -> {
-                // If the player is back online before we save the data don't trash it
-                if (Bukkit.getPlayer(playerId) == null) return;
-                progress.remove(playerId);
-              },
-              PGM.get().getExecutor());
+      Bingo.get().getRewards().storeObjectiveData(playerId, getObjectiveSlug(), serialize(data));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLeave(PlayerQuitEvent event) {
-      persistObjectiveData(event.getPlayer().getUniqueId());
+      persistObjectiveData(event.getPlayer().getUniqueId(), true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -160,7 +147,7 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
       event
           .getMatch()
           .getPlayers()
-          .forEach(matchPlayer -> persistObjectiveData(matchPlayer.getId())); // TODO: delay?!
+          .forEach(matchPlayer -> persistObjectiveData(matchPlayer.getId(), false));
     }
   }
 }
