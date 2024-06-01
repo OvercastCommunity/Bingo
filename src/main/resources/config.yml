@@ -64,7 +64,7 @@ golden-apple-full:
 hedgehog:
   min-arrows: 25
 high-killer:
-  required-kills: 100
+  kills-required: 100
 icarus-height:
   min-vertical-velocity: 6 # About 100 blocks in the air
   delay-ticks: 2

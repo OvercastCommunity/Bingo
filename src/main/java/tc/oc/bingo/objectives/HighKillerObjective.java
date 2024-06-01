@@ -24,8 +24,8 @@ public class HighKillerObjective extends ObjectiveTracker.Stateful<Integer> {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
-    Integer maxBuildHeight = regions.getMaxBuildHeight();
-    if (regions == null || maxBuildHeight == null) return;
+    Integer maxBuildHeight = regions == null ? null : regions.getMaxBuildHeight();
+    if (maxBuildHeight == null) return;
 
     if (!event.isChallengeKill()) return;
 

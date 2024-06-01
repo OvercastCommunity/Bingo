@@ -7,38 +7,39 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.jetbrains.annotations.NotNull;
-import tc.oc.pgm.api.match.event.MatchLoadEvent;
+import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
+import tc.oc.pgm.api.tracker.info.OwnerInfo;
 import tc.oc.pgm.api.tracker.info.RangedInfo;
 import tc.oc.pgm.api.tracker.info.TrackerInfo;
 import tc.oc.pgm.tracker.TrackerMatchModule;
 import tc.oc.pgm.tracker.Trackers;
+import tc.oc.pgm.tracker.trackers.EntityTracker;
 
 @Tracker("arrow-total-distance")
 public class ArrowTotalDistanceObjective extends ObjectiveTracker.Stateful<Double> {
 
-  private TrackerMatchModule tracker;
+  private EntityTracker tracker;
 
   private final Supplier<Integer> MIN_ARROW_DISTANCE_COUNT =
       useConfig("min-arrow-distance-count", 10000);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onMatchLoad(MatchLoadEvent event) {
-    tracker = event.getMatch().needModule(TrackerMatchModule.class);
+  public void onMatchAfterLoad(MatchAfterLoadEvent event) {
+    tracker = event.getMatch().needModule(TrackerMatchModule.class).getEntityTracker();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onEntityDamageByEntity(final EntityDamageByEntityEvent event) { // todo: change name
-    if (!(event.getEntity() instanceof Player) || !(event.getDamager() instanceof Arrow)) return;
+    if (!(event.getEntity() instanceof Player)
+        || !(event.getDamager() instanceof Arrow)
+        || tracker == null) return;
 
-    ParticipantState owner = tracker.getEntityTracker().getOwner(event.getDamager());
-    MatchPlayer player = getStatePlayer(owner);
+    TrackerInfo trackerInfo = tracker.resolveInfo(event.getDamager());
+    if (!(trackerInfo instanceof OwnerInfo) || !(trackerInfo instanceof RangedInfo)) return;
+
+    MatchPlayer player = getStatePlayer(((OwnerInfo) trackerInfo).getOwner());
     if (player == null) return;
-
-    TrackerInfo trackerInfo = tracker.getEntityTracker().resolveInfo(event.getDamager());
-    if (!(trackerInfo instanceof RangedInfo)) return;
-
     double distance =
         Trackers.distanceFromRanged((RangedInfo) trackerInfo, event.getActor().getLocation());
 

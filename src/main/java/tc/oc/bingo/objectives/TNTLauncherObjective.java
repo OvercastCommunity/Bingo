@@ -41,6 +41,7 @@ public class TNTLauncherObjective extends ObjectiveTracker {
     if (!(event.getEntity() instanceof TNTPrimed)) return;
 
     Vector startLocation = primedLocations.remove(event.getEntity().getEntityId());
+    if (startLocation == null) return;
 
     Vector endLocation = event.getEntity().getLocation().toVector();
 

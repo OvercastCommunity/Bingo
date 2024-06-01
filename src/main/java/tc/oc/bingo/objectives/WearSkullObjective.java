@@ -6,7 +6,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
-import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("wear-skull")
@@ -14,9 +13,7 @@ public class WearSkullObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onWearSkull(InventoryClickEvent event) {
-    Match match = getMatch(event.getWorld());
-    if (match == null) return;
-    MatchPlayer player = match.getPlayer(event.getWhoClicked());
+    MatchPlayer player = getPlayer(event.getWhoClicked());
     if (player == null || !player.isParticipating()) return;
 
     if (!event.getSlotType().equals(InventoryType.SlotType.ARMOR)) return;
