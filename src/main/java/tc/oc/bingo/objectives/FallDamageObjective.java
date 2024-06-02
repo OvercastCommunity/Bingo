@@ -26,7 +26,7 @@ public class FallDamageObjective extends ObjectiveTracker {
 
     Player player = (Player) event.getEntity();
 
-    double yValue = lastYPosition.get(player.getUniqueId());
+    double yValue = lastYPosition.getOrDefault(player.getUniqueId(), 0d);
 
     int fallHeight = (int) Math.ceil((yValue - event.getEntity().getLocation().getY()));
     double totalDamage = event.getFinalDamage();
