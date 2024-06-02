@@ -231,7 +231,7 @@ public class RewardManager implements Listener {
     if (diagonal2Line) lines++;
 
     if (lines >= 2) {
-      boolean fullHouse = completed.size() == bingoItems.size();
+      boolean fullHouse = completed.cardinality() == bingoItems.size();
 
       if (fullHouse) {
         return new Reward(RewardType.CARD);
