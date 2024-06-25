@@ -1,11 +1,12 @@
 package tc.oc.bingo.objectives;
 
+import static tc.oc.pgm.util.nms.NMSHacks.NMS_HACKS;
+
 import java.util.function.Supplier;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.jetbrains.annotations.NotNull;
-import tc.oc.pgm.util.nms.NMSHacks;
 
 // Pick up "x" arrows shot by enemy players.
 @Tracker("arrow-collect")
@@ -15,7 +16,7 @@ public class ArrowCollectObjective extends ObjectiveTracker.Stateful<Integer> {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onStrayArrowPickup(PlayerPickupItemEvent event) {
-    if (!NMSHacks.isCraftItemArrowEntity(event.getItem())) return;
+    if (!NMS_HACKS.isCraftItemArrowEntity(event)) return;
 
     Integer arrows = updateObjectiveData(event.getPlayer().getUniqueId(), i -> i + 1);
 

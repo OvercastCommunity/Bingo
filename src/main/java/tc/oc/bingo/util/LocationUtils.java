@@ -1,5 +1,7 @@
 package tc.oc.bingo.util;
 
+import static tc.oc.pgm.util.nms.NMSHacks.NMS_HACKS;
+
 import org.bukkit.Bukkit;
 import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
@@ -9,7 +11,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Firework;
 import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.util.Vector;
-import tc.oc.pgm.util.nms.NMSHacks;
 
 public class LocationUtils {
 
@@ -67,6 +68,6 @@ public class LocationUtils {
     Firework firework = (Firework) location.getWorld().spawnEntity(location, EntityType.FIREWORK);
     firework.setFireworkMeta(meta);
 
-    NMSHacks.skipFireworksLaunch(firework);
+    NMS_HACKS.skipFireworksLaunch(firework);
   }
 }
