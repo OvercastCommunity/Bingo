@@ -8,7 +8,6 @@ import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import java.util.Collections;
-import java.util.Objects;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import tc.oc.bingo.Bingo;

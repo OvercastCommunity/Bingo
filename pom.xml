@@ -4,12 +4,12 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>tc.oc</groupId>
   <artifactId>PGMBingo</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.1-SNAPSHOT</version>
   <name>PGMBingo</name>
   <scm>
-    <connection>scm:git:git://github.com/Pugzy/BountyHunter.git</connection>
-    <developerConnection>scm:git:git@github.com:Pugzy/BountyHunter.git</developerConnection>
-    <url>https://github.com/Pugzy/BountyHunter</url>
+    <connection>scm:git:git://github.com/OvercastCommunity/Bingo.git</connection>
+    <developerConnection>scm:git://github.com/OvercastCommunity/Bingo.git</developerConnection>
+    <url>https://github.com/OvercastCommunity/Bingo</url>
   </scm>
   <repositories>
     <repository>

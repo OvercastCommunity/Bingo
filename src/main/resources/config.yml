@@ -59,6 +59,9 @@ fall-damage-taken:
   max-fall-health-remaining: 1
 flower-pot:
   allow-any: false
+food-eater:
+  food-name: "GOLDEN_APPLE"
+  min-count: 100
 golden-apple-full:
   min-absorption-health: 4
 hedgehog:
@@ -68,6 +71,8 @@ high-killer:
 icarus-height:
   min-vertical-velocity: 6 # About 100 blocks in the air
   delay-ticks: 2
+item-whack:
+  material-name: "STICK"
 kill-assist-streak:
   min-assist-count: 5
 kill-streak:
@@ -88,6 +93,9 @@ player-shifting:
 quick-kills:
   kills-required: 3
   time-threshold-seconds: 5
+ride-distance:
+  riding-distance: 100
+  allow-vertical: false
 ride-time:
   riding-seconds: 30
   entity-type: "MINECART"
@@ -105,3 +113,6 @@ void-eating:
   food-name: "GOLDEN_APPLE"
 wool-collector:
   min-wool-count: 5
+yapper:
+  min-kills: 5
+  chars-per-kill: 100
