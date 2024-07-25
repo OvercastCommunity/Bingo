@@ -1,10 +1,17 @@
 package tc.oc.bingo.objectives;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.ConfigReader;
 import tc.oc.bingo.util.LocationUtils;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -18,18 +25,39 @@ public class BushSneakObjective extends ObjectiveTracker {
   private final Supplier<Material> MATERIAL_REQUIRED =
       useConfig("material-name", Material.DOUBLE_PLANT, MATERIAL_NAME_READER);
 
+  private final Supplier<Integer> REQUIRED_SECONDS = useConfig("required-seconds", 10);
+
+  private final Map<UUID, BukkitTask> sneakTasks = new HashMap<>();
+
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
-    if (!event.isSneaking()) return;
-
     MatchPlayer matchPlayer = getPlayer(event.getPlayer());
     if (matchPlayer == null) return;
 
-    // TODO: check if match player? or allow observers?
+    if (!event.isSneaking()) {
+      // Player stopped sneaking, cancel any scheduled task
+      BukkitTask task = sneakTasks.remove(event.getPlayer().getUniqueId());
+      if (task != null) task.cancel();
+      return;
+    }
+
     if (!matchPlayer.getMatch().isRunning() || !matchPlayer.isParticipating()) return;
 
-    if (LocationUtils.stoodInMaterial(matchPlayer.getLocation(), MATERIAL_REQUIRED.get())) {
-      reward(event.getPlayer());
+    if (passesVibeCheck(matchPlayer.getBukkit())) {
+      BukkitTask task =
+          new BukkitRunnable() {
+            @Override
+            public void run() {
+              if (event.getPlayer().isSneaking() && passesVibeCheck(event.getPlayer())) reward(event.getPlayer());
+              sneakTasks.remove(event.getPlayer().getUniqueId());
+            }
+          }.runTaskLater(Bingo.get(), REQUIRED_SECONDS.get() * 20);
+
+      sneakTasks.put(event.getPlayer().getUniqueId(), task);
     }
+  }
+
+  private boolean passesVibeCheck(Player player) {
+    return LocationUtils.stoodInMaterial(player.getLocation(), MATERIAL_REQUIRED.get());
   }
 }

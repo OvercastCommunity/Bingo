@@ -1,26 +1,36 @@
 package tc.oc.bingo.objectives;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
 @Tracker("boring-machine")
 public class BoringObjective extends ObjectiveTracker {
 
+  private final Map<UUID, Predicate<Block>> playerDirection = useState(Scope.LIFE);
   private final Map<UUID, Integer> playerTunnelDistance = useState(Scope.LIFE);
-  private final Map<UUID, Boolean> playerIsTunneling = useState(Scope.LIFE);
-  private final Map<UUID, Location> playerLastLocation = useState(Scope.LIFE);
 
   private final Supplier<Integer> REQUIRED_DISTANCE = useConfig("required-tunnel-distance", 20);
 
+  BlockFace[] CLOCKWISE =
+          new BlockFace[] {
+                  BlockFace.SOUTH,
+                  BlockFace.WEST,
+                  BlockFace.NORTH,
+                  BlockFace.EAST,
+          };
+
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onPlayerMove(BlockBreakEvent event) {
+  public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
     UUID playerId = player.getUniqueId();
 
@@ -34,43 +44,53 @@ public class BoringObjective extends ObjectiveTracker {
       return;
     }
 
-    if (!playerIsTunneling.getOrDefault(playerId, false)) {
-      playerIsTunneling.put(playerId, true);
-      playerLastLocation.put(playerId, player.getLocation());
+    Predicate<Block> blockPredicate = playerDirection.get(playerId);
+
+    if (blockPredicate == null || !blockPredicate.test(event.getBlock())) {
       playerTunnelDistance.put(playerId, 0);
+
+      Location location = event.getPlayer().getLocation();
+      final int playerY = location.getBlockY();
+
+      final BlockFace direction = yawToFace(event.getPlayer().getLocation().getYaw());
+      final int initialX = event.getBlock().getX();
+      final int initialZ = event.getBlock().getZ();
+
+      Predicate<Block> heightCheck = (block -> block.getY() == playerY || block.getY() == playerY + 1);
+      Predicate<Block> directionCheck = switch (direction) {
+        case NORTH -> block -> block.getX() == initialX && block.getZ() <= initialZ;
+        case EAST -> block -> block.getX() >= initialX && block.getZ() == initialZ;
+        case SOUTH -> block -> block.getX() == initialX && block.getZ() >= initialZ;
+        case WEST -> block -> block.getX() <= initialX && block.getZ() == initialZ;
+        default -> block -> false;
+      };
+
+      playerDirection.put(playerId, heightCheck.and(directionCheck));
+
       return;
     }
 
-    Location lastLocation = playerLastLocation.get(playerId);
-    if (isStraightLine(lastLocation, player.getLocation())) {
-      int distance = playerTunnelDistance.get(playerId) + 1;
-      playerTunnelDistance.put(playerId, distance);
-      playerLastLocation.put(playerId, player.getLocation());
+    int distance = playerTunnelDistance.compute(playerId, (uuid, i) -> i == null ? 1 : i + 1);
 
-      if (distance >= REQUIRED_DISTANCE.get()) {
-        reward(player);
-        resetPlayerProgress(playerId);
-      }
-    } else {
-      resetPlayerProgress(playerId);
+    if (distance >= REQUIRED_DISTANCE.get()) {
+      reward(player);
     }
   }
 
   private void resetPlayerProgress(UUID playerId) {
-    playerIsTunneling.put(playerId, false);
+    playerDirection.put(playerId, null);
     playerTunnelDistance.put(playerId, 0);
-    playerLastLocation.remove(playerId);
   }
 
   private boolean isEnclosed(Player player) {
-    Block blockAbove = player.getLocation().add(0, 1, 0).getBlock();
-    if (!blockAbove.isEmpty()) return false;
+    Block blockAbove = player.getLocation().add(0, 2, 0).getBlock();
+    if (!blockAbove.getType().isSolid()) return false;
 
     Block blockBelow = player.getLocation().subtract(0, 1, 0).getBlock();
-    return blockBelow.isEmpty();
+    return blockBelow.getType().isSolid();
   }
 
-  private boolean isStraightLine(Location from, Location to) {
-    return from.getBlockX() == to.getBlockX() || from.getBlockZ() == to.getBlockZ();
+  private BlockFace yawToFace(float yaw) {
+    return CLOCKWISE[Math.round(((yaw + 360) % 360) / 90f) & 0x3];
   }
 }

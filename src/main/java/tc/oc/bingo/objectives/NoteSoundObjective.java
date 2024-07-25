@@ -1,10 +1,11 @@
 package tc.oc.bingo.objectives;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.bukkit.Instrument;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -19,13 +20,14 @@ import org.bukkit.event.player.PlayerInteractEvent;
 public class NoteSoundObjective extends ObjectiveTracker {
 
   private final Map<UUID, Location> playLocation = useState(Scope.LIFE);
-  private final Map<UUID, List<Byte>> notesPlayed = useState(Scope.MATCH);
+  private final Map<UUID, EnumSet<Instrument>> notesPlayed = useState(Scope.MATCH);
 
   private final Supplier<Integer> REQUIRED_TYPES = useConfig("required-types", 5);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
-    if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+    if (!(event.getAction() == Action.RIGHT_CLICK_BLOCK
+        || event.getAction() == Action.LEFT_CLICK_BLOCK)) return;
 
     Block block = event.getClickedBlock();
     if (block == null || block.getType() != Material.NOTE_BLOCK) return;
@@ -54,9 +56,10 @@ public class NoteSoundObjective extends ObjectiveTracker {
 
     if (player == null) return;
 
-    List<Byte> playerNotes = notesPlayed.getOrDefault(player.getUniqueId(), new ArrayList<>(1));
+    Set<Instrument> playerNotes =
+        notesPlayed.computeIfAbsent(player.getUniqueId(), k -> EnumSet.noneOf(Instrument.class));
 
-    playerNotes.add(event.getInstrument().getType());
+    playerNotes.add(event.getInstrument());
 
     if (playerNotes.size() >= REQUIRED_TYPES.get()) {
       reward(player);

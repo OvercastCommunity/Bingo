@@ -15,7 +15,8 @@ public class SignWriterObjective extends ObjectiveTracker {
     String[] lines = event.getLines();
 
     // Trim the player name to the first 8 characters (to fit on a sign)
-    String playerName = event.getPlayer().getName(player).substring(0, 7);
+    String playerName =
+        event.getPlayer().getName(player).substring(0, Math.min(player.getName().length(), 7));
 
     // Check if any of the lines contain the player's name using streams
     boolean containsPlayerName = Arrays.stream(lines).anyMatch(line -> line.contains(playerName));
