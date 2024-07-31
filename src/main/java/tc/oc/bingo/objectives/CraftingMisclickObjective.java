@@ -1,6 +1,9 @@
 package tc.oc.bingo.objectives;
 
 import com.google.common.base.Objects;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,18 +17,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import tc.oc.bingo.config.ConfigReader;
 
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Supplier;
-
 @Tracker("crafting-misclick")
 public class CraftingMisclickObjective extends ObjectiveTracker {
 
   private static final ConfigReader<Material> MATERIAL_READER =
-          (cfg, key, def) -> Objects.firstNonNull(Material.getMaterial(cfg.getString(key)), def);
+      (cfg, key, def) -> Objects.firstNonNull(Material.getMaterial(cfg.getString(key)), def);
 
   private final Supplier<Material> MATERIAL_REQUIRED =
-          useConfig("material-name", Material.IRON_FENCE, MATERIAL_READER);
+      useConfig("material-name", Material.IRON_FENCE, MATERIAL_READER);
 
   private final Map<UUID, Boolean> craftingPlayers = useState(Scope.LIFE);
 
@@ -34,8 +33,8 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
     Player player = event.getActor();
     if (player == null) return;
 
-    if (event.getInventory().getType() != InventoryType.WORKBENCH &&
-            event.getInventory().getType() != InventoryType.CRAFTING) return;
+    if (event.getInventory().getType() != InventoryType.WORKBENCH
+        && event.getInventory().getType() != InventoryType.CRAFTING) return;
 
     if (checkCondition(player)) {
       craftingPlayers.put(event.getPlayer().getUniqueId(), true);
@@ -44,8 +43,8 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onInventoryCloseEvent(InventoryCloseEvent event) {
-    if (event.getInventory().getType() != InventoryType.WORKBENCH &&
-            event.getInventory().getType() != InventoryType.CRAFTING) return;
+    if (event.getInventory().getType() != InventoryType.WORKBENCH
+        && event.getInventory().getType() != InventoryType.CRAFTING) return;
 
     craftingPlayers.remove(event.getPlayer().getUniqueId());
   }
@@ -88,7 +87,8 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
 
     // Check player's armor and add required iron ingots for non-iron armor
     if (head == null || !head.getType().equals(Material.IRON_HELMET)) ironRequiredForArmor += 5;
-    if (chest == null || !chest.getType().equals(Material.IRON_CHESTPLATE)) ironRequiredForArmor += 8;
+    if (chest == null || !chest.getType().equals(Material.IRON_CHESTPLATE))
+      ironRequiredForArmor += 8;
     if (legs == null || !legs.getType().equals(Material.IRON_LEGGINGS)) ironRequiredForArmor += 7;
     if (feet == null || !feet.getType().equals(Material.IRON_BOOTS)) ironRequiredForArmor += 4;
 
@@ -97,10 +97,6 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
 
     // Check that they have just enough iron for the craft (with a leeway)
     if (ironRequiredForArmor + 5 < materialCount) return false;
-
-    // TODO: two blocks and need helm, legs fails
-
-    // TODO: some extra checks relating to a stack?
 
     return true;
   }

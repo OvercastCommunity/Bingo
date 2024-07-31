@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -24,11 +25,8 @@ public class HarvesterObjective extends ObjectiveTracker {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
-    Material blockType = event.getBlock().getType();
 
-    if (!cropMaterials.contains(blockType)) return;
-
-    // TODO: check for growth stage or drop amount?
+    if (!cropMaterials.contains(event.getBlock().getType()) || !isFullyGrown(event.getBlock())) return;
 
     Integer cropsCount =
         cropsHarvested.compute(
@@ -37,5 +35,16 @@ public class HarvesterObjective extends ObjectiveTracker {
     if (cropsCount >= REQUIRED_CROPS.get()) {
       reward(player);
     }
+  }
+
+  private boolean isFullyGrown(Block block) {
+    Material material = block.getType();
+    byte data = block.getData();
+
+    return switch (material) {
+      case WHEAT, CARROT, POTATO -> data == 7;
+      case NETHER_WARTS -> data == 3;
+      default -> false;
+    };
   }
 }

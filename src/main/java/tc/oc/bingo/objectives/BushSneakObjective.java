@@ -48,7 +48,9 @@ public class BushSneakObjective extends ObjectiveTracker {
           new BukkitRunnable() {
             @Override
             public void run() {
-              if (event.getPlayer().isSneaking() && passesVibeCheck(event.getPlayer())) reward(event.getPlayer());
+              if (event.getPlayer().isSneaking() && passesVibeCheck(event.getPlayer())) {
+                reward(event.getPlayer());
+              }
               sneakTasks.remove(event.getPlayer().getUniqueId());
             }
           }.runTaskLater(Bingo.get(), REQUIRED_SECONDS.get() * 20);

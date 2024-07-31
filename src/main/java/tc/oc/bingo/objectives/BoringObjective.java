@@ -1,5 +1,9 @@
 package tc.oc.bingo.objectives;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -7,11 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 @Tracker("boring-machine")
 public class BoringObjective extends ObjectiveTracker {
@@ -22,12 +21,9 @@ public class BoringObjective extends ObjectiveTracker {
   private final Supplier<Integer> REQUIRED_DISTANCE = useConfig("required-tunnel-distance", 20);
 
   BlockFace[] CLOCKWISE =
-          new BlockFace[] {
-                  BlockFace.SOUTH,
-                  BlockFace.WEST,
-                  BlockFace.NORTH,
-                  BlockFace.EAST,
-          };
+      new BlockFace[] {
+        BlockFace.SOUTH, BlockFace.WEST, BlockFace.NORTH, BlockFace.EAST,
+      };
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
@@ -56,14 +52,17 @@ public class BoringObjective extends ObjectiveTracker {
       final int initialX = event.getBlock().getX();
       final int initialZ = event.getBlock().getZ();
 
-      Predicate<Block> heightCheck = (block -> block.getY() == playerY || block.getY() == playerY + 1);
-      Predicate<Block> directionCheck = switch (direction) {
-        case NORTH -> block -> block.getX() == initialX && block.getZ() <= initialZ;
-        case EAST -> block -> block.getX() >= initialX && block.getZ() == initialZ;
-        case SOUTH -> block -> block.getX() == initialX && block.getZ() >= initialZ;
-        case WEST -> block -> block.getX() <= initialX && block.getZ() == initialZ;
-        default -> block -> false;
-      };
+      Predicate<Block> heightCheck =
+          (block -> block.getY() == playerY || block.getY() == playerY + 1);
+
+      Predicate<Block> directionCheck =
+          switch (direction) {
+            case NORTH -> block -> block.getX() == initialX && block.getZ() <= initialZ;
+            case EAST -> block -> block.getX() >= initialX && block.getZ() == initialZ;
+            case SOUTH -> block -> block.getX() == initialX && block.getZ() >= initialZ;
+            case WEST -> block -> block.getX() <= initialX && block.getZ() == initialZ;
+            default -> block -> false;
+          };
 
       playerDirection.put(playerId, heightCheck.and(directionCheck));
 
