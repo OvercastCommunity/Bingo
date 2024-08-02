@@ -1,7 +1,8 @@
 package tc.oc.bingo.objectives;
 
 import com.google.common.base.Objects;
-import java.util.Map;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Material;
@@ -26,7 +27,7 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
   private final Supplier<Material> MATERIAL_REQUIRED =
       useConfig("material-name", Material.IRON_FENCE, MATERIAL_READER);
 
-  private final Map<UUID, Boolean> craftingPlayers = useState(Scope.LIFE);
+  private final Set<UUID> craftingPlayers = Collections.newSetFromMap(useState(Scope.LIFE));
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onInventoryOpenEvent(InventoryOpenEvent event) {
@@ -37,7 +38,7 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
         && event.getInventory().getType() != InventoryType.CRAFTING) return;
 
     if (checkCondition(player)) {
-      craftingPlayers.put(event.getPlayer().getUniqueId(), true);
+      craftingPlayers.add(event.getPlayer().getUniqueId());
     }
   }
 
@@ -53,7 +54,7 @@ public class CraftingMisclickObjective extends ObjectiveTracker {
   public void onPlayerCraftEvent(CraftItemEvent event) {
     if (!(event.getWhoClicked() instanceof Player player)) return;
 
-    if (!craftingPlayers.get(player.getUniqueId())) return;
+    if (!craftingPlayers.contains(player.getUniqueId())) return;
     if (!event.getRecipe().getResult().getType().equals(MATERIAL_REQUIRED.get())) return;
 
     reward(player);
