@@ -20,13 +20,14 @@ public class HarvesterObjective extends ObjectiveTracker {
   private final Supplier<Integer> REQUIRED_CROPS = useConfig("required-crops", 32);
 
   private final Set<Material> cropMaterials =
-      EnumSet.of(Material.WHEAT, Material.CARROT, Material.POTATO, Material.NETHER_WARTS);
+      EnumSet.of(Material.CROPS, Material.CARROT, Material.POTATO, Material.NETHER_WARTS);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
 
-    if (!cropMaterials.contains(event.getBlock().getType()) || !isFullyGrown(event.getBlock())) return;
+    if (!cropMaterials.contains(event.getBlock().getType()) || !isFullyGrown(event.getBlock()))
+      return;
 
     Integer cropsCount =
         cropsHarvested.compute(

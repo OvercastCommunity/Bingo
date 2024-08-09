@@ -1,6 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import java.util.Objects;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,7 +12,8 @@ public class BreakUnderwaterObjective extends ObjectiveTracker {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
     Player player = event.getPlayer();
-    if (Objects.isNull(player)) return;
+    if (player == null) return;
+
     if (isPlayerInWater(player)) {
       reward(event.getPlayer());
     }
