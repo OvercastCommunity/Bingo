@@ -43,7 +43,7 @@ public class HarvesterObjective extends ObjectiveTracker {
     byte data = block.getData();
 
     return switch (material) {
-      case WHEAT, CARROT, POTATO -> data == 7;
+      case CROPS, CARROT, POTATO -> data == 7;
       case NETHER_WARTS -> data == 3;
       default -> false;
     };
