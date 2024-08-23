@@ -52,7 +52,7 @@ public class YapperObjective extends ObjectiveTracker {
 
                   // Require over the min kills and less than message length to kill ratio
                   if (kills <= MIN_KILLS.get()) return false;
-                  return (messageLength / CHARS_PER_KILL.get()) < kills;
+                  return (messageLength / CHARS_PER_KILL.get()) < kills; // TODO: >
                 })
             .map(MatchPlayer::getBukkit)
             .collect(Collectors.toList());

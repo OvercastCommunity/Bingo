@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
 import lombok.extern.java.Log;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 
 @Log
@@ -56,6 +57,11 @@ public class ConfigHandler {
     default Supplier<String> useConfig(String key, String defaultValue) {
       return getConfig()
           .register(new ConfigSetting<>(key, defaultValue, ConfigReader.STRING_READER));
+    }
+
+    default Supplier<Material> useConfig(String key, Material defaultValue) {
+      return getConfig()
+          .register(new ConfigSetting<>(key, defaultValue, ConfigReader.MATERIAL_READER));
     }
 
     default <T> Supplier<T> useConfig(String key, T def, ConfigReader<T> reader) {

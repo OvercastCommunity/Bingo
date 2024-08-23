@@ -1,6 +1,7 @@
 package tc.oc.bingo.config;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bukkit.configuration.Configuration;
@@ -37,8 +38,9 @@ public class Config {
                     map ->
                         new ObjectiveItem(
                             (String) map.get("slug"),
-                            (String) map.get("name"),
-                            (String) map.get("description"),
+                            (String) Objects.requireNonNullElse(map.get("name"), map.get("slug")),
+                            (String)
+                                Objects.requireNonNullElse(map.get("description"), map.get("slug")),
                             (int) map.get("idx"),
                             99,
                             null,
