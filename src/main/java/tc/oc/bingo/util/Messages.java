@@ -49,19 +49,20 @@ public class Messages {
     if (remaining.isNegative()) return null;
 
     long hours = remaining.toHours();
+    long minutes = remaining.toMinutes() % 60;
+
+    // Cutoff after 6 hours when only hours are shown
+    if (hours >= 6) return hours + " hours";
+
+    // Include both hours and minutes
     if (hours >= 1) {
-      if (hours == 1) {
-        return hours + " hour";
-      }
-      return hours + " hours";
+      return (hours == 1 ? "1 hour" : hours + " hours")
+          + (minutes > 0 ? " " + (minutes == 1 ? "1 minute" : minutes + " minutes") : "");
     }
 
-    long minutes = remaining.toMinutes();
+    // If less than 1 hour, only show minutes
     if (minutes >= 1) {
-      if (minutes == 1) {
-        return minutes + " minute";
-      }
-      return minutes + " minutes";
+      return minutes == 1 ? "1 minute" : minutes + " minutes";
     }
 
     return "a moment";
