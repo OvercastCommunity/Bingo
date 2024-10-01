@@ -149,6 +149,9 @@ public class RewardManager implements Listener {
 
     rewardAmount = rewardAmount * reward.amount;
 
+    // Extra lines when a full house given
+    rewardAmount += reward.extraLines * getRewardAmount(RewardType.LINE);
+
     if (rewardAmount != 0) {
       String rewardExtra = reward.amount > 1 ? " x" + reward.amount : "";
       Raindrops.reward(player, rewardAmount, "Bingo Goal " + reward.type.getName() + rewardExtra);
@@ -159,16 +162,12 @@ public class RewardManager implements Listener {
   }
 
   private int getRewardAmount(RewardType type) {
-    switch (type) {
-      case SINGLE:
-        return Config.get().getRewardSingle();
-      case LINE:
-        return Config.get().getRewardLine();
-      case CARD:
-        return Config.get().getRewardCard();
-      default:
-        return 0;
-    }
+    return switch (type) {
+      case SINGLE -> Config.get().getRewardSingle();
+      case LINE -> Config.get().getRewardLine();
+      case CARD -> Config.get().getRewardCard();
+      default -> 0;
+    };
   }
 
   public Reward getCompletionType(
@@ -184,7 +183,24 @@ public class RewardManager implements Listener {
       if (progressItem != null && progressItem.isCompleted()) completed.set(item.getIndex());
     }
 
-    // TODO: check logic with gridWidth added
+    int lines = getLinesCompleted(objective, completed);
+
+    if (lines >= 2) {
+      boolean fullHouse = completed.cardinality() == bingoItems.size();
+
+      if (fullHouse) {
+        return new Reward(RewardType.CARD, 1, lines);
+      }
+    }
+
+    if (lines > 0) {
+      return new Reward(RewardType.LINE, lines);
+    }
+
+    return new Reward(RewardType.SINGLE);
+  }
+
+  private int getLinesCompleted(ObjectiveItem objective, BitSet completed) {
     int gridWidth = Config.get().getGridWidth();
     int completedX = objective.getIndex() / gridWidth;
     int completedY = objective.getIndex() % gridWidth;
@@ -207,7 +223,6 @@ public class RewardManager implements Listener {
       }
     }
 
-    // TODO: check logic
     // Check for diagonal lines containing the completed item
     boolean diagonal1Line = completedX == completedY;
     boolean diagonal2Line = completedX + completedY == gridWidth - 1;
@@ -230,19 +245,7 @@ public class RewardManager implements Listener {
     if (diagonal1Line) lines++;
     if (diagonal2Line) lines++;
 
-    if (lines >= 2) {
-      boolean fullHouse = completed.cardinality() == bingoItems.size();
-
-      if (fullHouse) {
-        return new Reward(RewardType.CARD);
-      }
-    }
-
-    if (lines > 0) {
-      return new Reward(RewardType.LINE, lines);
-    }
-
-    return new Reward(RewardType.SINGLE);
+    return lines;
   }
 
   @Data
@@ -250,9 +253,14 @@ public class RewardManager implements Listener {
   public static class Reward {
     private final RewardType type;
     private final int amount;
+    private final int extraLines;
 
     public Reward(RewardType type) {
-      this(type, 1);
+      this(type, 1, 0);
+    }
+
+    public Reward(RewardType type, int lines) {
+      this(type, lines, 0);
     }
   }
 }
