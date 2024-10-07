@@ -55,10 +55,14 @@ public class BatmanObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerSneak(PlayerToggleSneakEvent event) {
-    if (!event.isSneaking() || Math.random() > EGG_CHANCE.get()) return;
+    if (!event.isSneaking()
+        || Math.random() > EGG_CHANCE.get()
+        || notParticipating(event.getPlayer())) return;
 
     PlayerInventory inventory = event.getPlayer().getInventory();
-    if (inventory == null || inventory.getHelmet().getType() != Material.PUMPKIN) return;
+    if (inventory == null
+        || inventory.getHelmet() == null
+        || inventory.getHelmet().getType() != Material.PUMPKIN) return;
 
     Player player = event.getPlayer();
     Location playerLocation = player.getLocation();

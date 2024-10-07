@@ -14,7 +14,6 @@ import org.bukkit.scheduler.BukkitTask;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.ConfigReader;
 import tc.oc.bingo.util.LocationUtils;
-import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("bush-sneak")
 public class BushSneakObjective extends ObjectiveTracker {
@@ -31,8 +30,7 @@ public class BushSneakObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
-    MatchPlayer matchPlayer = getPlayer(event.getPlayer());
-    if (matchPlayer == null) return;
+    if (notParticipating(event.getPlayer())) return;
 
     if (!event.isSneaking()) {
       // Player stopped sneaking, cancel any scheduled task
@@ -41,9 +39,7 @@ public class BushSneakObjective extends ObjectiveTracker {
       return;
     }
 
-    if (!matchPlayer.getMatch().isRunning() || !matchPlayer.isParticipating()) return;
-
-    if (passesVibeCheck(matchPlayer.getBukkit())) {
+    if (passesVibeCheck(event.getPlayer())) {
       BukkitTask task =
           new BukkitRunnable() {
             @Override

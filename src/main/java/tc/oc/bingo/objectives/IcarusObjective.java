@@ -31,9 +31,7 @@ public class IcarusObjective extends ObjectiveTracker {
   public void onEntityDamage(EntityDamageByEntityEvent event) {
     if (match == null) return;
 
-    if (event.getDamager() instanceof TNTPrimed && event.getEntity() instanceof Player) {
-      Player player = (Player) event.getEntity();
-
+    if (event.getDamager() instanceof TNTPrimed && event.getEntity() instanceof Player player) {
       MatchPlayer matchPlayer = match.getPlayer(player);
       if (matchPlayer == null || !matchPlayer.isParticipating()) return;
 

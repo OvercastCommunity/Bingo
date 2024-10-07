@@ -29,4 +29,9 @@ public interface PGMUtils extends MatchPlayerResolver {
   default @Nullable MatchPlayer getStatePlayer(@Nullable MatchPlayerState player) {
     return player == null ? null : player.getPlayer().orElse(null);
   }
+
+  default boolean notParticipating(@Nullable Entity player) {
+    MatchPlayer mp = getPlayer(player);
+    return mp == null || !mp.isParticipating();
+  }
 }

@@ -31,10 +31,7 @@ public class YapperObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMessageSent(ChannelMessageEvent event) {
-    MatchPlayer matchPlayer = getPlayer(event.getSender());
-    if (matchPlayer == null) return;
-
-    if (!matchPlayer.getMatch().isRunning() || !matchPlayer.isParticipating()) return;
+    if (notParticipating(event.getSender())) return;
 
     messageLength.compute(
         event.getSender().getUniqueId(),
