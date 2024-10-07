@@ -48,6 +48,11 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
     this.config.reload(config);
   }
 
+  @Override
+  public String getConfigSection() {
+    return this.objectiveSlug;
+  }
+
   protected final void reward(Collection<Player> players) {
     Bingo.get().getRewards().rewardPlayers(objectiveSlug, players);
   }

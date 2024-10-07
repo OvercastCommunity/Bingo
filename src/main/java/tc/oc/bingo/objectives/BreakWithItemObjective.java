@@ -1,10 +1,9 @@
 package tc.oc.bingo.objectives;
 
-import static tc.oc.bingo.config.ConfigReader.MATERIAL_LIST_READER;
 import static tc.oc.bingo.config.ConfigReader.MATERIAL_READER;
+import static tc.oc.bingo.config.ConfigReader.MATERIAL_SET_READER;
 
-import com.google.common.collect.Lists;
-import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -20,11 +19,8 @@ public class BreakWithItemObjective extends ObjectiveTracker {
   private final Supplier<Material> ITEM_IN_HAND =
       useConfig("item-in-hand", Material.SHEARS, MATERIAL_READER);
 
-  private final Supplier<List<Material>> MATERIALS_REQUIRED =
-      useConfig(
-          "block-list",
-          Lists.newArrayList(Material.LEAVES, Material.LEAVES_2),
-          MATERIAL_LIST_READER);
+  private final Supplier<Set<Material>> MATERIALS_REQUIRED =
+      useConfig("block-list", Set.of(Material.LEAVES, Material.LEAVES_2), MATERIAL_SET_READER);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {

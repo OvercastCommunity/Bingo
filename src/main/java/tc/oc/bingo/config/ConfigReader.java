@@ -1,8 +1,9 @@
 package tc.oc.bingo.config;
 
 import java.util.Arrays;
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -17,17 +18,17 @@ public interface ConfigReader<T> {
   ConfigReader<Material> MATERIAL_READER =
       (cfg, key, def) -> Material.getMaterial(cfg.getString(key));
 
-  ConfigReader<List<Material>> MATERIAL_LIST_READER =
+  ConfigReader<Set<Material>> MATERIAL_SET_READER =
       (cfg, key, def) -> {
         String materialNames = cfg.getString(key);
         if (materialNames == null || materialNames.isEmpty()) return def;
 
-        List<Material> parsedMaterials =
+        Set<Material> parsedMaterials =
             Arrays.stream(materialNames.split(","))
                 .map(String::trim)
                 .map(Material::getMaterial)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(() -> EnumSet.noneOf(Material.class)));
 
         return parsedMaterials.isEmpty() ? def : parsedMaterials;
       };

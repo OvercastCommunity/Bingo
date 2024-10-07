@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import lombok.extern.java.Log;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 
 @Log
 public class ConfigHandler {
@@ -40,6 +41,15 @@ public class ConfigHandler {
   public interface Extensions {
 
     ConfigHandler getConfig();
+
+    String getConfigSection();
+
+    default void reloadConfig(FileConfiguration config) {
+      ConfigurationSection section = config.getConfigurationSection(getConfigSection());
+      if (section != null) getConfig().reload(section);
+      else if (hasConfig())
+        log.warning("Config key for handler '" + getConfigSection() + "' not found");
+    }
 
     default Supplier<Integer> useConfig(String key, int defaultValue) {
       return getConfig().register(new ConfigSetting<>(key, defaultValue, ConfigReader.INT_READER));

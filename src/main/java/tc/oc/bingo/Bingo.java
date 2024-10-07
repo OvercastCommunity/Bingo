@@ -13,8 +13,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
-import org.bukkit.Bukkit;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.plugin.java.JavaPlugin;
 import tc.oc.bingo.card.CardRefresher;
 import tc.oc.bingo.card.RewardManager;
@@ -24,6 +22,7 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoDatabase;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
+import tc.oc.bingo.listeners.ItemRemoveCanceller;
 import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
@@ -37,16 +36,20 @@ public class Bingo extends JavaPlugin {
 
   private static Bingo INSTANCE;
 
-  private BukkitCommandManager commands;
+  // Plugin state
   private final Map<String, ObjectiveTracker> trackers = new HashMap<>(25);
+  private final Map<UUID, BingoPlayerCard> cards = new HashMap<>();
+  private BingoCard bingoCard = null;
 
+  // Plugin classes and utils
   @Getter(AccessLevel.NONE)
   private BingoDatabase database;
 
-  private final Map<UUID, BingoPlayerCard> cards = new HashMap<>();
-  private InventoryManager inventoryManager;
-  private BingoCard bingoCard = null;
+  private PlayerJoinListener playerJoinListener;
+  private ItemRemoveCanceller itemremoveCanceller;
   private RewardManager rewards;
+  private BukkitCommandManager commands;
+  private InventoryManager inventoryManager;
   private CardRefresher cardRefresher;
 
   public Bingo() {
@@ -64,28 +67,23 @@ public class Bingo extends JavaPlugin {
 
     this.database = BingoDatabase.build(Config.get().getDatabase());
 
-    this.cardRefresher = new CardRefresher();
-
-    Bukkit.getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+    this.playerJoinListener = new PlayerJoinListener(this);
+    this.itemremoveCanceller = new ItemRemoveCanceller(this);
     this.rewards = new RewardManager(this);
 
     // Set up the command manager and register all commands
     this.commands = new BukkitCommandManager(this);
-    commands.registerCommand(new CardCommand());
+    this.commands.registerCommand(new CardCommand());
 
-    inventoryManager = new InventoryManager(Bingo.get());
-    inventoryManager.init();
+    this.inventoryManager = new InventoryManager(Bingo.get());
+    this.inventoryManager.init();
+
+    this.cardRefresher = new CardRefresher();
   }
 
   public void reloadTrackerConfigs() {
-    trackers.values().forEach(this::reloadTrackerConfig);
-  }
-
-  private void reloadTrackerConfig(ObjectiveTracker tracker) {
-    ConfigurationSection section = getConfig().getConfigurationSection(tracker.getObjectiveSlug());
-    if (section != null) tracker.setConfig(section);
-    else if (tracker.hasConfig())
-      log.warning("Config key for tracker '" + tracker.getObjectiveSlug() + "' not found");
+    itemremoveCanceller.reloadConfig(getConfig());
+    trackers.values().forEach(t -> t.reloadConfig(getConfig()));
   }
 
   @SneakyThrows
@@ -157,7 +155,7 @@ public class Bingo extends JavaPlugin {
                 if (slug == null || !objectivesToCreate.contains(slug)) return;
 
                 ObjectiveTracker tracker = buildTracker(trackerClass);
-                reloadTrackerConfig(tracker);
+                tracker.reloadConfig(getConfig());
                 tracker.enable();
                 trackers.put(slug, tracker);
               });

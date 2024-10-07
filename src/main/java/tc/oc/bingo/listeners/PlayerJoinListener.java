@@ -1,6 +1,7 @@
 package tc.oc.bingo.listeners;
 
 import java.util.UUID;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -16,6 +17,7 @@ public class PlayerJoinListener implements Listener {
 
   public PlayerJoinListener(Bingo bingo) {
     this.bingo = bingo;
+    Bukkit.getServer().getPluginManager().registerEvents(this, bingo);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
