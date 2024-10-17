@@ -79,6 +79,8 @@ public class Bingo extends JavaPlugin {
     this.inventoryManager.init();
 
     this.cardRefresher = new CardRefresher();
+
+    reloadTrackerConfigs();
   }
 
   public void reloadTrackerConfigs() {
