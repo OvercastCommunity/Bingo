@@ -94,23 +94,19 @@ public class AllArmourObjective extends ObjectiveTracker.Stateful<Set<Character>
     Set<Character> sets = getObjectiveData(player.getId());
 
     for (ArmourSet set : VALID_SETS) {
-      if (sets.contains(set.code)) continue;
-      if (set.isFullSet(inventory)) {
+      if (sets.contains(set.code) || !set.isFullSet(inventory)) continue;
+      updateObjectiveData(
+          player.getId(),
+          s -> {
+            s.add(set.code);
+            return s;
+          });
 
-        int size =
-            updateObjectiveData(
-                    player.getId(),
-                    s -> {
-                      s.add(set.code);
-                      return s;
-                    })
-                .size();
+      break;
+    }
 
-        if (size >= SETS_REQUIRED.get()) {
-          reward(player.getBukkit());
-        }
-        break;
-      }
+    if (sets.size() >= SETS_REQUIRED.get()) {
+      reward(player.getBukkit());
     }
   }
 
