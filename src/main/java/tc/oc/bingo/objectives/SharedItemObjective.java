@@ -1,7 +1,10 @@
 package tc.oc.bingo.objectives;
 
+import static tc.oc.bingo.config.ConfigReader.MATERIAL_SET_READER;
+
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Bukkit;
@@ -19,7 +22,9 @@ public class SharedItemObjective extends ObjectiveTracker {
 
   private final Map<Integer, UUID> itemThrowers = new HashMap<>();
 
-  private final Supplier<Material> TRACKED_MATERIAL = useConfig("material", Material.COAL);
+  private final Supplier<Set<Material>> TRACKED_MATERIAL =
+      useConfig("material", Set.of(Material.GOLDEN_APPLE), MATERIAL_SET_READER);
+
   private final Supplier<Integer> TRACKED_DURATION = useConfig("pickup-seconds", 5);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -29,7 +34,7 @@ public class SharedItemObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDropItem(PlayerDropItemEvent event) {
-    if (!event.getItemDrop().getItemStack().getType().equals(TRACKED_MATERIAL.get())) return;
+    if (!TRACKED_MATERIAL.get().contains(event.getItemDrop().getItemStack().getType())) return;
 
     MatchPlayer player = getPlayer(event.getPlayer());
     if (player == null) return;

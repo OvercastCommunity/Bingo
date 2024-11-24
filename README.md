@@ -30,6 +30,7 @@ Outside of a development setup [Dispense](https://github.com/applenick/Dispense)
 - idx index of item on card
 - hint_level how many descriptors to show (1 = only name)
 - next_clue_unlock nullable
+- locked_until nullable
 - discovery_uuid nullable
 - discovery_time nullable
 

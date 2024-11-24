@@ -48,11 +48,14 @@ public class Messages {
   public static @Nullable String getDurationRemaining(Duration remaining) {
     if (remaining.isNegative()) return null;
 
+    long days = remaining.toDays();
     long hours = remaining.toHours();
     long minutes = remaining.toMinutes() % 60;
 
     // Cutoff after 6 hours when only hours are shown
-    if (hours >= 6) return hours + " hours";
+    if (hours >= 6 && hours < 24) {
+      return hours + " hours";
+    }
 
     // Include both hours and minutes
     if (hours >= 1) {

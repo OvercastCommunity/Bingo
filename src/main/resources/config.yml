@@ -1,6 +1,7 @@
 # Bingo Config
 grid-width: 5
 season-id: 1
+advent: false
 
 # Rewards based on unlock type
 rewards:
@@ -145,3 +146,7 @@ chat-chant:
   required-text: Beetlejuice
   ignore-case: true
   min-count: 3
+
+
+night-killer:
+  kills-required: 1000

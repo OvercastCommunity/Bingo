@@ -37,6 +37,7 @@ public class SQLDatabase implements BingoDatabase {
           + "idx INT,"
           + "hint_level INT,"
           + "next_clue_unlock DATETIME,"
+          + "locked_until DATETIME,"
           + "discovery_uuid VARCHAR(255),"
           + "discovery_time DATETIME, "
           + "PRIMARY KEY (slug, season_id)"
@@ -136,6 +137,7 @@ public class SQLDatabase implements BingoDatabase {
               resultSet.getInt("idx"),
               resultSet.getInt("hint_level"),
               parseTimestamp(resultSet.getTimestamp("next_clue_unlock")),
+              parseTimestamp(resultSet.getTimestamp("locked_until")),
               parseUuid(resultSet.getString("discovery_uuid")),
               parseTimestamp(resultSet.getTimestamp("discovery_time")));
       objectives.add(objective);

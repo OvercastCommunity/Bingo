@@ -8,11 +8,11 @@ import java.util.stream.Collectors;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import tc.oc.pgm.api.event.ChannelMessageEvent;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.stats.StatsMatchModule;
-import tc.oc.pgm.util.event.ChannelMessageEvent;
 
 @Tracker("yapper")
 public class YapperObjective extends ObjectiveTracker {
@@ -30,11 +30,11 @@ public class YapperObjective extends ObjectiveTracker {
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onMessageSent(ChannelMessageEvent event) {
-    if (notParticipating(event.getSender())) return;
+  public void onMessageSent(ChannelMessageEvent<?> event) {
+    if (!event.getSender().isParticipating()) return;
 
     messageLength.compute(
-        event.getSender().getUniqueId(),
+        event.getSender().getId(),
         (uuid, count) -> (count == null) ? 1 : count + event.getMessage().length());
   }
 

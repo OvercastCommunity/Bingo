@@ -9,8 +9,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import tc.oc.pgm.util.channels.Channel;
-import tc.oc.pgm.util.event.ChannelMessageEvent;
+import tc.oc.pgm.api.event.ChannelMessageEvent;
+import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.channels.GlobalChannel;
 
 @Tracker("chat-chant")
 public class ChatChantObjective extends ObjectiveTracker {
@@ -24,13 +25,13 @@ public class ChatChantObjective extends ObjectiveTracker {
   private int currentStreak = 0;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onMessageSent(ChannelMessageEvent event) {
-    Player player = event.getSender();
+  public void onMessageSent(ChannelMessageEvent<?> event) {
+    MatchPlayer player = event.getSender();
     String message = event.getMessage();
 
     if (player == null) return;
     if (message == null || message.isEmpty()) return;
-    if (event.getChannel() != Channel.GLOBAL) return;
+    if (!(event.getChannel() instanceof GlobalChannel)) return;
 
     // Reset the streak if not a match
     if ((!IGNORE_CASE.get() || !message.equalsIgnoreCase(REQUIRED_TEXT.get()))
@@ -41,7 +42,7 @@ public class ChatChantObjective extends ObjectiveTracker {
       return;
     }
 
-    chanters.add(player.getUniqueId());
+    chanters.add(player.getId());
     if (chanters.size() < MIN_COUNT.get()) return;
 
     // Get the players who haven't been rewarded in the previous streak

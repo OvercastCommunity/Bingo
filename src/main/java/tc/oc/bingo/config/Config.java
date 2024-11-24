@@ -15,6 +15,7 @@ public class Config {
   // Settings
   private int gridWidth;
   private int seasonId;
+  private boolean advent;
 
   // Rewards
   private int rewardSingle;
@@ -45,6 +46,7 @@ public class Config {
                             99,
                             null,
                             null,
+                            null,
                             null))
                 .collect(Collectors.toList());
       } else {
@@ -70,6 +72,8 @@ public class Config {
     this.gridWidth = config.getInt("grid-width", 5);
 
     this.seasonId = config.getInt("season-id", 1);
+
+    this.advent = config.getBoolean("advent", false);
 
     this.rewardSingle = config.getInt("rewards.single", 100);
     this.rewardLine = config.getInt("rewards.line", 250);

@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -33,6 +32,7 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.database.ProgressItem;
+import tc.oc.bingo.util.IconUtils;
 import tc.oc.bingo.util.Messages;
 import tc.oc.pgm.util.inventory.ItemBuilder;
 
@@ -132,6 +132,11 @@ public class BingoCardMenu implements InventoryProvider {
 
     List<String> loreList = new ArrayList<>();
 
+    if (!objective.hasUnlocked()) {
+      addUnlock(objective.getLockedUntil(), loreList);
+      return createIconItem(objective.getIndex(), false, false, true, "Objective Locked", loreList);
+    }
+
     boolean completed = progressItem != null && progressItem.isCompleted();
     if (completed) {
       loreList.add(GREEN + "Objective Complete" + DARK_GREEN + " ✔");
@@ -143,7 +148,7 @@ public class BingoCardMenu implements InventoryProvider {
     addSpaced(loreList, hints.revealed);
 
     // Add "Clue revealed in X"
-    if (hints.hasHidden) addNextUnlock(objective.getNextClueUnlock(), loreList);
+    if (hints.hasHidden) addNextClueUnlock(objective.getNextClueUnlock(), loreList);
 
     // Add "You placed #x", or "Progress: X%" (for stateful objectives)
     addProgress(progressItem, loreList);
@@ -161,16 +166,27 @@ public class BingoCardMenu implements InventoryProvider {
         hints.unlocked > 0
             ? objective.getName()
             : MAGIC + "NiceTry" + AQUA + " (" + objective.getGridPosition() + ")";
+
     return createIconItem(
-        completed, Objects.equals(requestedIdx, objective.getIndex()), name, loreList);
+        objective.getIndex(),
+        completed,
+        Objects.equals(requestedIdx, objective.getIndex()),
+        false,
+        name,
+        loreList);
   }
 
   private static @NotNull ItemStack createIconItem(
-      boolean completed, boolean highlight, String name, List<String> lore) {
+      int idx,
+      boolean completed,
+      boolean highlight,
+      boolean locked,
+      String name,
+      List<String> lore) {
     @SuppressWarnings("deprecation")
-    short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
-    ItemStack itemStack = new ItemStack(Material.INK_SACK, 1, color);
+    ItemStack itemStack = IconUtils.getItemStack(idx, completed, locked);
     ItemMeta itemMeta = itemStack.getItemMeta();
+
     if (highlight) {
       itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
       itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -200,11 +216,20 @@ public class BingoCardMenu implements InventoryProvider {
     addSpaced(loreList, GRAY + "Progress: " + GOLD + pct);
   }
 
-  private static void addNextUnlock(LocalDateTime unlockAt, List<String> loreList) {
+  private static void addUnlockMessage(
+      LocalDateTime unlockAt, List<String> loreList, String messagePrefix) {
     if (unlockAt == null) return;
     String nextIn = Messages.getDurationRemaining(Duration.between(LocalDateTime.now(), unlockAt));
     if (nextIn != null)
-      addSpaced(loreList, "" + ITALIC + DARK_PURPLE + "Clue revealed in " + nextIn + ".");
+      addSpaced(loreList, "" + ITALIC + DARK_PURPLE + messagePrefix + " " + nextIn + ".");
+  }
+
+  private static void addNextClueUnlock(LocalDateTime unlockAt, List<String> loreList) {
+    addUnlockMessage(unlockAt, loreList, "Clue revealed in");
+  }
+
+  private static void addUnlock(LocalDateTime unlockAt, List<String> loreList) {
+    addUnlockMessage(unlockAt, loreList, "Unlocked in");
   }
 
   private static void addSpaced(List<String> lore, String... txt) {
