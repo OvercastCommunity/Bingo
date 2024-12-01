@@ -134,6 +134,7 @@ public class Bingo extends JavaPlugin {
     Set<String> objectivesToCreate =
         card.getObjectives().stream()
             .filter(Objects::nonNull)
+            .filter(ObjectiveItem::hasUnlocked)
             .map(ObjectiveItem::getSlug)
             .collect(Collectors.toSet());
 
