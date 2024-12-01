@@ -184,7 +184,7 @@ public class BingoCardMenu implements InventoryProvider {
       String name,
       List<String> lore) {
     @SuppressWarnings("deprecation")
-    ItemStack itemStack = IconUtils.getItemStack(idx, completed, locked);
+    ItemStack itemStack = IconUtils.getItemStack(idx, completed, locked, highlight);
     ItemMeta itemMeta = itemStack.getItemMeta();
 
     if (highlight) {

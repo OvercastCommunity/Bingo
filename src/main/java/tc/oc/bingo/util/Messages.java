@@ -52,6 +52,16 @@ public class Messages {
     long hours = remaining.toHours();
     long minutes = remaining.toMinutes() % 60;
 
+    // When over 6 days just include days
+    if (days > 6) {
+      return days + " days";
+    }
+
+    // If over a day include the days and hours
+    if (days > 1) {
+      return days + " days" + spacedTimeString(hours % 24, "hour", "hours");
+    }
+
     // Cutoff after 6 hours when only hours are shown
     if (hours >= 6 && hours < 24) {
       return hours + " hours";
@@ -59,16 +69,21 @@ public class Messages {
 
     // Include both hours and minutes
     if (hours >= 1) {
-      return (hours == 1 ? "1 hour" : hours + " hours")
-          + (minutes > 0 ? " " + (minutes == 1 ? "1 minute" : minutes + " minutes") : "");
+      return (spacedTimeString(hours, "hour", "hours")
+              + spacedTimeString(minutes, "minute", "minutes"))
+          .trim();
     }
 
     // If less than 1 hour, only show minutes
     if (minutes >= 1) {
-      return minutes == 1 ? "1 minute" : minutes + " minutes";
+      return spacedTimeString(minutes, "minute", "minutes").trim();
     }
 
     return "a moment";
+  }
+
+  public static String spacedTimeString(long amount, String singular, String plural) {
+    return (amount > 0 ? " " + amount + " " + (amount == 1 ? singular : plural) : "");
   }
 
   public static Component getRewardTypeBroadcast(Player player, RewardManager.Reward reward) {

@@ -7,17 +7,16 @@ import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
+import tc.oc.pgm.util.event.ItemTransferEvent;
 
 @Tracker("chest-store")
 public class ChestStoreObjective extends ObjectiveTracker {
@@ -40,19 +39,21 @@ public class ChestStoreObjective extends ObjectiveTracker {
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onInventoryClick(InventoryClickEvent event) {
-    // Ensure the click event involves a chest inventory
-    if (event.getInventory().getType() != InventoryType.CHEST) return;
-    if (!VALID_ACTIONS.contains(event.getAction())) return;
+  public void onInventoryClick(ItemTransferEvent event) {
 
-    HumanEntity whoClicked = event.getWhoClicked();
-    if (!((whoClicked instanceof Player player))) return;
+    if (event.getFrom() == null || event.getTo() == null) return;
+    if (event.getFrom().getType() != InventoryType.PLAYER) return;
+
+    if (!(event.getActor() instanceof Player player)) return;
+
+    // Ensure the click event involves a chest inventory
+    if (event.getTo().getType() != InventoryType.CHEST) return;
 
     // Ensure the clicked item matches the required item
-    ItemStack clickedItem = player.getItemOnCursor();
+    ItemStack clickedItem = event.getItem();
     if (clickedItem == null || clickedItem.getType() != ITEM_REQUIRED.get()) return;
 
-    InventoryHolder holder = event.getInventory().getHolder();
+    InventoryHolder holder = event.getTo().getHolder();
     if (!(holder instanceof Chest chest)) return;
 
     Vector chestLocation = placedChests.get(player.getUniqueId());

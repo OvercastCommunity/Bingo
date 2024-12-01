@@ -45,7 +45,7 @@ public class PartyPlayerObjective extends ObjectiveTracker {
                   if (player == null) return null;
                   return player.getBukkit();
                 })
-            .filter(Objects::isNull)
+            .filter(Objects::nonNull)
             .toList();
 
     reward(rewardingPlayers);

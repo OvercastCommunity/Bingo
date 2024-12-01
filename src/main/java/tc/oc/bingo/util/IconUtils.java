@@ -31,7 +31,13 @@ public class IconUtils {
           "ewogICJ0aW1lc3RhbXAiIDogMTczMDcyNzM5NjU1NCwKICAicHJvZmlsZUlkIiA6ICI5MWYwNGZlOTBmMzY0M2I1OGYyMGUzMzc1Zjg2ZDM5ZSIsCiAgInByb2ZpbGVOYW1lIiA6ICJTdG9ybVN0b3JteSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS85MGM1N2NjNmJhZWYwMmVmYTBjNWFlZDYwNmYzNTI1MWNmNTQyYWZiYmNmZjI3YzQ1NjQ5N2YwNDYwMWRhYTJhIiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=",
           "v8qnVDj4/Dv7ONnXAiUC1MmU2JlniTvn5tVmyJjjeuYyW1NIYbKmDxowcfyAHYpRx4F1u0IxQo5Oy51dPJ9IRBXn3gRs8KnRO47V10t375SWVXaqet9OnnTNjja62NMdz6tOexKcG9vY2Vy9TG5qdpisWNdEfxrgkUgjBHWv9qa84hjy4h5LCeo3MftsfPWaek57itMXlqJk//L6Am69CW00fPKnAlfszLIMlAMHDK/dmfEvuNAOlG75t+6yYf5LrDh8o67eDaSdWEMpzvLCj/22NAGatCNFyDDk6Wq0L7pWrgQOB9Vukwc6pFvz2Ef/gczdP2Vmw3vlXC/8XhuOftNr1f5yuHrJP33N82le/NstbLFwHVO7uvD+EgCQq4tlwVVmascsArPV0kWpFkyAemIYCJ7DDNYfbn+2rb5P54fnLTz3q0Z01Nv+yGXi5AiLuRwVYI/3jX6Id/Ifv6HA3zmY2JVc3665HaOWfABXZ8ERK4+FnhuUxoJ0naDVqs4JersOL4rWg4lcTPCmqLzzbzVJDx9XTn2z3VtQnMpHjeKk4Ygbx6EUxu8JaYbiKjTNX18tXQc8DxSh7/1hbIPBd7iDndTsrbJWX8lHYtt5qkGtjr2DfN7r3G490YPRzgTOW8E9az9uo5y5LL/dKd2b0YMxzHFcLp3d5Ez8exHP0W4=");
 
-  public static ItemStack getItemStack(int idx, boolean completed, boolean locked) {
+  private static final Skin PURPLE_SKIN =
+      new Skin(
+          "ewogICJ0aW1lc3RhbXAiIDogMTY0MDk2MTIwNzM5NiwKICAicHJvZmlsZUlkIiA6ICI1NjY3NWIyMjMyZjA0ZWUwODkxNzllOWM5MjA2Y2ZlOCIsCiAgInByb2ZpbGVOYW1lIiA6ICJUaGVJbmRyYSIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS9iMGI0NWNiZmJkZmI2ZGM2Njk0ZGU5NmQ5N2RhMzZhZTdiNWZlM2NkOTRhNWIyNjI1MDU1NGM1ZjAyMmNhN2QwIiwKICAgICAgIm1ldGFkYXRhIiA6IHsKICAgICAgICAibW9kZWwiIDogInNsaW0iCiAgICAgIH0KICAgIH0KICB9Cn0=",
+          "kzn+wjWBqPK1t8tBx0aLPXtnZN8n0/ANV/DBPbPrPy44rCPmOFvD+949XiQPd0i+BqzU6wyVcGI+dQMZGtfZbshjEfKaVRPBtxOnovFYH+zqicaoaTBriftUiB2vFSKgvVA5ArzR/0WZM4hS43a+QTvUR4OlFKNRRVg1DdVkA9BCZmJvnnGWwxUqs4j2c/ifRQjbAZhRu+lUTctoj4FMwUONuwtSpqJkgEm7VXBoJtP9re0pkv3QYQrP4EtH6XuH/fSbhvUFs3PT9BSaoXAs8xSbv0JZRtjH89ja7gLoIjaZN7sbaGtvPtsl0VY5elECt9dmYfiJYwe3k9ja7bolWwieR/TUDxqA4EY7AugT7JCBmyLQZMFWZnPXbX+cqw51NNcYG96NTLYmXSROWdiMK/bmJi2807h6ATJAfKSYy4Q7oDvMt5KzlFjxb257koQhlK7SxJiHxRHHe9QL4v632tDrxROBrzyaSG72oafso4NFztyVAw3ECj0oXp1/CoENLThvnzbLgUTAuxpxOB0UrsPqztavjP8X6WtbtTaBhS6KAHZPSqihZzNSPt7HkIdqzDwcftTaul2DiR1ViYWy3WmLWC/jsfLBnT9GsGgBof/1c1vfEnARjfb3i/9i1edB8N0IoeoLHp9uI46BD0UwpLQ/zC/pBb/BkQOjeaq+5m0=");
+
+  public static ItemStack getItemStack(
+      int idx, boolean completed, boolean locked, boolean highlight) {
     if (!Config.get().isAdvent()) {
       short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
       return new ItemStack(Material.INK_SACK, 1, color);
@@ -40,7 +46,9 @@ public class IconUtils {
     int itemNumber = idx + 1;
 
     Skin skin = null;
-    if (locked) {
+    if (highlight) {
+      skin = PURPLE_SKIN;
+    } else if (locked) {
       skin = GRAY_SKIN;
     } else if (completed) {
       skin = GREEN_SKIN;

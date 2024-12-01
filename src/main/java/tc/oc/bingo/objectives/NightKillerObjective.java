@@ -38,11 +38,11 @@ public class NightKillerObjective extends ObjectiveTracker.Stateful<Integer> {
 
   @Override
   public @NotNull String serialize(@NotNull Integer data) {
-    return data.toString();
+    return String.valueOf(data);
   }
 
   @Override
   public double progress(Integer data) {
-    return data;
+    return (double) data / KILLS_REQUIRED.get();
   }
 }

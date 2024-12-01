@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.RayBlockIntersection;
 
 @Tracker("block-pyro")
 public class BlockPyroObjective extends ObjectiveTracker {
@@ -25,7 +26,10 @@ public class BlockPyroObjective extends ObjectiveTracker {
     ItemStack itemInHand = player.getItemInHand();
     if (itemInHand == null || itemInHand.getType() != Material.FLINT_AND_STEEL) return;
 
-    Material targetBlock = event.getPlayer().getTargetedBlock(false, false).getBlock().getType();
+    RayBlockIntersection targetedBlock = event.getPlayer().getTargetedBlock(false, false);
+    if (targetedBlock == null) return;
+
+    Material targetBlock = targetedBlock.getBlock().getType();
 
     if (BLOCKS_ALLOWED.get().contains(targetBlock)) reward(player);
   }
