@@ -1,6 +1,9 @@
 package tc.oc.bingo.objectives;
 
 import java.util.function.Supplier;
+import org.bukkit.entity.Boat;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Minecart;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -16,14 +19,18 @@ public class VehicleKillObjective extends ObjectiveTracker {
     if (!event.isChallengeKill()) return;
 
     MatchPlayer killer = getStatePlayer(event.getKiller());
-    if (killer == null) return;
+    if (killer == null || !killer.isAlive()) return;
 
     // Gets either the attacker or the victim
     MatchPlayer relevantPlayer = CHECK_ATTACKER.get() ? killer : event.getVictim();
     if (relevantPlayer == null) return;
 
-    if (relevantPlayer.getBukkit().isInsideVehicle()) {
-      reward(killer.getBukkit());
-    }
+    Entity vehicle = relevantPlayer.getBukkit().getVehicle();
+    if (vehicle == null) return;
+
+    // Only allow boats and minecarts
+    if (!(vehicle instanceof Minecart) && !(vehicle instanceof Boat)) return;
+
+    reward(killer.getBukkit());
   }
 }
