@@ -2,12 +2,12 @@ package tc.oc.bingo.objectives;
 
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
+import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("variant-player")
 public class VariantPlayerObjective extends ObjectiveTracker.Stateful<Integer> {
@@ -23,13 +23,10 @@ public class VariantPlayerObjective extends ObjectiveTracker.Stateful<Integer> {
 
     List<Player> rewardingPlayers =
         event.getMatch().getParticipants().stream()
-            .map(
-                player -> {
-                  Integer matchesPlayed = updateObjectiveData(player.getId(), i -> i + 1);
-                  if (matchesPlayed < REQUIRED_MATCHES.get()) return null;
-                  return player.getBukkit();
-                })
-            .collect(Collectors.toList());
+            .filter(
+                player -> updateObjectiveData(player.getId(), i -> i + 1) >= REQUIRED_MATCHES.get())
+            .map(MatchPlayer::getBukkit)
+            .toList();
 
     reward(rewardingPlayers);
   }
