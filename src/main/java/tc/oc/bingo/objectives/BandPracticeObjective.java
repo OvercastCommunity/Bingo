@@ -58,7 +58,7 @@ public class BandPracticeObjective extends ObjectiveTracker {
     lastPlayedPlayer = null;
     lastPlayedAt = null;
 
-    if (!location.equals(block.getLocation())) return;
+    if (location == null || !location.equals(block.getLocation())) return;
 
     MatchPlayer matchPlayer = getPlayer(player);
     if (matchPlayer == null) return;
