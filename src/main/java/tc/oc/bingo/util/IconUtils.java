@@ -39,13 +39,21 @@ public class IconUtils {
   public static ItemStack getItemStack(
       int idx, boolean completed, boolean locked, boolean highlight) {
     if (!Config.get().isAdvent()) {
-      short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
-      return new ItemStack(Material.INK_SACK, 1, color);
+
+      if (false) {
+        short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
+        return new ItemStack(Material.INK_SACK, 1, color);
+      }
+
+      if (locked) return new ItemStack(Material.STAINED_GLASS, 1, (short) 7);
+
+      short color = (completed ? DyeColor.RED : DyeColor.PINK).getWoolData();
+      return new ItemStack(Material.WOOL, 1, color);
     }
 
     int itemNumber = idx + 1;
 
-    Skin skin = null;
+    Skin skin;
     if (highlight) {
       skin = PURPLE_SKIN;
     } else if (locked) {
@@ -60,10 +68,7 @@ public class IconUtils {
     SkullMeta skullMeta = (SkullMeta) head.getItemMeta();
     NMSHacks.NMS_HACKS.setSkullMetaOwner(skullMeta, "name", UUID.randomUUID(), skin);
     head.setItemMeta(skullMeta);
-
-    //    if (!locked) {
     head.setAmount(itemNumber);
-    //    }
 
     return head;
   }

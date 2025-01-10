@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.EntityType;
 
 @FunctionalInterface
 public interface ConfigReader<T> {
@@ -32,6 +33,9 @@ public interface ConfigReader<T> {
 
         return parsedMaterials.isEmpty() ? def : parsedMaterials;
       };
+
+  ConfigReader<EntityType> ENTITY_TYPE_READER =
+      (cfg, key, def) -> EntityType.valueOf(cfg.getString(key));
 
   T read(ConfigurationSection section, String key, T defaultValue);
 }

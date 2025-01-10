@@ -38,7 +38,7 @@ public class GolemBuilderObjective extends ObjectiveTracker {
     if (!hasValidArms && ARMS.get() != Material.AIR) return;
 
     Block legsBlock = bodyBlock.getRelative(BlockFace.DOWN);
-    if (legsBlock.getType() != LEGS.get()) return;
+    if (legsBlock.getType() != LEGS.get() && LEGS.get() != Material.BARRIER) return;
 
     reward(event.getPlayer());
   }
