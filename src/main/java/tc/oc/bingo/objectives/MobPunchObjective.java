@@ -4,6 +4,7 @@ import static tc.oc.bingo.config.ConfigReader.ENTITY_TYPE_READER;
 import static tc.oc.bingo.config.ConfigReader.MATERIAL_READER;
 
 import java.util.function.Supplier;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -49,6 +50,7 @@ public class MobPunchObjective extends ObjectiveTracker {
         || notParticipating(event.getPlayer())) return;
 
     Player player = event.getPlayer();
+    if (player.getGameMode().equals(GameMode.CREATIVE)) return;
     Location playerLocation = player.getLocation();
 
     Item item =
@@ -63,19 +65,3 @@ public class MobPunchObjective extends ObjectiveTracker {
     event.getWorld().playSound(playerLocation, Sound.CHICKEN_EGG_POP, 1.0f, 1.0f);
   }
 }
-
-  // --- Placing bed next to someone else's
-
-  // --- Buckets of love rename on craft? Require amount thrown at another player
-
-  // --- Unhinged - trap door open close
-
-  // # Already coded
-
-  // Place x torches (eat next to a torch)? place a torch then eat next to it
-
-  // Symbol of Love: Love Letter Type ❤ in chat
-
-  // Golem
-
-  // Arrow punch

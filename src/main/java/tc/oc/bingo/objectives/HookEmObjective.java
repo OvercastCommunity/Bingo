@@ -1,47 +1,52 @@
 package tc.oc.bingo.objectives;
 
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Supplier;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.FishHook;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerFishEvent;
-import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
-import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.tracker.TrackerMatchModule;
-import tc.oc.pgm.tracker.trackers.EntityTracker;
+import org.bukkit.projectiles.ProjectileSource;
 
 @Tracker("hook-em")
 public class HookEmObjective extends ObjectiveTracker {
 
-  private final Supplier<Integer> MIN_SECONDS = useConfig("max-seconds", 5);
+  private final Supplier<Integer> MIN_SECONDS = useConfig("min-seconds", 3);
 
-  private EntityTracker tracker;
-
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onMatchAfterLoad(MatchAfterLoadEvent event) {
-    tracker = event.getMatch().needModule(TrackerMatchModule.class).getEntityTracker();
-  }
+  // Key: Hooked player UUID, Value: (Fisher UUID, Hook timestamp)
+  private final Map<UUID, Map.Entry<UUID, Long>> hookTracking = useState(Scope.LIFE);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerFish(PlayerFishEvent event) {
     if (event.getState() != PlayerFishEvent.State.CAUGHT_ENTITY) return;
 
-    Bukkit.broadcastMessage("CAUGHT ENTITY");
-    // TODO:
+    if (!(event.getPlayer() instanceof Player fisher)) return;
+    if (!(event.getCaught() instanceof Player hooked)) return;
+
+    UUID hookedId = hooked.getUniqueId();
+    Map.Entry<UUID, Long> hookData = hookTracking.remove(hookedId);
+
+    if (hookData == null || !hookData.getKey().equals(fisher.getUniqueId())) return;
+
+    long elapsedTime = (System.currentTimeMillis() - hookData.getValue()) / 1000L;
+
+    if (elapsedTime >= MIN_SECONDS.get()) {
+      reward(fisher);
+    }
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onEntityDamage(ProjectileHitEvent event) {
-    // TODO:
-    if (!(event.getEntity() instanceof FishHook fishHook)) return;
-    if (!(event.getActor() instanceof Player player)) return;
+  public void onEntityDamage(EntityDamageByEntityEvent event) {
+    if (!(event.getDamager() instanceof FishHook fishHook)) return;
 
-    MatchPlayer hooker = getPlayer(tracker.getOwner(fishHook));
-    if (hooker == null) return;
+    ProjectileSource shooter = fishHook.getShooter();
+    if (!(shooter instanceof Player fisher)) return;
+    if (!(event.getEntity() instanceof Player hooked)) return;
 
-    Bukkit.broadcastMessage("PROJECTILE HIT from " + hooker.getNameLegacy());
+    hookTracking.put(
+        hooked.getUniqueId(), Map.entry(fisher.getUniqueId(), System.currentTimeMillis()));
   }
 }

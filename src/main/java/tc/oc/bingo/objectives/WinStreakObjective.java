@@ -17,6 +17,7 @@ public class WinStreakObjective extends ObjectiveTracker.Stateful<Integer> {
 
   @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
   public void onMatchFinish(MatchFinishEvent event) {
+    if (event.getMatch().getWinners().size() > 1) return;
 
     // Create a Collection of winners and players
     Collection<MatchPlayer> players = event.getMatch().getPlayers();

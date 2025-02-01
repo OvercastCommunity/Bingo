@@ -28,7 +28,8 @@ public class DeathBuddyObjective extends ObjectiveTracker {
   public void onMatchPlayerDeath(MatchPlayerDeathEvent event) {
     MatchPlayer player = event.getPlayer();
 
-    if (!event.isSuicide()) return;
+    // Only allow deaths with no killer or self-inflicted
+    if (!(event.getKiller() == null || event.isSuicide())) return;
 
     UUID playerId = player.getId();
     Vector location = player.getBukkit().getLocation().toVector();

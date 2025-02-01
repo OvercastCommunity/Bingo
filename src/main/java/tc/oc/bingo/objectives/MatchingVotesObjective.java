@@ -21,6 +21,7 @@ import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.map.MapOrder;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.match.event.MatchVoteFinishEvent;
+import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.pools.VotingPool;
 import tc.oc.pgm.rotation.vote.MapPoll;
 import tc.oc.pgm.rotation.vote.events.MatchPlayerVoteEvent;
@@ -33,7 +34,7 @@ public class MatchingVotesObjective extends ObjectiveTracker.Stateful<Integer> {
 
   private final Supplier<Integer> INCLUDE_TOP_MAPS = useConfig("included-top-maps", 2);
 
-  private final Supplier<Integer> REQUIRED_COUNT = useConfig("required-count", 5);
+  private final Supplier<Integer> REQUIRED_COUNT = useConfig("required-count", 10);
 
   private final Map<UUID, Set<String>> playerVotes = useState(Scope.FULL_MATCH);
   private final Set<String> topVotes = new HashSet<>();
@@ -57,7 +58,10 @@ public class MatchingVotesObjective extends ObjectiveTracker.Stateful<Integer> {
     topVotes.clear();
 
     MapOrder mapOrder = PGM.get().getMapOrder();
-    if (!(mapOrder instanceof VotingPool votingPool)) return;
+    if (!(mapOrder instanceof MapPoolManager poolManager)) return;
+
+    MapOrder activePool = poolManager.getActiveMapPool();
+    if (!(activePool instanceof VotingPool votingPool)) return;
 
     MapPoll currentPoll = votingPool.getCurrentPoll();
     if (currentPoll == null) return;

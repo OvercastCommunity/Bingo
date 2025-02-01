@@ -9,9 +9,7 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import tc.oc.bingo.Bingo;
 import tc.oc.bingo.util.RepeatCheckTask;
 import tc.oc.pgm.util.event.PlayerCoarseMoveEvent;
 
@@ -33,18 +31,18 @@ public class SkinnyDippingObjective extends ObjectiveTracker {
           new RepeatCheckTask(() -> passesVibeCheck(player), () -> reward(player));
       swimTasks.put(player.getUniqueId(), repeatCheckTask.start(5, 20));
 
-      BukkitTask task =
-          new BukkitRunnable() {
-            @Override
-            public void run() {
-              if (passesVibeCheck(event.getPlayer())) {
-                reward(event.getPlayer());
-              }
-              swimTasks.remove(event.getPlayer().getUniqueId());
-            }
-          }.runTaskLater(Bingo.get(), REQUIRED_SECONDS.get() * 20);
-
-      swimTasks.put(event.getPlayer().getUniqueId(), task);
+      //      BukkitTask task =
+      //          new BukkitRunnable() {
+      //            @Override
+      //            public void run() {
+      //              if (passesVibeCheck(event.getPlayer())) {
+      //                reward(event.getPlayer());
+      //              }
+      //              swimTasks.remove(event.getPlayer().getUniqueId());
+      //            }
+      //          }.runTaskLater(Bingo.get(), REQUIRED_SECONDS.get() * 20);
+      //
+      //      swimTasks.put(event.getPlayer().getUniqueId(), task);
 
     } else {
       cancelSwimTask(player);

@@ -40,14 +40,6 @@ public class EternalFlameObjective extends ObjectiveTracker {
     RepeatCheckTask repeatCheckTask =
         new RepeatCheckTask(() -> passesVibeCheck(targetBlock), () -> reward(player));
     flameTasks.put(player.getUniqueId(), repeatCheckTask.start(REQUIRED_TIME.get()));
-
-    //        long currentTime = System.currentTimeMillis();
-    //        long timePassed = (currentTime - flameStartTimes.getOrDefault(player.getUniqueId(),
-    // currentTime)) / 1000;
-
-    //        if (timePassed >= REQUIRED_TIME.get()) {
-    //            reward(player);
-    //        }
   }
 
   private boolean passesVibeCheck(Block block) {
