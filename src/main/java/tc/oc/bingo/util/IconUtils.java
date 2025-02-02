@@ -45,7 +45,7 @@ public class IconUtils {
         return new ItemStack(Material.INK_SACK, 1, color);
       }
 
-      if (locked) return new ItemStack(Material.STAINED_GLASS, 1, (short) 7);
+      if (locked) return new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7);
 
       short color = (completed ? DyeColor.RED : DyeColor.PINK).getWoolData();
       return new ItemStack(Material.WOOL, 1, color);

@@ -86,7 +86,7 @@ public class FlowerBearerObjective extends ObjectiveTracker.Stateful<Integer> {
     Integer interactions = updateObjectiveData(playerId, count -> count + 1);
 
     // Check if the player has completed the objective
-    if (interactions >= EFFECT_COOLDOWN.get()) {
+    if (interactions >= REQUIRED_INTERACTIONS.get()) {
       reward(player);
     }
   }
@@ -108,7 +108,7 @@ public class FlowerBearerObjective extends ObjectiveTracker.Stateful<Integer> {
 
   @Override
   public double progress(Integer data) {
-    return (double) data / EFFECT_COOLDOWN.get();
+    return (double) data / REQUIRED_INTERACTIONS.get();
   }
 
   @Getter
