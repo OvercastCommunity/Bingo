@@ -25,24 +25,14 @@ public class SkinnyDippingObjective extends ObjectiveTracker {
     Player player = event.getPlayer();
     if (notParticipating(player)) return;
 
+    if (swimTasks.containsKey(player.getUniqueId())) return;
+
     if (passesVibeCheck(player)) {
 
       RepeatCheckTask repeatCheckTask =
-          new RepeatCheckTask(() -> passesVibeCheck(player), () -> reward(player));
+          new RepeatCheckTask(
+              () -> passesVibeCheck(player), () -> reward(player), () -> cancelSwimTask(player));
       swimTasks.put(player.getUniqueId(), repeatCheckTask.start(5, 20));
-
-      //      BukkitTask task =
-      //          new BukkitRunnable() {
-      //            @Override
-      //            public void run() {
-      //              if (passesVibeCheck(event.getPlayer())) {
-      //                reward(event.getPlayer());
-      //              }
-      //              swimTasks.remove(event.getPlayer().getUniqueId());
-      //            }
-      //          }.runTaskLater(Bingo.get(), REQUIRED_SECONDS.get() * 20);
-      //
-      //      swimTasks.put(event.getPlayer().getUniqueId(), task);
 
     } else {
       cancelSwimTask(player);

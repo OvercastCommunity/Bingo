@@ -3,24 +3,34 @@ package tc.oc.bingo.util;
 import java.util.function.BooleanSupplier;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import tc.oc.pgm.api.PGM;
+import org.jetbrains.annotations.Nullable;
+import tc.oc.bingo.Bingo;
 
 public class RepeatCheckTask extends BukkitRunnable {
 
-  private final BooleanSupplier check; // The condition to check
-  private final Runnable onSuccess; // Action if the condition passes all checks
-  private int maxIterations; // Number of checks to perform
+  private final BooleanSupplier check;
+  private final Runnable onSuccess;
+  private final @Nullable Runnable onFailure;
 
-  private int currentIteration = 0; // Tracks the current iteration
+  private int maxIterations;
+  private int currentIteration = 0;
 
   public RepeatCheckTask(BooleanSupplier check, Runnable onSuccess) {
     this.check = check;
     this.onSuccess = onSuccess;
+    this.onFailure = null;
+  }
+
+  public RepeatCheckTask(BooleanSupplier check, Runnable onSuccess, @Nullable Runnable onFailure) {
+    this.check = check;
+    this.onSuccess = onSuccess;
+    this.onFailure = onFailure;
   }
 
   @Override
   public void run() {
     if (!check.getAsBoolean()) {
+      if (onFailure != null) onFailure.run(); // If the check fails report back
       cancel(); // If the check fails, stop the task
       return;
     }
@@ -35,12 +45,12 @@ public class RepeatCheckTask extends BukkitRunnable {
 
   public BukkitTask start(int iterations) {
     this.maxIterations = iterations;
-    return runTaskTimer(PGM.get(), 20, 20); // Schedule the task
+    return runTaskTimer(Bingo.get(), 20, 20);
   }
 
   public BukkitTask start(long intervalTicks) {
     this.maxIterations = 1;
-    return runTaskTimer(PGM.get(), intervalTicks, intervalTicks); // Schedule the task
+    return runTaskTimer(Bingo.get(), intervalTicks, intervalTicks);
   }
 
   /**
@@ -51,6 +61,6 @@ public class RepeatCheckTask extends BukkitRunnable {
    */
   public BukkitTask start(int iterations, long intervalTicks) {
     this.maxIterations = iterations;
-    return runTaskTimer(PGM.get(), intervalTicks, intervalTicks); // Schedule the task
+    return runTaskTimer(Bingo.get(), intervalTicks, intervalTicks);
   }
 }

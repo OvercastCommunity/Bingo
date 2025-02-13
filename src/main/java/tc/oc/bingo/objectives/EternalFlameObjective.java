@@ -1,8 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -11,18 +8,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.scheduler.BukkitTask;
 import tc.oc.bingo.util.RepeatCheckTask;
+import tc.oc.pgm.api.match.Match;
 
 @Tracker("eternal-flame")
 public class EternalFlameObjective extends ObjectiveTracker {
 
-  //    private final Map<UUID, Long> flameStartTimes = useState(Scope.LIFE);
-
-  private final Supplier<Integer> REQUIRED_TIME =
-      useConfig("required-time", 10); // TODO: check vanilla and change
-
-  private final Map<UUID, BukkitTask> flameTasks = new HashMap<>(); // To track tasks for players
+  private final Supplier<Integer> REQUIRED_TIME = useConfig("required-time", 60);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
@@ -37,14 +29,16 @@ public class EternalFlameObjective extends ObjectiveTracker {
     Block targetBlock = block.getRelative(event.getBlockFace());
     if (!targetBlock.getType().equals(Material.AIR)) return;
 
-    RepeatCheckTask repeatCheckTask =
-        new RepeatCheckTask(() -> passesVibeCheck(targetBlock), () -> reward(player));
-    flameTasks.put(player.getUniqueId(), repeatCheckTask.start(REQUIRED_TIME.get()));
+    Match match = getMatch(event.getWorld());
+    if (match == null) return;
+
+    (new RepeatCheckTask(() -> passesVibeCheck(match, targetBlock), () -> reward(player)))
+        .start(REQUIRED_TIME.get());
   }
 
-  private boolean passesVibeCheck(Block block) {
-    return (block != null
-        && block.getType()
-            == Material.FIRE); // TODO: match end check in here somewhere or player offline
+  private boolean passesVibeCheck(Match match, Block block) {
+    if (!match.isRunning()) return false;
+
+    return (block != null && block.getType() == Material.FIRE);
   }
 }
