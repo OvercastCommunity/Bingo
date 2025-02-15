@@ -19,10 +19,10 @@ public class LowHealthKillObjective extends ObjectiveTracker {
     Player player = killer.getBukkit();
     if (player == null) return;
 
-    // Require player to be low
-    if (player.getHealth() <= 0.5) return;
+    // Require player to be high/low (tweak as needed)
+    if (player.getHealth() < 20) return;
     // and have hearts for this to be impressive
-    if (player.getMaxHealth() < 10) return;
+    // if (player.getMaxHealth() < 10) return;
 
     reward(player);
   }
