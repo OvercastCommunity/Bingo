@@ -21,14 +21,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchScope;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("item-bearer")
-public class FlowerBearerObjective extends ObjectiveTracker.Stateful<Integer> {
+public class FlowerBearerObjective extends ObjectiveTracker.StatefulInt {
 
   private final Supplier<Integer> REQUIRED_INTERACTIONS = useConfig("required-interactions", 12);
   private final Supplier<Integer> EFFECT_COOLDOWN = useConfig("cooldown-seconds", 5);
@@ -83,32 +82,14 @@ public class FlowerBearerObjective extends ObjectiveTracker.Stateful<Integer> {
     }
 
     if (!interactedPlayers.computeIfAbsent(playerId, uuid -> new HashSet<>()).add(targetId)) return;
-    Integer interactions = updateObjectiveData(playerId, count -> count + 1);
 
     // Check if the player has completed the objective
-    if (interactions >= REQUIRED_INTERACTIONS.get()) {
-      reward(player);
-    }
+    trackProgress(player);
   }
 
   @Override
-  public @NotNull Integer initial() {
-    return 0;
-  }
-
-  @Override
-  public @NotNull Integer deserialize(@NotNull String string) {
-    return Integer.valueOf(string);
-  }
-
-  @Override
-  public @NotNull String serialize(@NotNull Integer data) {
-    return String.valueOf(data);
-  }
-
-  @Override
-  public double progress(Integer data) {
-    return (double) data / REQUIRED_INTERACTIONS.get();
+  protected int maxValue() {
+    return REQUIRED_INTERACTIONS.get();
   }
 
   @Getter

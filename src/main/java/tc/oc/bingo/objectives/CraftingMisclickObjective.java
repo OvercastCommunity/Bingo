@@ -1,6 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import com.google.common.base.Objects;
 import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
@@ -16,16 +15,12 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import tc.oc.bingo.config.ConfigReader;
 
 @Tracker("crafting-misclick")
 public class CraftingMisclickObjective extends ObjectiveTracker {
 
-  private static final ConfigReader<Material> MATERIAL_READER =
-      (cfg, key, def) -> Objects.firstNonNull(Material.getMaterial(cfg.getString(key)), def);
-
   private final Supplier<Material> MATERIAL_REQUIRED =
-      useConfig("material-name", Material.IRON_FENCE, MATERIAL_READER);
+      useConfig("material-name", Material.IRON_FENCE);
 
   private final Set<UUID> craftingPlayers = Collections.newSetFromMap(useState(Scope.LIFE));
 

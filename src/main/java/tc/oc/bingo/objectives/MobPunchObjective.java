@@ -1,7 +1,6 @@
 package tc.oc.bingo.objectives;
 
 import static tc.oc.bingo.config.ConfigReader.ENTITY_TYPE_READER;
-import static tc.oc.bingo.config.ConfigReader.MATERIAL_READER;
 
 import java.util.function.Supplier;
 import org.bukkit.GameMode;
@@ -33,8 +32,7 @@ public class MobPunchObjective extends ObjectiveTracker {
   public static final String EGG_META = "bingo-egg";
   private final MetadataValue eggMetaValue = MetadataUtils.createMetadataValue(Bingo.get(), true);
 
-  private final Supplier<Material> ITEM_REQUIRED =
-      useConfig("item-type", Material.FEATHER, MATERIAL_READER);
+  private final Supplier<Material> ITEM_REQUIRED = useConfig("item-type", Material.FEATHER);
 
   private final Supplier<EntityType> ENTITY_REQUIRED =
       useConfig("entity-type", EntityType.CHICKEN, ENTITY_TYPE_READER);

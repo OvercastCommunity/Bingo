@@ -12,17 +12,13 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import tc.oc.bingo.Bingo;
-import tc.oc.bingo.config.ConfigReader;
 import tc.oc.bingo.util.LocationUtils;
 
 @Tracker("bush-sneak")
 public class BushSneakObjective extends ObjectiveTracker {
 
-  private static final ConfigReader<Material> MATERIAL_NAME_READER =
-      (cfg, key, def) -> Material.getMaterial(cfg.getString(key));
-
   private final Supplier<Material> MATERIAL_REQUIRED =
-      useConfig("material-name", Material.DOUBLE_PLANT, MATERIAL_NAME_READER);
+      useConfig("material-name", Material.DOUBLE_PLANT);
 
   private final Supplier<Integer> REQUIRED_SECONDS = useConfig("required-seconds", 10);
 

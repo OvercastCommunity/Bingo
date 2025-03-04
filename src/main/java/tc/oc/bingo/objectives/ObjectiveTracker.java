@@ -1,9 +1,11 @@
 package tc.oc.bingo.objectives;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -153,6 +155,62 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
           .getMatch()
           .getPlayers()
           .forEach(matchPlayer -> persistObjectiveData(matchPlayer.getId(), false));
+    }
+  }
+
+  public abstract static class StatefulInt extends Stateful<Integer> {
+
+    protected abstract int maxValue();
+
+    protected void trackProgress(Player player) {
+      trackProgress(player, 1);
+    }
+
+    protected void trackProgress(Player player, int amount) {
+      if (player == null) return;
+      Integer interactions = updateObjectiveData(player.getUniqueId(), curr -> curr + amount);
+
+      // Check if the player has completed the objective
+      if (interactions >= maxValue()) {
+        reward(player);
+      }
+    }
+
+    protected void trackProgress(Collection<? extends Player> players) {
+      trackProgress(players, p -> 1);
+    }
+
+    protected void trackProgress(
+        Collection<? extends Player> players, Function<Player, Integer> update) {
+      if (players == null) return;
+      List<Player> toReward = new ArrayList<>(players.size());
+      for (Player player : players) {
+        if (player == null) continue;
+        Integer interactions =
+            updateObjectiveData(player.getUniqueId(), curr -> curr + update.apply(player));
+        if (interactions >= maxValue()) toReward.add(player);
+      }
+      reward(toReward);
+    }
+
+    @Override
+    public @NotNull Integer initial() {
+      return 0;
+    }
+
+    @Override
+    public @NotNull Integer deserialize(@NotNull String string) {
+      return Integer.valueOf(string);
+    }
+
+    @Override
+    public @NotNull String serialize(@NotNull Integer data) {
+      return String.valueOf(data);
+    }
+
+    @Override
+    public double progress(Integer data) {
+      return (double) data / maxValue();
     }
   }
 }

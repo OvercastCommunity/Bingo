@@ -1,9 +1,7 @@
 package tc.oc.bingo.objectives;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -14,7 +12,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.MapInfo;
@@ -27,7 +24,7 @@ import tc.oc.pgm.rotation.vote.MapPoll;
 import tc.oc.pgm.rotation.vote.events.MatchPlayerVoteEvent;
 
 @Tracker("matching-votes")
-public class MatchingVotesObjective extends ObjectiveTracker.Stateful<Integer> {
+public class MatchingVotesObjective extends ObjectiveTracker.StatefulInt {
 
   private final Supplier<Integer> PERSONAL_VOTES = useConfig("required-personal-votes", 2);
   private final Supplier<Integer> GLOBAL_VOTES = useConfig("required-total-votes", 3);
@@ -87,20 +84,16 @@ public class MatchingVotesObjective extends ObjectiveTracker.Stateful<Integer> {
 
   @EventHandler(priority = EventPriority.HIGHEST)
   public void onMatchLoad(MatchAfterLoadEvent event) {
-    List<UUID> rewardingPlayers = new ArrayList<>();
-
-    playerVotes.forEach(
-        (playerId, votes) -> {
-          if (votes.size() == PERSONAL_VOTES.get()
-              && topVotes.containsAll(votes)) { // TODO: contains all checks which way? if extra?
-            int currentCount = updateObjectiveData(playerId, i -> i + 1);
-            if (currentCount >= REQUIRED_COUNT.get()) {
-              rewardingPlayers.add(playerId);
-            }
-          }
-        });
-
-    reward(rewardingPlayers.stream().map(Bukkit::getPlayer).filter(Objects::nonNull).toList());
+    trackProgress(
+        playerVotes.entrySet().stream()
+            .filter(
+                e ->
+                    e.getValue().size() == PERSONAL_VOTES.get()
+                        && topVotes.containsAll(e.getValue()))
+            .map(Map.Entry::getKey)
+            .map(Bukkit::getPlayer)
+            .filter(Objects::nonNull)
+            .toList());
   }
 
   private int countVotes(Collection<UUID> uuids) {
@@ -121,22 +114,7 @@ public class MatchingVotesObjective extends ObjectiveTracker.Stateful<Integer> {
   }
 
   @Override
-  public @NotNull Integer initial() {
-    return 0;
-  }
-
-  @Override
-  public @NotNull Integer deserialize(@NotNull String string) {
-    return Integer.valueOf(string);
-  }
-
-  @Override
-  public @NotNull String serialize(@NotNull Integer data) {
-    return String.valueOf(data);
-  }
-
-  @Override
-  public double progress(Integer data) {
-    return (double) data / REQUIRED_COUNT.get();
+  protected int maxValue() {
+    return REQUIRED_COUNT.get();
   }
 }

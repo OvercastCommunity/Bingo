@@ -10,12 +10,11 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.jetbrains.annotations.NotNull;
 import tc.oc.bingo.Bingo;
 import tc.oc.pgm.spawns.events.ParticipantDespawnEvent;
 
 @Tracker("low-health-time")
-public class LowHealthTimeObjective extends ObjectiveTracker.Stateful<Integer> {
+public class LowHealthTimeObjective extends ObjectiveTracker.StatefulInt {
 
   private final Supplier<Integer> REQUIRED_MINS = useConfig("required-mins", 15);
   private final Supplier<Integer> MAX_HEALTH = useConfig("max-health", 4);
@@ -80,9 +79,7 @@ public class LowHealthTimeObjective extends ObjectiveTracker.Stateful<Integer> {
     if (startedAt == null) return;
 
     long secondsInState = (System.currentTimeMillis() - startedAt) / 1000;
-
-    Integer totalInState = updateObjectiveData(player.getUniqueId(), i -> i + (int) secondsInState);
-    if (totalInState >= REQUIRED_MINS.get() * 60) reward(player);
+    trackProgress(player, (int) secondsInState);
   }
 
   private boolean passesVibeCheck(Player player) {
@@ -90,22 +87,7 @@ public class LowHealthTimeObjective extends ObjectiveTracker.Stateful<Integer> {
   }
 
   @Override
-  public @NotNull Integer initial() {
-    return 0;
-  }
-
-  @Override
-  public @NotNull Integer deserialize(@NotNull String string) {
-    return Integer.valueOf(string);
-  }
-
-  @Override
-  public @NotNull String serialize(@NotNull Integer data) {
-    return String.valueOf(data);
-  }
-
-  @Override
-  public double progress(Integer data) {
-    return (double) data / (REQUIRED_MINS.get() * 60);
+  protected int maxValue() {
+    return REQUIRED_MINS.get() * 60;
   }
 }

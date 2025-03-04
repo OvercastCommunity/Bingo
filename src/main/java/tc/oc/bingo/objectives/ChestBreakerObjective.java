@@ -1,7 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import static tc.oc.bingo.config.ConfigReader.MATERIAL_READER;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -21,8 +19,7 @@ public class ChestBreakerObjective extends ObjectiveTracker {
 
   private final Map<Vector, String> trackedBlocks = new HashMap<>();
 
-  private final Supplier<Material> TRACKED_BLOCK =
-      useConfig("tracked-block", Material.CHEST, MATERIAL_READER);
+  private final Supplier<Material> TRACKED_BLOCK = useConfig("tracked-block", Material.CHEST);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) {

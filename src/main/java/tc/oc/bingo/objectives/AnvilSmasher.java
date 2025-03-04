@@ -1,6 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import com.google.common.base.Objects;
 import java.util.Collection;
 import java.util.function.Supplier;
 import org.bukkit.Location;
@@ -9,7 +8,6 @@ import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import tc.oc.bingo.config.ConfigReader;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
@@ -21,11 +19,7 @@ public class AnvilSmasher extends ObjectiveTracker {
 
   private TrackerMatchModule tracker;
 
-  private static final ConfigReader<Material> MATERIAL_READER =
-      (cfg, key, def) -> Objects.firstNonNull(Material.getMaterial(cfg.getString(key)), def);
-
-  private final Supplier<Material> BLOCK_REQUIRED =
-      useConfig("falling-block-name", Material.ANVIL, MATERIAL_READER);
+  private final Supplier<Material> BLOCK_REQUIRED = useConfig("falling-block-name", Material.ANVIL);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) { // TODO: switch to match after load event
