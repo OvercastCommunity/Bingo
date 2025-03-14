@@ -128,6 +128,8 @@ public class RewardManager implements Listener {
 
           LocationUtils.spawnFirework(player.getLocation(), FIREWORK_EFFECT, ROCKET_POWER);
 
+          Bukkit.getPluginManager().callEvent(new BingoRewardEvent(player, objectiveItem, reward));
+
           if (reward.getType().isBroadcast()) {
             match.sendMessage(Messages.getRewardTypeBroadcast(player, reward));
           }

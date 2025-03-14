@@ -8,9 +8,11 @@ import co.aikar.commands.annotation.Optional;
 import co.aikar.commands.annotation.Subcommand;
 import co.aikar.commands.bukkit.contexts.OnlinePlayer;
 import java.util.Collections;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import tc.oc.bingo.Bingo;
+import tc.oc.bingo.card.BingoCardOpenEvent;
 import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.MockDatabase;
 import tc.oc.bingo.database.ObjectiveItem;
@@ -42,6 +44,13 @@ public class CardCommand extends BaseCommand {
                       sender.sendMessage("An error occurred when running this command");
                       return;
                     }
+
+                    Bukkit.getScheduler()
+                        .scheduleSyncDelayedTask(
+                            Bingo.get(),
+                            () ->
+                                Bukkit.getPluginManager()
+                                    .callEvent(new BingoCardOpenEvent(player, bingoPlayerCard)));
 
                     BingoCardMenu.get(bingoPlayerCard, index).open(player);
                   }));

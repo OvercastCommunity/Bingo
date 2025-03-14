@@ -20,14 +20,18 @@ public class PortalLighterObjective extends ObjectiveTracker {
   private final Supplier<Integer> MIN_WIDTH = useConfig("min-width", 2);
   private final Supplier<Integer> MAX_WIDTH = useConfig("max-width", 2);
 
+  private final Supplier<Material> ITEM_REQUIRED = useConfig("item-type", Material.FLINT_AND_STEEL);
+  private final Supplier<Material> PORTAL_MATERIAL =
+      useConfig("portal-material", Material.OBSIDIAN);
+
   @EventHandler
   public void onPlayerLightPortal(PlayerInteractEvent event) {
     if (event.getAction() == Action.RIGHT_CLICK_BLOCK
         && event.getItem() != null
-        && event.getItem().getType() == Material.FLINT_AND_STEEL) {
+        && event.getItem().getType() == ITEM_REQUIRED.get()) {
 
       Block clickedBlock = event.getClickedBlock();
-      if (clickedBlock == null || clickedBlock.getType() != Material.OBSIDIAN) return;
+      if (clickedBlock == null || !isPortalBlock(clickedBlock)) return;
 
       if (checkPortalStructure(clickedBlock, event.getBlockFace())) {
         reward(event.getPlayer());
@@ -36,7 +40,7 @@ public class PortalLighterObjective extends ObjectiveTracker {
   }
 
   private boolean isPortalBlock(Block block) {
-    return block.getType() == Material.OBSIDIAN;
+    return block.getType() == PORTAL_MATERIAL.get();
   }
 
   private boolean checkPortalStructure(Block clickedBlock, BlockFace blockFace) {

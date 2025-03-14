@@ -40,15 +40,10 @@ public class IconUtils {
       int idx, boolean completed, boolean locked, boolean highlight) {
     if (!Config.get().isAdvent()) {
 
-      if (false) {
-        short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
-        return new ItemStack(Material.INK_SACK, 1, color);
-      }
+      if (locked) return new ItemStack(Material.BEDROCK, 1, (short) 7);
 
-      if (locked) return new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 7);
-
-      short color = (completed ? DyeColor.RED : DyeColor.PINK).getWoolData();
-      return new ItemStack(Material.WOOL, 1, color);
+      short color = (completed ? DyeColor.LIME : DyeColor.GRAY).getDyeData();
+      return new ItemStack(Material.INK_SACK, 1, color);
     }
 
     int itemNumber = idx + 1;
