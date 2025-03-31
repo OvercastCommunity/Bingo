@@ -25,8 +25,7 @@ public class PongObjective extends ObjectiveTracker {
       player.sendMessage(text("Pong!", NamedTextColor.YELLOW));
     }
 
-    if (!params[0].equalsIgnoreCase("/pong")) {
-      // TODO: get the users nickname if applied
+    if (params[0].equalsIgnoreCase("/pong")) {
       player.sendMessage(
           text(
               "I hear " + player.getNameLegacy() + " likes cute Asian boys.",
