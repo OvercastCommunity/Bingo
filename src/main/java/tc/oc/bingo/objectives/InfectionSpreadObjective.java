@@ -5,6 +5,7 @@ import static net.kyori.adventure.text.Component.text;
 import java.util.EnumSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -12,26 +13,25 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import tc.oc.bingo.Bingo;
+import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("infection-spread")
-public class InfectionSpreadObjective extends ObjectiveTracker implements Listener {
+public class InfectionSpreadObjective extends ObjectiveTracker {
 
-  private final Supplier<Double> BASE_INFECTION_CHANCE =
-      useConfig("infection-chance", 0.001); // Higher base chance
+  private final Supplier<Double> EAT_INFECTION_CHANCE = useConfig("eat-infection-chance", 0.2);
   private final Supplier<Double> MIN_DISTANCE_CHANCE = useConfig("min-distance-chance", 0.02);
   private final Supplier<Double> MAX_DISTANCE_CHANCE = useConfig("max-distance-chance", 0.001);
+  private final Supplier<String> INFECTION_TIME = useConfig("infection-time", "3d");
 
   private final Supplier<Double> MAX_DISTANCE = useConfig("max-distance", 5d);
-  private final Supplier<String> PERMISSION_COMMAND =
-      useConfig("permission-command", "lp user %s permission set %s");
 
-  public final String INFECTED_GROUP = "group.bingo.infected";
+  private static final String INFECTED_GROUP = "bingo.infected";
+  private static final String INFECTED_PERMISSION = "group." + INFECTED_GROUP;
+  private static final String PERMISSION_COMMAND = "lp user %s parent addtemp %s %s";
 
   private final Random random = new Random();
 
@@ -45,52 +45,45 @@ public class InfectionSpreadObjective extends ObjectiveTracker implements Listen
     this.allowSelfInfection = false;
 
     // 30 seconds after match starts check if there are any infected players in the game
-    Bukkit.getScheduler()
-        .runTaskLater(
-            Bingo.get(),
+    PGM.get()
+        .getExecutor()
+        .schedule(
             () -> {
               // If there are no infected players allow self-infection
               if (!event.getMatch().isRunning()) return;
 
-              boolean containsInfected =
+              allowSelfInfection =
                   event.getMatch().getParticipants().stream()
-                      .anyMatch(p -> p.getBukkit().hasPermission(INFECTED_GROUP));
-
-              allowSelfInfection = !containsInfected;
+                      .noneMatch(p -> p.getBukkit().hasPermission(INFECTED_PERMISSION));
             },
-            600L);
+            30,
+            TimeUnit.SECONDS);
   }
 
   @EventHandler
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
-    Player victim = event.getPlayer().getBukkit();
-    if (victim == null) return;
+    Player victim = getBukkit(event.getVictim());
+    Player killer = getBukkit(event.getKiller());
+    if (victim == null || killer == null) return;
 
-    if (!(getPlayer(event.getKiller()) instanceof Player killer)) return;
-
-    boolean killerInfected = killer.hasPermission(INFECTED_GROUP);
-    boolean victimInfected = victim.hasPermission(INFECTED_GROUP);
+    boolean killerInfected = killer.hasPermission(INFECTED_PERMISSION);
+    boolean victimInfected = victim.hasPermission(INFECTED_PERMISSION);
 
     // If both infected or not-infected do nothing
-    if ((killerInfected && victimInfected) || (!killerInfected && !victimInfected)) return;
+    if (killerInfected == victimInfected) return;
 
     double distance = victim.getLocation().distance(killer.getLocation());
     if (distance >= MAX_DISTANCE.get()) return;
 
-    double infectionChance =
-        MIN_DISTANCE_CHANCE.get()
-            - ((distance / MAX_DISTANCE.get())
-                * (MIN_DISTANCE_CHANCE.get() - MAX_DISTANCE_CHANCE.get()));
+    double min = MIN_DISTANCE_CHANCE.get();
+    double scale = MAX_DISTANCE_CHANCE.get() - min;
 
-    if (!(random.nextDouble() < infectionChance)) return;
+    double infectionChance = min + (distance * scale / MAX_DISTANCE.get());
 
-    if (!killerInfected) {
-      grantInfection(killer);
-    }
+    if (random.nextDouble() >= infectionChance) return;
 
-    if (!victimInfected) {
-      grantInfection(victim);
-    }
+    if (!killerInfected) grantInfection(killer);
+    if (!victimInfected) grantInfection(victim);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -98,22 +91,21 @@ public class InfectionSpreadObjective extends ObjectiveTracker implements Listen
     if (!allowSelfInfection) return;
 
     Material type = event.getItem().getType();
-    if (RAW_FOODS.contains(type)) {
+    if (RAW_FOODS.contains(type) && random.nextDouble() < EAT_INFECTION_CHANCE.get()) {
       grantInfection(event.getPlayer());
       allowSelfInfection = false;
     }
   }
 
   private void grantInfection(Player player) {
-    String command = String.format(PERMISSION_COMMAND.get(), player.getName(), INFECTED_GROUP);
-
-    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+    String cmd =
+        PERMISSION_COMMAND.formatted(player.getUniqueId(), INFECTED_GROUP, INFECTION_TIME.get());
+    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
 
     MatchPlayer matchPlayer = getPlayer(player);
     if (matchPlayer == null) return;
 
     reward(player);
-
     matchPlayer.sendMessage(text("☠ You have been infected! ☠", NamedTextColor.GREEN));
   }
 }

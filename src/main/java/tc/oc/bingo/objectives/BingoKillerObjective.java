@@ -18,12 +18,10 @@ public class BingoKillerObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
-    if (!(event.getKiller() == null || event.isKiller(event.getPlayer()))) return;
-
-    // TODO: make sure you can't kill yourself to get it?? or maybe this should be allowed
-
-    if (event.getPlayer().getId().equals(lastRewarded)) {
-      reward(event.getPlayer().getBukkit());
-    }
+    var killer = getPlayer(event.getKiller());
+    if (killer == null
+        || !event.isChallengeKill()
+        || !event.getVictim().getId().equals(lastRewarded)) return;
+    reward(killer.getBukkit());
   }
 }

@@ -17,18 +17,22 @@ public class PongObjective extends ObjectiveTracker {
     String[] params = event.getMessage().split(" ");
     if (params.length != 1) return;
 
-    if (!params[0].equalsIgnoreCase("/pong")) return;
+    MatchPlayer player = getPlayer(event.getPlayer());
+    if (player == null) return;
 
-    MatchPlayer matchPlayer = getPlayer(event.getPlayer());
-    if (matchPlayer == null) return;
+    if (params[0].equalsIgnoreCase("/ping")) {
+      event.setCancelled(true);
+      player.sendMessage(text("Pong!", NamedTextColor.YELLOW));
+    }
 
-    // TODO: get the users nickname if applied
-    matchPlayer.sendMessage(
-        text(
-            "I hear " + event.getPlayer().getName() + " likes cute Asian boys.",
-            NamedTextColor.YELLOW));
-
-    event.setCancelled(true);
-    reward(event.getPlayer());
+    if (!params[0].equalsIgnoreCase("/pong")) {
+      // TODO: get the users nickname if applied
+      player.sendMessage(
+          text(
+              "I hear " + player.getNameLegacy() + " likes cute Asian boys.",
+              NamedTextColor.YELLOW));
+      event.setCancelled(true);
+      reward(event.getPlayer());
+    }
   }
 }

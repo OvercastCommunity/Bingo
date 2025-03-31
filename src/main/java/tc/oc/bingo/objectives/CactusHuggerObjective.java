@@ -17,8 +17,7 @@ public class CactusHuggerObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDamageByBlock(EntityDamageByBlockEvent event) {
-    if (!(event.getEntity() instanceof Player)) return;
-    Player player = (Player) event.getEntity();
+    if (!(event.getEntity() instanceof Player player)) return;
     if (event.getCause().equals(EntityDamageEvent.DamageCause.CONTACT) && isCactusTall(event)) {
       reward(player);
     }

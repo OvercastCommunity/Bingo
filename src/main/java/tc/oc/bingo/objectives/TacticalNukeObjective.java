@@ -61,7 +61,7 @@ public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
     if (killer == null) return;
 
     // == and not >= so it only triggers once
-    if (updateObjectiveData(killer.getId(), cur -> cur + 1) == KILLS_REQUIRED.get()) {
+    if (updateObjectiveData(killer.getId(), cur -> cur + 1).equals(KILLS_REQUIRED.get())) {
       triggerNuke(killer);
     }
   }
@@ -84,14 +84,14 @@ public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
     if (nuker != null) return;
     nuker = player;
     timer = 10;
-    BukkitTask task =
+    // TODO: use PGM api for executors.
+    nukeTask =
         new BukkitRunnable() {
           @Override
           public void run() {
             nukeCountdown();
           }
         }.runTaskTimer(Bingo.get(), 20L, 20L);
-    nukeTask = task;
   }
 
   private void nukeCountdown() {
@@ -99,10 +99,7 @@ public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
     final Match match = getMatch(nuker.getWorld());
     if (match == null) return;
     if (timer <= 0) {
-      timerTasks.forEach(
-          (integer, bukkitTask) -> {
-            bukkitTask.cancel();
-          });
+      timerTasks.forEach((integer, bukkitTask) -> bukkitTask.cancel());
       timerTasks.clear();
 
       Collection<MatchPlayer> players = match.getParticipants();

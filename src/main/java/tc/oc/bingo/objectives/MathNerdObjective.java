@@ -2,6 +2,8 @@ package tc.oc.bingo.objectives;
 
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
@@ -12,22 +14,22 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import tc.oc.bingo.Bingo;
+import tc.oc.pgm.api.PGM;
+import tc.oc.pgm.api.event.ChannelMessageEvent;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
+import tc.oc.pgm.channels.GlobalChannel;
 
 @Tracker("math-nerd")
 public class MathNerdObjective extends ObjectiveTracker {
 
   private final Supplier<Integer> QUIZ_INTERVAL = useConfig("quiz-interval", 120);
   private Double currentAnswer = null;
-  private int taskId = -1;
+  private Future<?> task = null;
 
   private Match match;
 
@@ -38,31 +40,27 @@ public class MathNerdObjective extends ObjectiveTracker {
 
   @EventHandler
   public void onMatchStart(MatchStartEvent event) {
-    startQuiz();
+    queueQuiz();
   }
 
   @EventHandler
   public void onMatchEnd(MatchFinishEvent event) {
-    clearCurrentTask();
+    cleanupQuiz();
   }
 
-  private void startQuiz() {
-    clearCurrentTask();
-
-    taskId =
-        Bukkit.getScheduler()
-            .runTaskTimer(
-                Bingo.get(),
-                this::postMathQuestion,
-                QUIZ_INTERVAL.get() * 20L,
-                QUIZ_INTERVAL.get() * 20L)
-            .getTaskId();
+  private void queueQuiz() {
+    cleanupQuiz();
+    task =
+        PGM.get()
+            .getExecutor()
+            .scheduleWithFixedDelay(
+                this::postMathQuestion, QUIZ_INTERVAL.get(), QUIZ_INTERVAL.get(), TimeUnit.SECONDS);
   }
 
-  private void clearCurrentTask() {
-    if (taskId != -1) {
-      Bukkit.getScheduler().cancelTask(taskId);
-      taskId = -1;
+  private void cleanupQuiz() {
+    if (task != null) {
+      task.cancel(true);
+      task = null;
     }
   }
 
@@ -80,11 +78,6 @@ public class MathNerdObjective extends ObjectiveTracker {
     double randomValue = min + (blended * (max - min));
 
     var node = generateGoodNode(randomValue);
-    if (node == null) {
-      // If failed to generate start again
-      startQuiz();
-      return;
-    }
 
     // Build [Tip] Solve this x component
     TextComponent.Builder tip =
@@ -100,21 +93,19 @@ public class MathNerdObjective extends ObjectiveTracker {
   }
 
   @EventHandler
-  public void onPlayerChat(AsyncPlayerChatEvent event) {
-    if (currentAnswer == -1) return;
+  public void onPlayerChat(ChannelMessageEvent<?> event) {
+    if (currentAnswer == null || !(event.getChannel() instanceof GlobalChannel)) return;
 
     String trim = event.getMessage().trim();
     String[] split = trim.split(" ");
-    if (split.length < 1) return;
-
     try {
-      int answer = Integer.parseInt(split[0]);
+      double answer = Double.parseDouble(split[0]);
       if (answer == currentAnswer) {
-        reward(event.getPlayer());
+        reward(event.getSender().getBukkit());
 
         // Immediately start the next question
         currentAnswer = null;
-        postMathQuestion();
+        queueQuiz();
       }
     } catch (NumberFormatException ignored) {
     }
@@ -133,9 +124,6 @@ public class MathNerdObjective extends ObjectiveTracker {
       if (node != null) return node;
     }
     double nextAttempt = complexity < 1d ? complexity + 0.05 : complexity - 0.05d;
-    //    log.warning("Failed to create a good " + complexity + ", will try " + nextAttempt
-    //            + " instead (bad numbers=" + fails[BAD] + ", too small=" + fails[SMALL] + ", too
-    // big=" + fails[BIG] + ")");
     return generateGoodNode(nextAttempt);
   }
 
@@ -369,8 +357,10 @@ public class MathNerdObjective extends ObjectiveTracker {
     }
   }
 
+  /*
+  // Debug code:
   public static void main(String[] args) {
-    //    runAsserts();
+    runAsserts();
 
     MathNerdObjective mathNerdObjective = new MathNerdObjective();
     for (int i = 0; i < 100; i++) {
@@ -452,5 +442,5 @@ public class MathNerdObjective extends ObjectiveTracker {
     if (new Expression(Operation.POW, children).result() != 25) throw new IllegalStateException();
     if (new Expression(Operation.FACTORIAL, new Node[] {Literal.of(5)}).result() != 120)
       throw new IllegalStateException();
-  }
+  }*/
 }

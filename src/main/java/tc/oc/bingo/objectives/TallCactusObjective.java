@@ -31,6 +31,8 @@ public class TallCactusObjective extends ObjectiveTracker {
 
   // TODO: Cancel players trying to grow it by hand (allow up to 3)
 
+  // TODO: (pugzy) check collision and add sounds
+
   private int growthTaskId = -1;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
