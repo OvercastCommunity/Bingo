@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
@@ -27,13 +28,19 @@ public class TallCactusObjective extends ObjectiveTracker {
   private final Supplier<Integer> REQUIRED_HEIGHT = useConfig("required-height", 5);
   private final Supplier<Integer> MAX_HEIGHT = useConfig("max-height", 15);
 
-  private final Map<UUID, Location> cactusOwners = useState(Scope.LIFE);
+  private final Map<UUID, Location> cactusOwners = useState(Scope.PARTICIPATION);
 
   // TODO: Cancel players trying to grow it by hand (allow up to 3)
 
   // TODO: (pugzy) check collision and add sounds
 
+  // TODO: on kit apply check if item contains cactus, dont apply this logic if so
+
   private int growthTaskId = -1;
+
+  private final BlockFace[] blockFaces = {
+    BlockFace.SELF, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+  };
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onCactusPlace(BlockPlaceEvent event) {
@@ -83,6 +90,7 @@ public class TallCactusObjective extends ObjectiveTracker {
     // Ensure the next block is air and can support a new cactus
     if (canPlace(baseLocation.getBlock())) {
       topLocation.getBlock().setType(Material.CACTUS);
+      topLocation.getWorld().playSound(topLocation, Sound.DIG_WOOL, 1.0f, 1.0f);
     } else {
       cactusOwners.remove(playerId);
     }
@@ -110,9 +118,8 @@ public class TallCactusObjective extends ObjectiveTracker {
   }
 
   private boolean canPlace(Block location) {
-    // Check that all blocks around NORTH, EAST, SOUTH, WEST are air too
-    for (BlockFace face :
-        new BlockFace[] {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST}) {
+    // Check that all blocks around are air too
+    for (BlockFace face : blockFaces) {
       Block adjacentBlock = location.getRelative(face);
       if (adjacentBlock.getType() != Material.AIR) {
         return false;
