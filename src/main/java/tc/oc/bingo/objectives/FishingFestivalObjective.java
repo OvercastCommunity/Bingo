@@ -33,7 +33,7 @@ import tc.oc.pgm.regions.CylindricalRegion;
 public class FishingFestivalObjective extends ObjectiveTracker {
 
   private final Supplier<Integer> MAX_DISTANCE = useConfig("max-distance", 10);
-  private final Supplier<Integer> MAX_TIME_WINDOW = useConfig("max-time-window", 5);
+  private final Supplier<Integer> MAX_TIME_WINDOW = useConfig("max-time-window", 30);
 
   private final Supplier<Integer> FESTIVAL_RANGE = useConfig("festival-range", 5);
   private final Supplier<Integer> FESTIVAL_TIME = useConfig("festival-seconds", 60);

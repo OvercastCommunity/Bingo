@@ -43,31 +43,39 @@ public class CrossyRoadObjective extends ObjectiveTracker {
     if (passenger == null || passenger.getType() != EntityType.CHICKEN) return;
     if (!(event.getVehicle() instanceof Minecart)) return;
 
-    // Check if the minecart is tracked and has a last location
-    Vector vector = lastLocation.get(passenger.getUniqueId());
+    // Check that Mine-cart is moving at speed
+    if (event.getTo().distance(event.getFrom()) <= 0.2) return;
+
+    // Check if the minecart is tracked and has a last location //
+    UUID trackedId = passenger.getUniqueId();
+    Vector vector = lastLocation.get(trackedId);
     if (vector == null) return;
 
     Vector newLocation = event.getTo().toVector();
     if (vector.distance(newLocation) > 1) {
       // Reward the player who pushed the minecart
-      lastLocation.put(passenger.getUniqueId(), newLocation);
+      lastLocation.put(trackedId, newLocation);
 
       Set<UUID> nearbyPlayerIds =
           event.getWorld().getNearbyPlayers(event.getFrom(), 1).stream()
               .map(Entity::getUniqueId)
               .collect(Collectors.toSet());
 
-      mineCartPushers
-          .computeIfAbsent(passenger.getUniqueId(), k -> new HashSet<>())
-          .addAll(nearbyPlayerIds);
+      mineCartPushers.merge(
+          trackedId,
+          new HashSet<>(nearbyPlayerIds),
+          (existingSet, newSet) -> {
+            existingSet.addAll(newSet);
+            return existingSet;
+          });
     }
 
-    // Reward players who pushed it 10 blocks
-    if (vector.distance(startLocation.get(passenger.getUniqueId())) > 10) {
+    // Reward players when pushed 10 blocks
+    if (vector.distance(startLocation.get(trackedId)) > 10) {
 
       // Reset the start location and pushers
-      startLocation.put(passenger.getUniqueId(), newLocation);
-      Set<UUID> pushers = mineCartPushers.remove(passenger.getUniqueId());
+      startLocation.put(trackedId, newLocation);
+      Set<UUID> pushers = mineCartPushers.remove(trackedId);
       if (pushers != null)
         reward(
             pushers.stream()

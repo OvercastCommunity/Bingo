@@ -15,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import tc.oc.pgm.api.PGM;
+import tc.oc.pgm.api.event.NameDecorationChangeEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
@@ -29,8 +30,8 @@ public class InfectionSpreadObjective extends ObjectiveTracker {
 
   private final Supplier<Double> MAX_DISTANCE = useConfig("max-distance", 5d);
 
-  private static final String INFECTED_GROUP = "bingo.infected";
-  private static final String INFECTED_PERMISSION = "group." + INFECTED_GROUP;
+  public static final String INFECTED_GROUP = "bingo.infected";
+  public static final String INFECTED_PERMISSION = "group." + INFECTED_GROUP;
   private static final String PERMISSION_COMMAND = "lp user %s parent addtemp %s %s";
 
   private final Random random = new Random();
@@ -107,5 +108,7 @@ public class InfectionSpreadObjective extends ObjectiveTracker {
 
     reward(player);
     matchPlayer.sendMessage(text("☠ You have been infected! ☠", NamedTextColor.GREEN));
+
+    matchPlayer.getMatch().callEvent(new NameDecorationChangeEvent(matchPlayer.getId()));
   }
 }

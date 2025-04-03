@@ -4,6 +4,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.util.Vector;
 import tc.oc.pgm.util.event.PlayerCoarseMoveEvent;
 
@@ -12,12 +13,13 @@ public class BarWalkerObjective extends ObjectiveTracker {
 
   // A play on the joke "A man walks in to a bar"... but have them walk in to an iron bar.
 
+  @EventHandler(ignoreCancelled = true)
   public void onPlayerMove(PlayerCoarseMoveEvent event) {
     Player player = event.getPlayer();
     Location to = event.getTo();
     Block blockAtNewLocation = to.getBlock();
 
-    if (blockAtNewLocation.getType() == Material.IRON_BARDING) {
+    if (blockAtNewLocation.getType() == Material.IRON_FENCE) {
       Vector movement = event.getTo().toVector().subtract(event.getFrom().toVector()).normalize();
       Vector looking = player.getLocation().getDirection().setY(0).normalize();
 

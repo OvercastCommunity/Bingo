@@ -1,10 +1,41 @@
 package tc.oc.bingo.objectives;
 
+import static tc.oc.bingo.objectives.InfectionSpreadObjective.INFECTED_GROUP;
+import static tc.oc.bingo.objectives.InfectionSpreadObjective.INFECTED_PERMISSION;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
+import tc.oc.pgm.api.event.NameDecorationChangeEvent;
+import tc.oc.pgm.api.match.Match;
+
 @Tracker("cured")
 public class CuredObjective extends ObjectiveTracker {
 
+  private static final String PERMISSION_COMMAND = "lp user %s parent removetemp %s";
+
   // Detect when a player drinks a milk bucket whilst infected
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onPlayerConsume(PlayerItemConsumeEvent event) {
+    if (event.getItem().getType() == Material.MILK_BUCKET) {
+      Player player = event.getPlayer();
 
-  // Give them the rank "group.cured"
+      // Check if the player is infected
+      if (player.hasPermission(INFECTED_PERMISSION)) {
+        // Remove the infected permission from the player
+        String cmd = PERMISSION_COMMAND.formatted(player.getUniqueId(), INFECTED_GROUP);
+        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
 
+        reward(player);
+
+        Match match = getMatch(player.getWorld());
+        if (match != null) {
+          match.callEvent(new NameDecorationChangeEvent(player.getUniqueId()));
+        }
+      }
+    }
+  }
 }
