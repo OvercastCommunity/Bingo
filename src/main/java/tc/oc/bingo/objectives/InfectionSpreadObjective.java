@@ -24,11 +24,19 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 public class InfectionSpreadObjective extends ObjectiveTracker {
 
   private final Supplier<Double> EAT_INFECTION_CHANCE = useConfig("eat-infection-chance", 0.2);
-  private final Supplier<Double> MIN_DISTANCE_CHANCE = useConfig("min-distance-chance", 0.02);
-  private final Supplier<Double> MAX_DISTANCE_CHANCE = useConfig("max-distance-chance", 0.001);
   private final Supplier<String> INFECTION_TIME = useConfig("infection-time", "3d");
 
-  private final Supplier<Double> MAX_DISTANCE = useConfig("max-distance", 5d);
+  private final Supplier<Double> MIN_CHANCE = useConfig("min-chance", 0.005);
+  private final Supplier<Double> MAX_CHANCE = useConfig("max-chance", 0.03);
+  private final Supplier<Double> CHANCE_SPREAD =
+      useComputedConfig(() -> MAX_CHANCE.get() - MIN_CHANCE.get());
+
+  private final Supplier<Double> MIN_DISTANCE = useConfig("min-distance", 2d);
+  private final Supplier<Double> MAX_DISTANCE = useConfig("max-distance", 7d);
+  private final Supplier<Double> DISTANCE_SPREAD =
+      useComputedConfig(() -> MAX_DISTANCE.get() - MIN_DISTANCE.get());
+  private final Supplier<Double> SLOPE =
+      useComputedConfig(() -> CHANCE_SPREAD.get() / DISTANCE_SPREAD.get());
 
   public static final String INFECTED_GROUP = "bingo.infected";
   public static final String INFECTED_PERMISSION = "group." + INFECTED_GROUP;
@@ -73,13 +81,10 @@ public class InfectionSpreadObjective extends ObjectiveTracker {
     // If both infected or not-infected do nothing
     if (killerInfected == victimInfected) return;
 
-    double distance = victim.getLocation().distance(killer.getLocation());
-    if (distance >= MAX_DISTANCE.get()) return;
-
-    double min = MIN_DISTANCE_CHANCE.get();
-    double scale = MAX_DISTANCE_CHANCE.get() - min;
-
-    double infectionChance = min + (distance * scale / MAX_DISTANCE.get());
+    double dist =
+        Math.max(victim.getLocation().distance(killer.getLocation()) - MIN_DISTANCE.get(), 0);
+    if (dist >= DISTANCE_SPREAD.get()) return;
+    double infectionChance = MAX_CHANCE.get() - (dist * SLOPE.get());
 
     if (random.nextDouble() >= infectionChance) return;
 
