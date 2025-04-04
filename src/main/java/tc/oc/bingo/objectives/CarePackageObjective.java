@@ -5,7 +5,11 @@ import static net.kyori.adventure.text.Component.text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collector;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
@@ -16,11 +20,11 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
+import org.bukkit.craftbukkit.v1_8_R3.entity.CraftEntity;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Chicken;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
@@ -31,12 +35,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.material.Directional;
 import org.bukkit.material.MaterialData;
 import org.bukkit.metadata.MetadataValue;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import tc.oc.bingo.Bingo;
+import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
@@ -172,18 +173,17 @@ public class CarePackageObjective extends ObjectiveTracker {
                     .getWorld()
                     .playSound(centerLocation, Sound.CHEST_OPEN, 1f, 1f);
 
-                ItemStack loot;
-
                 int choice = (int) (Math.random() * 6);
-                switch (choice) {
-                  case 0 -> loot = new ItemStack(Material.MILK_BUCKET, 1);
-                  case 1 -> loot = new ItemStack(Material.GOLDEN_APPLE, 1);
-                  case 2 -> loot = new ItemStack(Material.DIAMOND, 1);
-                  case 3 -> loot = new ItemStack(Material.CACTUS, 1);
-                  case 4 -> loot = new ItemStack(Material.EXP_BOTTLE, 3);
-                  case 5 -> loot = new ItemStack(Material.BREAD, 5);
-                  default -> loot = new ItemStack(Material.GRASS, 1);
-                }
+                ItemStack loot =
+                    switch (choice) {
+                      case 0 -> new ItemStack(Material.MILK_BUCKET, 1);
+                      case 1 -> new ItemStack(Material.GOLDEN_APPLE, 1);
+                      case 2 -> new ItemStack(Material.DIAMOND, 1);
+                      case 3 -> new ItemStack(Material.CACTUS, 1);
+                      case 4 -> new ItemStack(Material.EXP_BOTTLE, 3);
+                      case 5 -> new ItemStack(Material.BREAD, 5);
+                      default -> new ItemStack(Material.GRASS, 1);
+                    };
 
                 event.getWorld().dropItemNaturally(centerLocation, loot);
               });
@@ -242,12 +242,11 @@ public class CarePackageObjective extends ObjectiveTracker {
   }
 
   private void triggerCarePackage(Player player, Block clickedBlock, Integer spawnHeight) {
-    CarePackage carePackage = new CarePackage(player);
-    liveCarePackages.add(carePackage);
-
-    carePackage.spawn(
-        clickedBlock.getLocation().add(0.5, spawnHeight, 0.5),
-        yawToFace(player.getLocation().getYaw()));
+    liveCarePackages.add(
+        new CarePackage(
+            player,
+            clickedBlock.getLocation().add(0.5, spawnHeight, 0.5),
+            yawToFace(player.getLocation().getYaw())));
   }
 
   // Give them an item that allows them to summon a care package
@@ -267,198 +266,168 @@ public class CarePackageObjective extends ObjectiveTracker {
   // Reward player once they take out the loot (or open the chest)
 
   public class CarePackage {
+    private static final ScheduledExecutorService EXECUTOR = PGM.get().getExecutor();
+    private final UUID owner;
+    private final ArmorStand chest;
+    private final ArmorStand leasher;
+    private final List<Chicken> chickens;
+    private final Future<?> movementTask;
 
-    public final UUID owner;
+    private final BlockFace placeFace;
+    private Block placedChest;
+    private long landedAt;
 
-    public LivingEntity zombie;
-    public LivingEntity leashHolder;
-    public LivingEntity chicken;
-
-    public BlockFace placeFace;
-    public Block placedChest;
-    public long landedAt;
-
-    BukkitTask movementTask;
-
-    private CarePackage(Player player) {
+    private CarePackage(Player player, Location spawnAt, BlockFace facing) {
       this.owner = player.getUniqueId();
-    }
+      this.placeFace = facing.getOppositeFace();
 
-    public void spawn(Location spawnLocation, BlockFace spawnDirection) {
-
-      this.placeFace = spawnDirection.getOppositeFace();
-      World world = spawnLocation.getWorld();
-
-      Zombie zombie = (Zombie) world.spawnEntity(spawnLocation, EntityType.ZOMBIE);
-      zombie.setCanPickupItems(false);
-      zombie.getEquipment().setChestplate(new ItemStack(Material.AIR));
-      zombie.getEquipment().setLeggings(new ItemStack(Material.AIR));
-      zombie.getEquipment().setBoots(new ItemStack(Material.AIR));
-      zombie.setBaby(false);
-
-      PotionEffect invisibility =
-          new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false);
-      zombie.addPotionEffect(invisibility);
-
-      Location zombieDirection =
-          zombie
-              .getLocation()
+      World world = spawnAt.getWorld();
+      spawnAt =
+          spawnAt
+              .clone()
               .setDirection(
                   new Vector(
                       placeFace.getModX() * 90,
                       placeFace.getModY() * 90,
                       placeFace.getModZ() * 90));
+      chest = world.spawn(spawnAt, ArmorStand.class);
+      chest.setVisible(false);
+      chest.setBasePlate(false);
+      NMSHacks.NMS_HACKS.freezeEntity(chest);
+      chest.getEquipment().setHelmet(new ItemStack(Material.CHEST));
+      chest.setMetadata(EGG_META, eggMetaValue);
 
-      zombie.teleport(zombieDirection);
-
-      NMSHacks.NMS_HACKS.freezeEntity(zombie);
-
-      // Set chest on its head
-      zombie.getEquipment().setHelmet(new ItemStack(Material.CHEST));
-      zombie.setMetadata(EGG_META, eggMetaValue);
-
-      // new Vector(placeFace.getModX() * 90, placeFace.getModY() * 90, placeFace.getModZ() * 90));
-
-      LivingEntity leashPoint =
-          (LivingEntity)
-              world.spawnEntity(spawnLocation.clone().add(0.7, -3, -0.5), EntityType.CHICKEN);
-      NMSHacks.NMS_HACKS.freezeEntity(leashPoint);
-      leashPoint.addPotionEffect(invisibility);
-      leashPoint.setMetadata(EGG_META, eggMetaValue);
+      leasher = world.spawn(spawnAt, ArmorStand.class);
+      leasher.setVisible(false);
+      leasher.setBasePlate(false);
+      NMSHacks.NMS_HACKS.freezeEntity(leasher);
+      leasher.setMetadata(EGG_META, eggMetaValue);
 
       // Spawn the chicken above
-      Location chickenLocation = spawnLocation.clone().add(0, 3, 0);
-      Chicken chicken = (Chicken) world.spawnEntity(chickenLocation, EntityType.CHICKEN);
-
-      List<Chicken> toLeash = new ArrayList<>();
-      toLeash.add(chicken);
+      chickens = new ArrayList<>();
       for (int i = 0; i < 3 + (int) (Math.random() * 3); i++) {
-        Location nextLocation =
-            chicken
-                .getLocation()
-                .clone()
-                .add(
-                    (Math.random() - 0.5) * 1.5,
-                    1 + Math.random() * 1.2,
-                    (Math.random() - 0.5) * 1.5);
-        toLeash.add((Chicken) world.spawnEntity(nextLocation, EntityType.CHICKEN));
+        var loc = spawnAt.clone();
+        loc.add((Math.random() - 0.5) * 1.5, 4 + Math.random() * 1.2, (Math.random() - 0.5) * 1.5);
+        chickens.add(world.spawn(loc, Chicken.class));
       }
 
-      this.zombie = zombie;
-      this.leashHolder = leashPoint;
-      this.chicken = chicken;
-
-      CarePackage carePackage = this;
-
-      // Lead the chicken to the zombie
-      new BukkitRunnable() {
-        @Override
-        public void run() {
-          if (!carePackage.isValid()) {
-            this.cancel();
-            return;
-          }
-          toLeash.forEach(
-              chick -> {
-                chick.setLeashHolder(leashPoint);
-              });
-        }
-      }.runTaskLater(Bingo.get(), 1L);
+      // Leash the chicken to the zombie
+      EXECUTOR.schedule(
+          () -> {
+            if (CarePackage.this.isValid())
+              chickens.forEach(chick -> chick.setLeashHolder(leasher));
+          },
+          50,
+          TimeUnit.MILLISECONDS);
 
       // Sync zombie position with chicken, maintaining 5 block distance
-      movementTask =
-          new BukkitRunnable() {
-            @Override
-            public void run() {
-              if (!carePackage.isValid()) {
-                this.cancel();
-                return;
-              }
-
-              if (!carePackage.updateLocation()) {
-                this.cancel();
-              }
-            }
-          }.runTaskTimer(Bingo.get(), 0L, 2L); // Repeats every 2 ticks
+      movementTask = EXECUTOR.scheduleAtFixedRate(this::updateTask, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     public boolean isValid() {
-      return zombie.isValid() && leashHolder.isValid();
+      return chest.isValid();
+    }
+
+    private void updateTask() {
+      if (!isValid() || !updateLocation()) movementTask.cancel(true);
     }
 
     public boolean updateLocation() {
-
-      // When the chicken is alive move based on the chicken
-      if (chicken.isValid()) {
-        Location chickenLoc = chicken.getLocation();
-        Location newZombieLoc = chickenLoc.clone().add(0, -5, 0);
-        zombie.teleport(newZombieLoc);
-
-        // leashHolder.setLeashHolder(chicken);
-
-        Location newLeashLocation = chickenLoc.clone().add(0.7, -3, -0.5);
-        leashHolder.teleport(newLeashLocation);
-      } else {
-        // Move the zombie on its own
-        zombie.teleport(zombie.getLocation().subtract(0, 0.4, 0));
+      // When chickens are alive, use avg pos of them
+      Vector hangPoint =
+          chickens.stream()
+              .filter(Entity::isValid)
+              .map(Entity::getLocation)
+              .collect(averagingPosition());
+      // If not, use chest +4.6 as hang point
+      if (hangPoint == null) {
+        hangPoint = chest.getLocation().toVector();
+        hangPoint.setY(hangPoint.getY() + 4.6);
       }
 
+      Location loc = chest.getLocation();
+      ((CraftEntity) chest)
+          .getHandle()
+          .move(
+              Math.clamp(hangPoint.getX() - loc.getX(), -0.2d, 0.2d),
+              Math.clamp(hangPoint.getY() - 5 - loc.getY(), -0.8d, -0.05d),
+              Math.clamp(hangPoint.getZ() - loc.getZ(), -0.2d, 0.2d));
+      // Leash relative offset for 1.8 players.
+      // Newer versions will see it point to a wrong position, but we can't do much about it.
+      Location leashLoc = chest.getLocation().add(-0.7, 1, 0.5);
+      leashLoc.setYaw(180f);
+      leasher.teleport(leashLoc);
+
       // Check if the zombie is near the ground
-      Location checkLocation = zombie.getLocation().add(0, 1, 0);
+      Location checkLocation = chest.getLocation().add(0, 1, 0);
       boolean isGrounded = !checkLocation.getBlock().isEmpty();
       boolean isVoided = checkLocation.getY() < 0;
 
-      if (isGrounded || isVoided) {
-        movementTask.cancel();
+      if (!isGrounded && !isVoided) return true;
 
-        if (!isVoided) {
-          Location chestLocation = checkLocation.add(0, 1, 0);
-          Block blockAt = zombie.getWorld().getBlockAt(chestLocation);
-          blockAt.setType(Material.CHEST);
+      if (!isVoided) {
+        Location chestLocation = checkLocation.add(0, 1, 0);
+        Block blockAt = chest.getWorld().getBlockAt(chestLocation);
+        blockAt.setType(Material.CHEST);
 
-          // Set the direction and store the chest
-          Block modifiedBlock = zombie.getWorld().getBlockAt(chestLocation);
-          if (modifiedBlock.getState() instanceof Chest chest) {
-            MaterialData materialData = chest.getMaterialData();
-            if (materialData instanceof Directional directional) {
-              directional.setFacingDirection(placeFace);
-              placedChest = modifiedBlock;
-              chest.update();
-              chest.setMetadata(EGG_META, eggMetaValue);
-            }
+        // Set the direction and store the chest
+        Block modifiedBlock = chest.getWorld().getBlockAt(chestLocation);
+        if (modifiedBlock.getState() instanceof Chest block) {
+          MaterialData materialData = block.getMaterialData();
+          if (materialData instanceof Directional directional) {
+            directional.setFacingDirection(placeFace);
+            placedChest = modifiedBlock;
+            block.update();
+            block.setMetadata(EGG_META, eggMetaValue);
           }
-
-          // Start timer to remove after CHEST_ALIVE_SECONDS
-          new BukkitRunnable() {
-            @Override
-            public void run() {
-              if (placedChest.getType().equals(Material.CHEST)) {
-                placedChest.setType(Material.AIR);
-                liveCarePackages.remove(CarePackage.this);
-                placedChest
-                    .getLocation()
-                    .getWorld()
-                    .playEffect(
-                        placedChest.getLocation().add(0.5, 0.5, 0.5), Effect.EXPLOSION_LARGE, 1);
-              }
-            }
-          }.runTaskLater(Bingo.get(), CHEST_ALIVE_SECONDS.get() * 20L);
-        } else {
-          liveCarePackages.remove(this);
         }
 
-        landedAt = System.currentTimeMillis();
-        zombie.remove();
-        leashHolder.remove();
-
-        return false;
+        // Start timer to remove after CHEST_ALIVE_SECONDS
+        EXECUTOR.schedule(
+            () -> {
+              if (!placedChest.getType().equals(Material.CHEST)) return;
+              placedChest.setType(Material.AIR);
+              liveCarePackages.remove(CarePackage.this);
+              placedChest
+                  .getLocation()
+                  .getWorld()
+                  .playEffect(
+                      placedChest.getLocation().add(0.5, 0.5, 0.5), Effect.EXPLOSION_LARGE, 1);
+            },
+            CHEST_ALIVE_SECONDS.get(),
+            TimeUnit.SECONDS);
+      } else {
+        liveCarePackages.remove(this);
       }
 
-      return true;
+      landedAt = System.currentTimeMillis();
+      leasher.remove();
+      chest.remove();
+      return false;
     }
   }
 
   private static BlockFace yawToFace(float yaw) {
     return CLOCKWISE[Math.round(((yaw + 360) % 360) / 90f) & 0x3];
+  }
+
+  private static Collector<Location, ?, Vector> averagingPosition() {
+    // Calculates an average vector for a set of Location
+    return Collector.of(
+        () -> new double[4],
+        (a, t) -> {
+          a[0] += t.getX();
+          a[1] += t.getY();
+          a[2] += t.getZ();
+          a[3]++;
+        },
+        (a, b) -> {
+          a[0] += b[0];
+          a[1] += b[1];
+          a[2] += b[2];
+          a[3] += b[4];
+          return a;
+        },
+        a -> a[3] == 0 ? null : new Vector(a[0] / a[3], a[1] / a[3], a[2] / a[3]));
   }
 }
