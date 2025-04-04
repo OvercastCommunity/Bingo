@@ -3,6 +3,7 @@ package tc.oc.bingo.objectives;
 import static tc.oc.bingo.objectives.InfectionSpreadObjective.INFECTED_GROUP;
 import static tc.oc.bingo.objectives.InfectionSpreadObjective.INFECTED_PERMISSION;
 
+import java.util.concurrent.TimeUnit;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -11,6 +12,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import tc.oc.pgm.api.event.NameDecorationChangeEvent;
 import tc.oc.pgm.api.match.Match;
+import tc.oc.pgm.api.match.MatchScope;
 
 @Tracker("cured")
 public class CuredObjective extends ObjectiveTracker {
@@ -29,11 +31,18 @@ public class CuredObjective extends ObjectiveTracker {
         String cmd = PERMISSION_COMMAND.formatted(player.getUniqueId(), INFECTED_GROUP);
         Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
 
-        reward(player);
-
         Match match = getMatch(player.getWorld());
         if (match != null) {
-          match.callEvent(new NameDecorationChangeEvent(player.getUniqueId()));
+          // Delay flair update event to allow command to process
+          match
+              .getExecutor(MatchScope.LOADED)
+              .schedule(
+                  () -> {
+                    match.callEvent(new NameDecorationChangeEvent(player.getUniqueId()));
+                    reward(player);
+                  },
+                  2,
+                  TimeUnit.SECONDS);
         }
       }
     }

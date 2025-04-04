@@ -16,6 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.event.NameDecorationChangeEvent;
+import tc.oc.pgm.api.match.MatchScope;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
@@ -111,9 +112,18 @@ public class InfectionSpreadObjective extends ObjectiveTracker {
     MatchPlayer matchPlayer = getPlayer(player);
     if (matchPlayer == null) return;
 
-    reward(player);
     matchPlayer.sendMessage(text("☠ You have been infected! ☠", NamedTextColor.GREEN));
 
-    matchPlayer.getMatch().callEvent(new NameDecorationChangeEvent(matchPlayer.getId()));
+    // Delay flair update event to allow command to process
+    matchPlayer
+        .getMatch()
+        .getExecutor(MatchScope.LOADED)
+        .schedule(
+            () -> {
+              matchPlayer.getMatch().callEvent(new NameDecorationChangeEvent(matchPlayer.getId()));
+              reward(player);
+            },
+            2,
+            TimeUnit.SECONDS);
   }
 }
