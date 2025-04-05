@@ -43,9 +43,8 @@ public class HydrationObjective extends ObjectiveTracker.StatefulInt {
     long now = System.currentTimeMillis();
     long drinkGap = now - lastDrink.getOrDefault(player.getUniqueId(), 0L);
 
-    lastDrink.put(player.getUniqueId(), now);
-
     if (drinkGap < MIN_SECONDS.get() * 1000L) return;
+    lastDrink.put(player.getUniqueId(), now);
 
     if (drinkGap > MAX_SECONDS.get() * 1000L) {
       storeObjectiveData(player.getUniqueId(), 1);

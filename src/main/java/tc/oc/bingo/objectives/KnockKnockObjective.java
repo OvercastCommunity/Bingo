@@ -17,7 +17,7 @@ import tc.oc.pgm.api.player.MatchPlayer;
 @Tracker("knock-knock")
 public class KnockKnockObjective extends ObjectiveTracker.StatefulInt {
 
-  private final Supplier<Integer> REQUIRED_KNOCKS = useConfig("required-knocks", 1000);
+  private final Supplier<Integer> REQUIRED_KNOCKS = useConfig("required-knocks", 250);
 
   private final Map<UUID, Boolean> lastDoorClicked = useState(Scope.LIFE);
 
@@ -33,8 +33,6 @@ public class KnockKnockObjective extends ObjectiveTracker.StatefulInt {
     if (event.getClickedBlock().getType().name().contains("DOOR")) {
 
       boolean isOpen = isDoorOpen(event.getClickedBlock());
-      System.out.println("Door opened? " + isOpen);
-
       Boolean lastClicked = lastDoorClicked.get(player.getId());
       if (lastClicked != null && lastClicked != isOpen) {
         trackProgress(player.getBukkit());

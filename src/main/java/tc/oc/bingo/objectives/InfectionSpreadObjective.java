@@ -24,7 +24,7 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 @Tracker("infection-spread")
 public class InfectionSpreadObjective extends ObjectiveTracker {
 
-  private final Supplier<Double> EAT_INFECTION_CHANCE = useConfig("eat-infection-chance", 0.2);
+  private final Supplier<Double> EAT_INFECTION_CHANCE = useConfig("eat-infection-chance", 0.05);
   private final Supplier<String> INFECTION_TIME = useConfig("infection-time", "3d");
 
   private final Supplier<Double> MIN_CHANCE = useConfig("min-chance", 0.005);

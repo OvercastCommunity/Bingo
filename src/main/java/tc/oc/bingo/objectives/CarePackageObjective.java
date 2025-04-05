@@ -10,7 +10,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collector;
-import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -39,11 +39,13 @@ import org.bukkit.util.Vector;
 import tc.oc.bingo.Bingo;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
+import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.killreward.KillRewardMatchModule;
-import tc.oc.pgm.spawns.events.ParticipantKitApplyEvent;
+import tc.oc.pgm.util.MatchPlayers;
 import tc.oc.pgm.util.bukkit.MetadataUtils;
+import tc.oc.pgm.util.inventory.InventoryUtils;
 import tc.oc.pgm.util.inventory.tag.ItemTag;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.nms.NMSHacks;
@@ -51,12 +53,15 @@ import tc.oc.pgm.util.nms.NMSHacks;
 @Tracker("care-package")
 public class CarePackageObjective extends ObjectiveTracker {
 
-  // When player get a 5 kill streak (configable)
-
   private static final ItemTag<Boolean> EGG_ITEM = ItemTag.newBoolean("custom-egg-item");
-  public static final String EGG_META = "care-package-egg";
+  private static final String EGG_META = "care-package-egg";
   private static final MetadataValue eggMetaValue =
       MetadataUtils.createMetadataValue(Bingo.get(), true);
+
+  private static final Component TOP_FACE =
+      text("You must click the top face of a block to spawn a care package!");
+  private static final Component OPEN_AIR =
+      text("You must click a block with air above it to spawn a care package!");
 
   private final Supplier<Integer> REQUIRED_STREAK = useConfig("required-streak", 5);
   private final Supplier<Integer> SPAWN_HEIGHT = useConfig("spawn-height", 30);
@@ -76,17 +81,14 @@ public class CarePackageObjective extends ObjectiveTracker {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
     killRewardModule = event.getMatch().getModule(KillRewardMatchModule.class);
+    liveCarePackages.clear();
   }
 
-  @EventHandler
-  public void onParticipantKitApplyEvent(ParticipantKitApplyEvent event) {
-    ItemStack itemStack = new ItemStack(Material.MONSTER_EGG, 1, (short) 93);
-    ItemMeta itemMeta = itemStack.getItemMeta();
-    itemMeta.setDisplayName(ChatColor.RESET + "Care Package Spawn Egg");
-    itemStack.setItemMeta(itemMeta);
-    EGG_ITEM.set(itemStack, true);
-
-    event.getPlayer().getBukkit().getInventory().addItem(itemStack);
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onMatchEnd(MatchFinishEvent event) {
+    // Deleting all associated entities will also cause any ongoing task to end
+    for (CarePackage carePackage : liveCarePackages) carePackage.deleteEntities();
+    liveCarePackages.clear();
   }
 
   @EventHandler
@@ -99,171 +101,123 @@ public class CarePackageObjective extends ObjectiveTracker {
     int streak = killRewardModule.getKillStreak(matchPlayer.getId());
     if (streak != REQUIRED_STREAK.get()) return;
 
-    // Create item with name and meta
-    ItemStack itemStack = new ItemStack(Material.MONSTER_EGG, 1, (short) 93);
-    ItemMeta itemMeta = itemStack.getItemMeta();
-    itemMeta.setDisplayName(ChatColor.RESET + "Care Package Spawn Egg");
-    itemStack.setItemMeta(itemMeta);
-    EGG_ITEM.set(itemStack, true);
-
-    matchPlayer.getBukkit().getInventory().addItem(itemStack);
-    // TODO: what if player inventory full
-
-    // matchPlayer.getBukkit().getInventory().getContents()
+    matchPlayer.getBukkit().getInventory().addItem(carePackageItem());
 
     // Check if they have a 5 kill streak
     // If so, give them a care package item
     // Maybe give them a care package item every `x` kills?
   }
 
+  private ItemStack carePackageItem() {
+    ItemStack itemStack = new ItemStack(Material.MONSTER_EGG, 1, (short) 93);
+    ItemMeta itemMeta = itemStack.getItemMeta();
+    itemMeta.setDisplayName(ChatColor.RESET + "Care Package Spawn Egg");
+    itemStack.setItemMeta(itemMeta);
+    EGG_ITEM.set(itemStack, true);
+    return itemStack;
+  }
+
   @EventHandler(ignoreCancelled = true)
   public void onChestOpen(PlayerInteractEvent event) {
     // Detect player opening a chest
-    if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
-        && event.getClickedBlock().getType().equals(Material.CHEST)) {
+    if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;
+    if (!event.getClickedBlock().getType().equals(Material.CHEST)) return;
+    if (!event.getClickedBlock().getState().hasMetadata(EGG_META)) return;
 
-      // Check if the chest has metadata
-      if (!event.getClickedBlock().getState().hasMetadata(EGG_META)) return;
+    MatchPlayer matchPlayer = getPlayer(event.getPlayer());
+    if (!MatchPlayers.canInteract(matchPlayer)) return;
 
-      MatchPlayer matchPlayer = getPlayer(event.getPlayer());
-      if (matchPlayer == null || !matchPlayer.isParticipating()) return;
+    // Check that the player is the owner
+    var carePackage =
+        liveCarePackages.stream()
+            .filter(p -> p.placedChest != null && p.placedChest.equals(event.getClickedBlock()))
+            .findFirst()
+            .orElse(null);
+    if (carePackage == null) return;
 
-      // Check that the player is the owner
-      liveCarePackages.stream()
-          .filter(
-              carePackage -> {
-                if (carePackage.placedChest == null) return false;
+    // Check carePackage.placedAt against current time and CHEST_LOCKED_SECONDS
+    // Check if the player is the owner
+    boolean isOwner = carePackage.owner.equals(matchPlayer.getId());
+    boolean isLocked =
+        System.currentTimeMillis() - carePackage.landedAt < CHEST_LOCKED_SECONDS.get() * 1000;
 
-                return carePackage.placedChest.equals(event.getClickedBlock());
-              })
-          .findFirst()
-          .ifPresent(
-              carePackage -> {
-                // Check carePackage.placedAt against current time and CHEST_LOCKED_SECONDS
-                // Check if the player is the owner
-                boolean isOwner = carePackage.owner.equals(matchPlayer.getId());
-                boolean isLocked =
-                    System.currentTimeMillis() - carePackage.landedAt
-                        < CHEST_LOCKED_SECONDS.get() * 1000;
+    MatchPlayer ownerPlayer = getPlayer(carePackage.owner);
 
-                MatchPlayer ownerPlayer = getPlayer(carePackage.owner);
-
-                if (!isOwner && isLocked && ownerPlayer != null) {
-                  matchPlayer.sendMessage(
-                      text("This care package belongs to ", NamedTextColor.RED)
-                          .append(ownerPlayer.getName(NameStyle.SIMPLE_COLOR))
-                          .append(text("!", NamedTextColor.RED)));
-                  matchPlayer
-                      .getBukkit()
-                      .playSound(carePackage.placedChest.getLocation(), Sound.DOOR_OPEN, 1f, 1f);
-                  event.setCancelled(true);
-                  return;
-                }
-
-                if (isOwner) {
-                  reward(matchPlayer.getBukkit());
-                }
-
-                carePackage.placedChest.setType(Material.AIR);
-                liveCarePackages.remove(carePackage);
-
-                Location centerLocation = carePackage.placedChest.getLocation().toCenterLocation();
-                matchPlayer
-                    .getBukkit()
-                    .getWorld()
-                    .playSound(centerLocation, Sound.CHEST_OPEN, 1f, 1f);
-
-                int choice = (int) (Math.random() * 6);
-                ItemStack loot =
-                    switch (choice) {
-                      case 0 -> new ItemStack(Material.MILK_BUCKET, 1);
-                      case 1 -> new ItemStack(Material.GOLDEN_APPLE, 1);
-                      case 2 -> new ItemStack(Material.DIAMOND, 1);
-                      case 3 -> new ItemStack(Material.CACTUS, 1);
-                      case 4 -> new ItemStack(Material.EXP_BOTTLE, 3);
-                      case 5 -> new ItemStack(Material.BREAD, 5);
-                      default -> new ItemStack(Material.GRASS, 1);
-                    };
-
-                event.getWorld().dropItemNaturally(centerLocation, loot);
-              });
+    if (!isOwner && isLocked && ownerPlayer != null) {
+      matchPlayer.sendWarning(
+          text("This care package belongs to ")
+              .append(ownerPlayer.getName(NameStyle.SIMPLE_COLOR))
+              .append(text("!")));
+      matchPlayer
+          .getBukkit()
+          .playSound(carePackage.placedChest.getLocation(), Sound.DOOR_OPEN, 1f, 1f);
+      event.setCancelled(true);
+      return;
     }
+
+    if (isOwner) reward(matchPlayer.getBukkit());
+
+    carePackage.placedChest.setType(Material.AIR);
+    carePackage.chickens.forEach(Entity::remove);
+    liveCarePackages.remove(carePackage);
+
+    Location centerLocation = carePackage.placedChest.getLocation().toCenterLocation();
+    matchPlayer.getBukkit().getWorld().playSound(centerLocation, Sound.CHEST_OPEN, 1f, 1f);
+
+    ItemStack loot =
+        switch ((int) (Math.random() * 7)) {
+          case 0 -> new ItemStack(Material.MILK_BUCKET, 1);
+          case 1 -> new ItemStack(Material.GOLDEN_APPLE, 1);
+          case 2 -> new ItemStack(Material.DIAMOND, 1);
+          case 3 -> new ItemStack(Material.CACTUS, 1);
+          case 4 -> new ItemStack(Material.EXP_BOTTLE, 3);
+          case 5 -> new ItemStack(Material.BREAD, 5);
+          default -> new ItemStack(Material.GRASS, 1);
+        };
+
+    event.getWorld().dropItemNaturally(centerLocation, loot);
   }
 
   @EventHandler(ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
     if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;
-
-    if (event.getItem() == null) return;
-
-    if (!EGG_ITEM.has(event.getItem())) return;
+    var item = event.getItem();
+    if (item == null || !EGG_ITEM.has(event.getItem())) return;
     event.setCancelled(true);
 
-    MatchPlayer matchPlayer = getPlayer(event.getPlayer());
-    if (matchPlayer == null) return;
+    MatchPlayer player = getPlayer(event.getPlayer());
+    if (player == null) return;
 
     // Check the player clicked the top face of a block
     if (!event.getBlockFace().equals(BlockFace.UP)) {
-      matchPlayer.sendMessage(
-          text(
-              "You must click the top face of a block to spawn a care package!",
-              NamedTextColor.RED));
+      player.sendWarning(TOP_FACE);
       return;
     }
 
     // Check that blocks from clicked block SPAWN_HEIGHT blocks are all air
     Block clickedBlock = event.getClickedBlock();
-    int startingY = clickedBlock.getY() + 1;
-    for (int i = startingY; i < startingY + SPAWN_HEIGHT.get(); i++) {
+    for (int i = clickedBlock.getY() + SPAWN_HEIGHT.get(); i > clickedBlock.getY(); i--) {
       Block block = clickedBlock.getWorld().getBlockAt(clickedBlock.getX(), i, clickedBlock.getZ());
       if (!block.getType().equals(Material.AIR)) {
-        matchPlayer.sendMessage(
-            text(
-                "You must click a block with air above it to spawn a care package!",
-                NamedTextColor.RED));
+        player.sendWarning(OPEN_AIR);
         return;
       }
     }
 
     // Remove a spawn egg from players hand
-    ItemStack itemInHand = event.getPlayer().getItemInHand();
-    itemInHand.setAmount(itemInHand.getAmount() - 1);
-    event.getPlayer().setItemInHand(itemInHand);
-
-    triggerCarePackage(event.getPlayer(), clickedBlock, SPAWN_HEIGHT.get());
+    InventoryUtils.consumeItem(event);
+    liveCarePackages.add(
+        new CarePackage(
+            event.getPlayer(),
+            clickedBlock.getLocation().add(0.5, SPAWN_HEIGHT.get(), 0.5),
+            yawToFace(player.getLocation().getYaw())));
   }
 
   @EventHandler(ignoreCancelled = true)
   public void onEntityDamageEvent(EntityDamageEvent event) {
     // Prevent damage to fake mobs
-    if (event.getEntity().hasMetadata(EGG_META)) {
-      event.setCancelled(true);
-    }
+    if (event.getEntity().hasMetadata(EGG_META)) event.setCancelled(true);
   }
-
-  private void triggerCarePackage(Player player, Block clickedBlock, Integer spawnHeight) {
-    liveCarePackages.add(
-        new CarePackage(
-            player,
-            clickedBlock.getLocation().add(0.5, spawnHeight, 0.5),
-            yawToFace(player.getLocation().getYaw())));
-  }
-
-  // Give them an item that allows them to summon a care package
-
-  // Maybe once player places it on ground it will take 10 seconds to drop (check they can build?
-  // before giving them?)
-
-  // Care package will drop from the sky (falling chest with chickens on leads attached like a
-  // parachute)
-
-  // When chest lands the person who called it in can open and get some set loot
-
-  // Maybe remove after `x` time of not being opened?
-  // Only allow opener to use it? locked for just them for `x` seconds?
-  // Remove chest once looted?
-
-  // Reward player once they take out the loot (or open the chest)
 
   public class CarePackage {
     private static final ScheduledExecutorService EXECUTOR = PGM.get().getExecutor();
@@ -329,9 +283,12 @@ public class CarePackageObjective extends ObjectiveTracker {
     }
 
     private void updateTask() {
-      if (!isValid() || !updateLocation()) movementTask.cancel(true);
+      if (!isValid() || !updateLocation()) {
+        movementTask.cancel(false);
+      }
     }
 
+    // True when it continues moving, false when it has landed or voided
     public boolean updateLocation() {
       // When chickens are alive, use avg pos of them
       Vector hangPoint =
@@ -385,6 +342,7 @@ public class CarePackageObjective extends ObjectiveTracker {
         // Start timer to remove after CHEST_ALIVE_SECONDS
         EXECUTOR.schedule(
             () -> {
+              chickens.forEach(Entity::remove);
               if (!placedChest.getType().equals(Material.CHEST)) return;
               placedChest.setType(Material.AIR);
               liveCarePackages.remove(CarePackage.this);
@@ -396,14 +354,21 @@ public class CarePackageObjective extends ObjectiveTracker {
             },
             CHEST_ALIVE_SECONDS.get(),
             TimeUnit.SECONDS);
+
+        landedAt = System.currentTimeMillis();
+        leasher.remove();
+        chest.remove();
       } else {
         liveCarePackages.remove(this);
+        deleteEntities();
       }
+      return false;
+    }
 
-      landedAt = System.currentTimeMillis();
+    private void deleteEntities() {
       leasher.remove();
       chest.remove();
-      return false;
+      chickens.forEach(Entity::remove);
     }
   }
 
