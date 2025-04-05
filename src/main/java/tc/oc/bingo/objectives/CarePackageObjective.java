@@ -64,7 +64,7 @@ public class CarePackageObjective extends ObjectiveTracker {
       text("You must click a block with air above it to spawn a care package!");
 
   private final Supplier<Integer> REQUIRED_STREAK = useConfig("required-streak", 5);
-  private final Supplier<Integer> SPAWN_HEIGHT = useConfig("spawn-height", 30);
+  private final Supplier<Integer> SPAWN_HEIGHT = useConfig("spawn-height", 50);
 
   private final Supplier<Integer> CHEST_LOCKED_SECONDS = useConfig("chest-locked-seconds", 10);
   private final Supplier<Integer> CHEST_ALIVE_SECONDS = useConfig("chest-alive-seconds", 30);
@@ -98,14 +98,15 @@ public class CarePackageObjective extends ObjectiveTracker {
     MatchPlayer matchPlayer = getPlayer(event.getKiller());
     if (matchPlayer == null) return;
 
+    // Check if they have the required kill streak
     int streak = killRewardModule.getKillStreak(matchPlayer.getId());
     if (streak != REQUIRED_STREAK.get()) return;
 
+    // Give custom item with name and meta
     matchPlayer.getBukkit().getInventory().addItem(carePackageItem());
 
-    // Check if they have a 5 kill streak
-    // If so, give them a care package item
-    // Maybe give them a care package item every `x` kills?
+    // TODO: what if player inventory full
+    // TODO: Maybe give them a care package item every `x` kills?
   }
 
   private ItemStack carePackageItem() {
@@ -143,6 +144,7 @@ public class CarePackageObjective extends ObjectiveTracker {
 
     MatchPlayer ownerPlayer = getPlayer(carePackage.owner);
 
+    // If the owner has gone and enough time has passed allow otherwise prevent
     if (!isOwner && isLocked && ownerPlayer != null) {
       matchPlayer.sendWarning(
           text("This care package belongs to ")
@@ -158,7 +160,7 @@ public class CarePackageObjective extends ObjectiveTracker {
     if (isOwner) reward(matchPlayer.getBukkit());
 
     carePackage.placedChest.setType(Material.AIR);
-    carePackage.chickens.forEach(Entity::remove);
+    carePackage.deleteChickens();
     liveCarePackages.remove(carePackage);
 
     Location centerLocation = carePackage.placedChest.getLocation().toCenterLocation();
@@ -167,10 +169,10 @@ public class CarePackageObjective extends ObjectiveTracker {
     ItemStack loot =
         switch ((int) (Math.random() * 7)) {
           case 0 -> new ItemStack(Material.MILK_BUCKET, 1);
-          case 1 -> new ItemStack(Material.GOLDEN_APPLE, 1);
+          case 1 -> new ItemStack(Material.GOLDEN_APPLE, 1 + (int) (Math.random() * 5));
           case 2 -> new ItemStack(Material.DIAMOND, 1);
           case 3 -> new ItemStack(Material.CACTUS, 1);
-          case 4 -> new ItemStack(Material.EXP_BOTTLE, 3);
+          case 4 -> new ItemStack(Material.EXP_BOTTLE, 3 + (int) (Math.random() * 6));
           case 5 -> new ItemStack(Material.BREAD, 5);
           default -> new ItemStack(Material.GRASS, 1);
         };
@@ -342,7 +344,7 @@ public class CarePackageObjective extends ObjectiveTracker {
         // Start timer to remove after CHEST_ALIVE_SECONDS
         EXECUTOR.schedule(
             () -> {
-              chickens.forEach(Entity::remove);
+              deleteChickens();
               if (!placedChest.getType().equals(Material.CHEST)) return;
               placedChest.setType(Material.AIR);
               liveCarePackages.remove(CarePackage.this);
@@ -368,7 +370,15 @@ public class CarePackageObjective extends ObjectiveTracker {
     private void deleteEntities() {
       leasher.remove();
       chest.remove();
-      chickens.forEach(Entity::remove);
+      deleteChickens();
+    }
+
+    private void deleteChickens() {
+      for (Chicken chicken : chickens) {
+        if (!chicken.isInsideVehicle()) {
+          chicken.remove();
+        }
+      }
     }
   }
 

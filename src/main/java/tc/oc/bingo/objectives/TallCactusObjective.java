@@ -25,7 +25,7 @@ import tc.oc.pgm.kits.ApplyItemKitEvent;
 @Tracker("tall-cactus")
 public class TallCactusObjective extends ObjectiveTracker {
 
-  private final Supplier<Integer> MIN_GROW_TIME = useConfig("min-grow-time", 30);
+  private final Supplier<Integer> MIN_GROW_TIME = useConfig("min-grow-time", 60);
   private final Supplier<Integer> MAX_GROW_TIME = useConfig("max-grow-time", 120);
 
   private final Supplier<Integer> REQUIRED_HEIGHT = useConfig("required-height", 8);
