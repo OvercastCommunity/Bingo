@@ -43,7 +43,7 @@ public class Config {
                             (String)
                                 Objects.requireNonNullElse(map.get("description"), map.get("slug")),
                             (int) map.get("idx"),
-                            99,
+                            0,
                             null,
                             null,
                             null,

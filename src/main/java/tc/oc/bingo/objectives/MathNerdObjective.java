@@ -300,6 +300,7 @@ public class MathNerdObjective extends ObjectiveTracker {
   }
 
   private static double fac(double val) {
+    if (val <= 1 || (val % 1) != 0) return Double.NaN;
     double result = 1;
     for (int i = 2; i <= (long) val; i++) result *= i;
     return result;

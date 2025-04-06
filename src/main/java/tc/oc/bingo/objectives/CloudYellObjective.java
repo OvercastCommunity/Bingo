@@ -28,24 +28,22 @@ public class CloudYellObjective extends ObjectiveTracker {
     if (event.getAction() != Action.LEFT_CLICK_AIR) return;
     if (player.getLocation().getPitch() > -80F) return;
 
-    PlayerState state = states.getOrDefault(player.getUniqueId(), new PlayerState());
+    PlayerState state = states.computeIfAbsent(player.getUniqueId(), k -> new PlayerState());
 
     long now = System.currentTimeMillis();
     long timeSincePunch = now - state.lastPunch;
+    long timeSinceYell = now - state.lastYell;
 
-    // Reset punch count back to 0 if the time between punches is too long
-    if (timeSincePunch > MAX_ACTION_SECONDS.get() * 1000L) {
-      state.punchCount = 0;
-    }
+    // Reset punch & yell counts back to 0 if the time is too long
+    if (timeSincePunch > MAX_ACTION_SECONDS.get() * 1000L) state.punchCount = 0;
+    if (timeSinceYell > MAX_ACTION_SECONDS.get() * 1000L) state.lastYell = 0;
 
     // Detect player hitting air again after doing above then reward them
     state.punchCount++;
-    if (state.punchCount >= 3 && now - state.lastYell < MAX_ACTION_SECONDS.get() * 1000L) {
+    state.lastPunch = now;
+    if (state.punchCount >= 3 && state.lastYell != 0) {
       reward(player);
     }
-
-    state.lastPunch = now;
-    states.put(player.getUniqueId(), state);
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -55,17 +53,13 @@ public class CloudYellObjective extends ObjectiveTracker {
 
     String message = event.getMessage();
 
-    PlayerState state = states.getOrDefault(player.getId(), new PlayerState());
-    if (state.punchCount < 3) return;
+    PlayerState state = states.computeIfAbsent(player.getId(), k -> new PlayerState());
 
     // Allowed characters = A-Z (upper case) and !
-    if (message.matches("[^A-Z !]")) return;
-
-    long now = System.currentTimeMillis();
-    state.lastYell = now;
-    state.lastPunch = now;
-    state.punchCount = 0;
-    states.put(player.getId(), state);
+    if (state.punchCount >= 3 && message.matches("[A-Z !]{5,}!")) {
+      state.lastYell = state.lastPunch = System.currentTimeMillis();
+      state.punchCount = 0;
+    }
   }
 
   static class PlayerState {

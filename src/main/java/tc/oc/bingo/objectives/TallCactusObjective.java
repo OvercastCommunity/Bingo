@@ -1,14 +1,13 @@
 package tc.oc.bingo.objectives;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
@@ -17,27 +16,28 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockPlaceEvent;
-import tc.oc.bingo.Bingo;
+import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.kits.ApplyItemKitEvent;
+import tc.oc.pgm.util.StreamUtils;
 
 @Tracker("tall-cactus")
 public class TallCactusObjective extends ObjectiveTracker {
 
-  private final Supplier<Integer> MIN_GROW_TIME = useConfig("min-grow-time", 60);
-  private final Supplier<Integer> MAX_GROW_TIME = useConfig("max-grow-time", 120);
+  private final Supplier<Integer> MIN_GROW_TIME = useConfig("min-grow-time", 45);
+  private final Supplier<Integer> MAX_GROW_TIME = useConfig("max-grow-time", 75);
+  private final Supplier<Integer> GROWTH_SPREAD =
+      useComputedConfig(() -> MAX_GROW_TIME.get() - MIN_GROW_TIME.get());
 
   private final Supplier<Integer> REQUIRED_HEIGHT = useConfig("required-height", 8);
   private final Supplier<Integer> MAX_HEIGHT = useConfig("max-height", 15);
 
-  private final Map<UUID, Location> cactusOwners = useState(Scope.PARTICIPATION);
-  private final Map<UUID, Integer> lastKnownHeight = useState(Scope.PARTICIPATION);
-  private final Map<UUID, Long> nextCactusGrowth = useState(Scope.PARTICIPATION);
+  private final Map<UUID, CactusTracker> cactusOwners = useState(Scope.PARTICIPATION);
 
   private boolean enabled = true;
 
-  private int growthTaskId = -1;
+  private Future<?> growthTask;
 
   private final BlockFace[] blockFaces = {
     BlockFace.SELF, BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
@@ -51,128 +51,84 @@ public class TallCactusObjective extends ObjectiveTracker {
   @EventHandler
   public void onKitApply(ApplyItemKitEvent event) {
     if (!enabled) return;
-    // TODO: event.getMatch().getDuration() check?
 
     // Check if the kit contains a cactus
     boolean containsCactus =
-        StreamSupport.stream(event.getItems().spliterator(), false)
-            .anyMatch(item -> item.getType() == Material.CACTUS);
+        StreamUtils.of(event.getItems()).anyMatch(item -> item.getType() == Material.CACTUS);
 
-    if (containsCactus) {
-      enabled = false;
-    }
+    if (containsCactus) enabled = false;
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onCactusPlace(BlockPlaceEvent event) {
     if (!enabled) return;
 
-    if (event.getBlock().getType() == Material.CACTUS
-        && event.getBlock().getRelative(BlockFace.DOWN).getType() == Material.SAND) {
-      Location cactusLocation = event.getBlock().getLocation();
-      UUID playerId = event.getPlayer().getUniqueId();
-      cactusOwners.put(playerId, cactusLocation);
+    Block block = event.getBlock();
+    if (block.getType() != Material.CACTUS
+        || block.getRelative(BlockFace.DOWN).getType() != Material.SAND) return;
+    cactusOwners.put(event.getPlayer().getUniqueId(), new CactusTracker(block, 1, nextGrowthBy()));
 
-      logGrowth(playerId, 1, System.currentTimeMillis());
-
-      if (growthTaskId == -1) {
-        startGrowthTask();
-      }
+    if (growthTask == null) {
+      growthTask =
+          PGM.get()
+              .getExecutor()
+              .scheduleAtFixedRate(this::tickCactusGrowth, 1, 50, TimeUnit.MILLISECONDS);
     }
   }
 
-  private void startGrowthTask() {
-    growthTaskId =
-        Bukkit.getScheduler()
-            .runTaskTimer(Bingo.get(), this::tickCactusGrowth, 20L, 20L)
-            .getTaskId();
+  private void cancelTask() {
+    if (growthTask != null) {
+      growthTask.cancel(false);
+      growthTask = null;
+    }
   }
 
   private void tickCactusGrowth() {
-    if (!enabled || cactusOwners.isEmpty()) {
-      return;
-    }
+    if (!enabled || cactusOwners.isEmpty()) cancelTask();
+    else cactusOwners.entrySet().removeIf(e -> tickCactus(e.getKey(), e.getValue()));
+  }
 
-    // Pick a random cactus to grow
-    List<UUID> players = new ArrayList<>(cactusOwners.keySet());
-    UUID playerId = players.get(new Random().nextInt(players.size()));
-    Location baseLocation = cactusOwners.get(playerId);
-
+  // True if this cactus is done (fully grown, or should otherwise cancel)
+  private boolean tickCactus(UUID playerId, CactusTracker tracker) {
     // Ensure the base cactus still exists
-    if (baseLocation.getBlock().getType() != Material.CACTUS) {
-      reset(playerId);
-      return;
-    }
+    if (tracker.base.getType() != Material.CACTUS) return true;
+    if (tracker.growBy > System.currentTimeMillis()) return false;
 
-    // Check if the cactus is ready to grow
-    long now = System.currentTimeMillis();
-    Long nextGrowthTime = nextCactusGrowth.get(playerId);
-    if (nextGrowthTime == null || now < nextGrowthTime) {
-      return;
-    }
-
-    // Check the height of the cactus
-    int height = 1;
-    Location topLocation = baseLocation.clone().add(0, 1, 0);
-    while (topLocation.getBlock().getType() == Material.CACTUS) {
+    Block checking = tracker.base;
+    int height = 0, overheight = Math.max(3, tracker.lastHeight) + 1;
+    while (checking.getType() == Material.CACTUS && height <= overheight) {
+      checking = checking.getRelative(BlockFace.UP);
       height++;
-      // Prevent growing by hand
-      Integer lastHeight = lastKnownHeight.get(playerId);
-      if (lastHeight != null && lastHeight >= 3 && height > lastHeight) {
-        break;
-      }
-      topLocation.add(0, 1, 0);
     }
+    // Cactus was manually grown or can't grow, cancel
+    if (height >= overheight || !canPlace(checking)) return true;
 
-    // Ensure the next block is air and can support a new cactus
-    if (canPlace(topLocation.getBlock())) {
-      topLocation.getBlock().setType(Material.CACTUS);
-      topLocation.getWorld().playSound(topLocation, Sound.DIG_WOOL, 1.0f, 1.0f);
+    height++;
+    checking.setType(Material.CACTUS);
+    checking.getWorld().playSound(checking.getLocation(), Sound.DIG_WOOL, 1.0f, 1.0f);
 
-      // Log that the cactus has been grown
-      logGrowth(playerId, height, now);
-    } else {
-      reset(playerId);
-    }
+    tracker.lastHeight = height;
+    tracker.growBy = nextGrowthBy();
 
     // Reward the player when the cactus reaches 4 blocks tall
     if (height >= REQUIRED_HEIGHT.get()) {
       Player player = Bukkit.getPlayer(playerId);
-      if (player != null) {
-        reward(player);
-      }
+      if (player != null) reward(player);
 
       // Randomly stop growing once reached max height
-      if (height >= MAX_HEIGHT.get() && Math.random() > 0.75) {
-        reset(playerId);
-      }
+      return height > MAX_HEIGHT.get() || Math.random() > 0.85;
     }
+    return false;
   }
 
   @EventHandler
   public void onMatchFinish(MatchFinishEvent event) {
-    if (growthTaskId != -1) {
-      Bukkit.getScheduler().cancelTask(growthTaskId);
-      growthTaskId = -1;
-    }
+    cancelTask();
   }
 
-  private void logGrowth(UUID playerId, int height, Long now) {
-    // Log the cactus growth
-    int nextGrowthTime =
-        (MIN_GROW_TIME.get()
-                + (int) (Math.random() * (MAX_GROW_TIME.get() - MIN_GROW_TIME.get() + 1)))
-            * 1000;
-
-    lastKnownHeight.put(playerId, height);
-    nextCactusGrowth.put(playerId, now + nextGrowthTime);
-  }
-
-  private void reset(UUID playerId) {
-    // Reset the cactus owner and height
-    cactusOwners.remove(playerId);
-    lastKnownHeight.remove(playerId);
-    nextCactusGrowth.remove(playerId);
+  private long nextGrowthBy() {
+    return System.currentTimeMillis()
+        + ((int) (MIN_GROW_TIME.get() + (Math.random() * GROWTH_SPREAD.get())) * 1000L);
   }
 
   private boolean canPlace(Block location) {
@@ -184,5 +140,13 @@ public class TallCactusObjective extends ObjectiveTracker {
       }
     }
     return true;
+  }
+
+  @Data
+  @AllArgsConstructor
+  private static class CactusTracker {
+    final Block base;
+    int lastHeight;
+    long growBy;
   }
 }

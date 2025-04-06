@@ -64,6 +64,7 @@ public class CarePackageObjective extends ObjectiveTracker {
       text("You must click a block with air above it to spawn a care package!");
 
   private final Supplier<Integer> REQUIRED_STREAK = useConfig("required-streak", 5);
+  private final Supplier<Boolean> STREAK_REPEAT = useConfig("streak-repeat", false);
   private final Supplier<Integer> SPAWN_HEIGHT = useConfig("spawn-height", 50);
 
   private final Supplier<Integer> CHEST_LOCKED_SECONDS = useConfig("chest-locked-seconds", 10);
@@ -91,22 +92,21 @@ public class CarePackageObjective extends ObjectiveTracker {
     liveCarePackages.clear();
   }
 
-  @EventHandler
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;
 
     MatchPlayer matchPlayer = getPlayer(event.getKiller());
     if (matchPlayer == null) return;
 
-    // Check if they have the required kill streak
-    int streak = killRewardModule.getKillStreak(matchPlayer.getId());
+    // Check required kill streak. PGM updates on monitor, so assume + 1
+    int streak = killRewardModule.getKillStreak(matchPlayer.getId()) + 1;
+    if (STREAK_REPEAT.get()) streak = 1 + (streak - 1) % REQUIRED_STREAK.get();
+
     if (streak != REQUIRED_STREAK.get()) return;
 
-    // Give custom item with name and meta
+    // Give custom item with name and meta, sadly lost if inv is full.
     matchPlayer.getBukkit().getInventory().addItem(carePackageItem());
-
-    // TODO: what if player inventory full
-    // TODO: Maybe give them a care package item every `x` kills?
   }
 
   private ItemStack carePackageItem() {
