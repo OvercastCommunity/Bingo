@@ -24,29 +24,20 @@ public class AgarObjective extends ObjectiveTracker.StatefulInt {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public final void onDeath(MatchPlayerDeathEvent event) {
-    // If a player dies on their own set their progress back to the start
-    if (event.getKiller() == null || event.isSelfKill() || event.isSuicide()) {
-      storeObjectiveData(event.getPlayer().getId(), SIZE_START.get());
-      return;
-    }
-
-    if (!event.isChallengeKill()) return;
+    var victim = event.getVictim();
+    var victimScore = getObjectiveData(victim.getId());
 
     MatchPlayer killer = getPlayer(event.getKiller());
-    if (killer == null) return;
-
-    MatchPlayer deadPlayer = event.getPlayer();
-
-    // Add dead player's size to killer
-    trackProgress(killer.getBukkit(), getObjectiveData(deadPlayer.getId()));
-
-    // TODO: turn in to a record not stateful int, track if player got the objective already
-    // TODO: Don't reset them back to 0 if they have already been rewarded?
-    if (getObjectiveData(killer.getId()) >= SIZE_NEEDED.get()) {
-      storeObjectiveData(killer.getId(), SIZE_OVERFLOW.get());
+    if (killer != null && event.isChallengeKill()) {
+      var newScore = getObjectiveData(killer.getId()) + victimScore;
+      if (newScore >= SIZE_NEEDED.get()) {
+        reward(killer.getBukkit());
+        newScore = SIZE_OVERFLOW.get();
+      }
+      storeObjectiveData(killer.getId(), newScore);
     }
 
-    storeObjectiveData(deadPlayer.getId(), SIZE_START.get());
+    resetObjectiveData(victim.getId());
   }
 
   @Override

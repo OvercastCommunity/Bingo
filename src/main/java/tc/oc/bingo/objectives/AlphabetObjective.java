@@ -37,11 +37,11 @@ public class AlphabetObjective extends ObjectiveTracker.Stateful<Character> {
 
     // When they reach 'Z' reward
     if (currentChar >= LAST_CHAR) {
-      storeObjectiveData(player.getId(), '-');
+      storeObjectiveData(playerId, '-');
       reward(player.getBukkit());
     } else {
       currentChar++; // bump current char before storing
-      storeObjectiveData(player.getId(), currentChar);
+      storeObjectiveData(playerId, currentChar);
     }
   }
 

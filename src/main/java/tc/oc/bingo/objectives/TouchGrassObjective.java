@@ -61,7 +61,7 @@ public class TouchGrassObjective extends ObjectiveTracker.Stateful<Long> {
   public final void onMatchEnd(MatchFinishEvent event) {
     // When a match ends update the last played time for all players
     Collection<MatchPlayer> players = event.getMatch().getParticipants();
-    players.forEach(player -> storeObjectiveData(player.getId(), System.currentTimeMillis()));
+    players.forEach(player -> resetObjectiveData(player.getId()));
   }
 
   @EventHandler(priority = EventPriority.LOWEST)
@@ -69,7 +69,7 @@ public class TouchGrassObjective extends ObjectiveTracker.Stateful<Long> {
     // When a player logs out update the last played time
     Player player = event.getPlayer();
     if (player == null) return;
-    storeObjectiveData(player.getUniqueId(), System.currentTimeMillis());
+    resetObjectiveData(player.getUniqueId());
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -94,7 +94,7 @@ public class TouchGrassObjective extends ObjectiveTracker.Stateful<Long> {
 
   @Override
   public @NotNull Long initial() {
-    return 0L;
+    return System.currentTimeMillis();
   }
 
   @Override

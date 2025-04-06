@@ -17,7 +17,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -25,7 +24,7 @@ import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.events.PlayerParticipationStopEvent;
 
 @Tracker("tactical-nuke")
-public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
+public class TacticalNukeObjective extends ObjectiveTracker.StatefulInt {
 
   private final Supplier<Integer> KILLS_REQUIRED = useConfig("kills-required", 25);
   private final Supplier<Boolean> RESET_ON_CYCLE = useConfig("reset-on-cycle", true);
@@ -59,7 +58,7 @@ public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
     MatchPlayer victim = event.getVictim();
     if (victim == null) return;
 
-    storeObjectiveData(victim.getId(), 0);
+    resetObjectiveData(victim.getId());
     if (!event.isChallengeKill()) return;
 
     MatchPlayer killer = getStatePlayer(event.getKiller());
@@ -75,14 +74,13 @@ public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
   public final void onJoin(PlayerJoinEvent event) {
     Player player = event.getPlayer();
     if (player == null) return;
-    storeObjectiveData(player.getUniqueId(), 0);
+    resetObjectiveData(player.getUniqueId());
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public final void onParticipationStop(PlayerParticipationStopEvent event) {
     if (!RESET_ON_CYCLE.get()) return;
-
-    storeObjectiveData(event.getPlayer().getId(), 0);
+    resetObjectiveData(event.getPlayer().getId());
   }
 
   private void triggerNuke(MatchPlayer player) {
@@ -164,22 +162,7 @@ public class TacticalNukeObjective extends ObjectiveTracker.Stateful<Integer> {
   }
 
   @Override
-  public @NotNull Integer initial() {
-    return 0;
-  }
-
-  @Override
-  public @NotNull Integer deserialize(@NotNull String string) {
-    return Integer.parseInt(string);
-  }
-
-  @Override
-  public @NotNull String serialize(@NotNull Integer data) {
-    return String.valueOf(data);
-  }
-
-  @Override
-  public double progress(Integer data) {
-    return data / (double) KILLS_REQUIRED.get();
+  protected int maxValue() {
+    return KILLS_REQUIRED.get();
   }
 }

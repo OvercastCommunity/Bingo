@@ -92,16 +92,6 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
       return state == null ? null : progress(state);
     }
 
-    public void storeObjectiveData(UUID playerId, T data) {
-      if (!progress.containsKey(playerId)) {
-        log.warning(
-            "Ignoring progress for " + playerId + " since it could lead to loss of progress");
-        return;
-      }
-      progress.put(playerId, data);
-      dirtyProgress.add(playerId);
-    }
-
     public T getObjectiveData(UUID playerId) {
       T data =
           progress.computeIfAbsent(
@@ -129,6 +119,24 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
       }
 
       return data;
+    }
+
+    public void storeObjectiveData(UUID playerId, T data) {
+      if (!progress.containsKey(playerId)) {
+        // This can happen due to one of two things:
+        // a) no prior call to getObjectiveData. In which case, consider using resetObjectiveData
+        // b) bingo data hasn't loaded yet; we must avoid saving as it could lose progress
+        log.warning(
+            "Ignoring progress for " + playerId + " since it could lead to loss of progress");
+        return;
+      }
+      progress.put(playerId, data);
+      dirtyProgress.add(playerId);
+    }
+
+    public void resetObjectiveData(UUID playerId) {
+      progress.put(playerId, initial());
+      dirtyProgress.add(playerId);
     }
 
     public T updateObjectiveData(UUID playerId, Function<T, T> updater) {

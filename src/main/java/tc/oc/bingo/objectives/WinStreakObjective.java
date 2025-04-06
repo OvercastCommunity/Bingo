@@ -28,7 +28,7 @@ public class WinStreakObjective extends ObjectiveTracker.StatefulInt {
     // Reset the progress of any losers
     event.getMatch().getPlayers().stream()
         .filter(player -> !winners.contains(player.getBukkit()))
-        .forEach(player -> storeObjectiveData(player.getId(), 0));
+        .forEach(player -> resetObjectiveData(player.getId()));
 
     // Update the progress of any winners and reward those who meet the requirements
     trackProgress(winners);
