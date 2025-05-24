@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
@@ -96,8 +97,13 @@ public class BingoCardMenu implements InventoryProvider {
               contents.set(
                   objectiveItem.getY(),
                   objectiveItem.getX() + xOffset,
-                  ClickableItem.empty(
-                      makeIconFor(player, objectiveItem, playerCard, requestedObjectiveIndex)));
+                  ClickableItem.of(
+                      makeIconFor(player, objectiveItem, playerCard, requestedObjectiveIndex),
+                      inventoryClickEvent ->
+                          Bukkit.getPluginManager()
+                              .callEvent(
+                                  new ObjectiveClickEvent(
+                                      player, objectiveItem, inventoryClickEvent))));
             });
   }
 

@@ -9,6 +9,7 @@ import lombok.extern.java.Log;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.EntityType;
 
 @Log
 public class ConfigHandler {
@@ -72,6 +73,11 @@ public class ConfigHandler {
     default Supplier<Material> useConfig(String key, Material defaultValue) {
       return getConfig()
           .register(new ConfigSetting<>(key, defaultValue, ConfigReader.MATERIAL_READER));
+    }
+
+    default Supplier<EntityType> useConfig(String key, EntityType defaultValue) {
+      return getConfig()
+          .register(new ConfigSetting<>(key, defaultValue, ConfigReader.ENTITY_TYPE_READER));
     }
 
     default <T> Supplier<T> useConfig(String key, T def, ConfigReader<T> reader) {

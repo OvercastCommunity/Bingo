@@ -45,19 +45,11 @@ public class LocationUtils {
     double minY = Math.floor(location.getY());
     double maxY = Math.ceil(location.getY() + 1.8);
 
-    Location vectorLocation = vector.toLocation(location.getWorld());
+    double x = vector.getX();
+    double y = vector.getY();
+    double z = vector.getZ();
 
-    for (double x = minX; x < maxX; x++) {
-      for (double z = minZ; z < maxZ; z++) {
-        for (double y = minY; y < maxY; y++) {
-          Block block = location.getWorld().getBlockAt((int) x, (int) y, (int) z);
-          if (block.getLocation().equals(vectorLocation)) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
+    return x >= minX && x <= maxX && y >= minY && y <= maxY && z >= minZ && z <= maxZ;
   }
 
   public static void spawnFirework(Location location, FireworkEffect effect, int power) {

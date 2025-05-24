@@ -1,7 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import static tc.oc.bingo.config.ConfigReader.ENTITY_TYPE_READER;
-
 import java.util.function.Supplier;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -34,8 +32,7 @@ public class MobPunchObjective extends ObjectiveTracker {
 
   private final Supplier<Material> ITEM_REQUIRED = useConfig("item-type", Material.FEATHER);
 
-  private final Supplier<EntityType> ENTITY_REQUIRED =
-      useConfig("entity-type", EntityType.CHICKEN, ENTITY_TYPE_READER);
+  private final Supplier<EntityType> ENTITY_REQUIRED = useConfig("entity-type", EntityType.CHICKEN);
 
   private final Supplier<Double> EGG_CHANCE = useConfig("egg-chance", 0.05);
 

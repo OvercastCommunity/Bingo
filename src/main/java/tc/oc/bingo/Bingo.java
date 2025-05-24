@@ -75,7 +75,7 @@ public class Bingo extends JavaPlugin {
     this.commands = new BukkitCommandManager(this);
     this.commands.registerCommand(new CardCommand());
 
-    this.inventoryManager = new InventoryManager(Bingo.get());
+    this.inventoryManager = new InventoryManager(this);
     this.inventoryManager.init();
 
     this.cardRefresher = new CardRefresher();
