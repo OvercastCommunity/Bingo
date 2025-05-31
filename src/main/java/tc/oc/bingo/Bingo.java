@@ -28,6 +28,7 @@ import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
 import tc.oc.bingo.util.Exceptions;
 import tc.oc.bingo.util.Reflections;
+import tc.oc.bingo.util.StringUtils;
 import tc.oc.pgm.api.PGM;
 
 @Log
@@ -89,8 +90,10 @@ public class Bingo extends JavaPlugin {
   }
 
   @SneakyThrows
-  private <T extends ObjectiveTracker> T buildTracker(Class<T> trackerCls) {
-    return trackerCls.getConstructor().newInstance();
+  private <T extends ObjectiveTracker> T buildTracker(Class<T> trackerCls, String slug) {
+    T tracker = trackerCls.getConstructor().newInstance();
+    tracker.setObjectiveSlug(slug);
+    return tracker;
   }
 
   public boolean isBingoCardLoaded(UUID playerId) {
@@ -148,6 +151,9 @@ public class Bingo extends JavaPlugin {
         });
 
     if (!objectivesToCreate.isEmpty()) {
+      // Build a map of tracker classes keyed by their annotation value
+      Map<String, Class<? extends ObjectiveTracker>> trackerClassMap = new HashMap<>();
+
       // Find tracker classes not present in current map, and create them
       Reflections.findClasses(
               ObjectiveTracker.class.getPackage().getName(), ObjectiveTracker.class, Tracker.class)
@@ -155,13 +161,23 @@ public class Bingo extends JavaPlugin {
               trackerClass -> {
                 Tracker annotation = trackerClass.getAnnotation(Tracker.class);
                 String slug = annotation != null ? annotation.value() : null;
-                if (slug == null || !objectivesToCreate.contains(slug)) return;
-
-                ObjectiveTracker tracker = buildTracker(trackerClass);
-                tracker.reloadConfig(getConfig());
-                tracker.enable();
-                trackers.put(slug, tracker);
+                if (slug != null) {
+                  trackerClassMap.put(slug, trackerClass);
+                }
               });
+
+      objectivesToCreate.forEach(
+          fullSlug -> {
+            StringUtils.SplitSlug slug = StringUtils.splitSlug(fullSlug);
+
+            Class<? extends ObjectiveTracker> trackerClass = trackerClassMap.get(slug.tracker());
+            if (trackerClass == null) return;
+
+            ObjectiveTracker tracker = buildTracker(trackerClass, fullSlug);
+            tracker.reloadConfig(getConfig());
+            tracker.enable();
+            trackers.put(fullSlug, tracker);
+          });
     }
   }
 }

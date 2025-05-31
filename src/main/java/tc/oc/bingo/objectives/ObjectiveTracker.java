@@ -33,7 +33,7 @@ import tc.oc.pgm.api.match.event.MatchFinishEvent;
 @Log
 public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensions, PGMUtils {
 
-  private final String objectiveSlug;
+  private String objectiveSlug;
   private final StateHandler state = new StateHandler();
   private final ConfigHandler config = new ConfigHandler();
 
