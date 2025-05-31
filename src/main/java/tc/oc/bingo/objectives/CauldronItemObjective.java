@@ -84,7 +84,7 @@ public class CauldronItemObjective extends ObjectiveTracker {
 
     // Play effect and sound, then drop the item
     Location effectLocation = block.getLocation().add(0.5, 1, 0.5);
-    block.getWorld().playEffect(effectLocation, Effect.SMALL_SMOKE, 0);
+    block.getWorld().playEffect(effectLocation, Effect.EXPLOSION_LARGE, 1);
     block.getWorld().playSound(effectLocation, Sound.CHICKEN_EGG_POP, 1.0f, 1.0f);
     block.getWorld().dropItemNaturally(effectLocation, item);
   }
