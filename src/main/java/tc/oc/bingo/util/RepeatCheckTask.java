@@ -8,6 +8,7 @@ import tc.oc.bingo.Bingo;
 
 public class RepeatCheckTask extends BukkitRunnable {
 
+  private final CheckMode mode;
   private final BooleanSupplier check;
   private final Runnable onSuccess;
   private final @Nullable Runnable onFailure;
@@ -15,32 +16,76 @@ public class RepeatCheckTask extends BukkitRunnable {
   private int maxIterations;
   private int currentIteration = 0;
 
-  public RepeatCheckTask(BooleanSupplier check, Runnable onSuccess) {
-    this.check = check;
-    this.onSuccess = onSuccess;
-    this.onFailure = null;
+  public enum CheckMode {
+    /**
+     * The condition must remain true for the entire duration (e.g., player stays inside a region).
+     * Fails immediately if the condition is false at any point.
+     */
+    CONTINUOUS,
+
+    /**
+     * The condition must be true at least once within the time period (e.g., player enters a zone
+     * once). Succeeds immediately when true; fails only if never true during the time.
+     */
+    PASS_ONCE
   }
 
-  public RepeatCheckTask(BooleanSupplier check, Runnable onSuccess, @Nullable Runnable onFailure) {
+  public RepeatCheckTask(CheckMode mode, BooleanSupplier check, Runnable onSuccess) {
+    this(mode, check, onSuccess, null);
+  }
+
+  public RepeatCheckTask(
+      CheckMode mode, BooleanSupplier check, Runnable onSuccess, @Nullable Runnable onFailure) {
+    this.mode = mode;
     this.check = check;
     this.onSuccess = onSuccess;
     this.onFailure = onFailure;
   }
 
+  // Legacy fallback constructor: defaults to CONTINUOUS
+  @Deprecated
+  public RepeatCheckTask(BooleanSupplier check, Runnable onSuccess) {
+    this(CheckMode.CONTINUOUS, check, onSuccess, null);
+  }
+
+  @Deprecated
+  public RepeatCheckTask(BooleanSupplier check, Runnable onSuccess, @Nullable Runnable onFailure) {
+    this(CheckMode.CONTINUOUS, check, onSuccess, onFailure);
+  }
+
   @Override
   public void run() {
-    if (!check.getAsBoolean()) {
-      if (onFailure != null) onFailure.run(); // If the check fails report back
-      cancel(); // If the check fails, stop the task
-      return;
-    }
-
+    boolean result = check.getAsBoolean();
     currentIteration++;
+    boolean lastIteration = currentIteration >= maxIterations;
 
-    if (currentIteration >= maxIterations) {
-      onSuccess.run(); // Execute the success action
-      cancel(); // Stop the task
+    switch (mode) {
+      case PASS_ONCE:
+        if (result) {
+          succeed();
+        } else if (lastIteration) {
+          fail();
+        }
+        break;
+
+      case CONTINUOUS:
+        if (!result) {
+          fail();
+        } else if (lastIteration) {
+          succeed();
+        }
+        break;
     }
+  }
+
+  private void succeed() {
+    onSuccess.run();
+    cancel();
+  }
+
+  private void fail() {
+    if (onFailure != null) onFailure.run();
+    cancel();
   }
 
   public BukkitTask start(int iterations) {

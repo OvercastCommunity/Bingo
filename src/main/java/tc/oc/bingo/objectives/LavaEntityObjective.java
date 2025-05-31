@@ -28,7 +28,12 @@ public class LavaEntityObjective extends ObjectiveTracker {
   @Override
   public Stream<ManagedListener> children() {
     return Stream.concat(
-        super.children(), Stream.of(CarePackageModule.getInstance().addLoot(this::loot)));
+        super.children(),
+        Stream.of(
+            CarePackageModule.getInstance()
+                .addLoot(this::loot)
+                .addLoot(matchPlayer -> new ItemStack(Material.SADDLE))
+                .addLoot(matchPlayer -> new ItemStack(Material.SAPLING, 1, (short) 3))));
   }
 
   private ItemStack loot(MatchPlayer player) {
