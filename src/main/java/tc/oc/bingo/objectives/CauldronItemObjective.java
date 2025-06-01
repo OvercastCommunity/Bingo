@@ -22,6 +22,7 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.material.Cauldron;
 import org.bukkit.material.Dye;
 import org.bukkit.material.MaterialData;
+import tc.oc.bingo.listeners.ItemRemoveCanceller;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.util.bukkit.BukkitUtils;
 
@@ -81,6 +82,7 @@ public class CauldronItemObjective extends ObjectiveTracker {
     ItemStack item = new ItemStack(Material.INK_SACK, 1);
     item.setData(new Dye(dyeColor));
     item.setDurability(item.getData().getData());
+    ItemRemoveCanceller.applyCustomMeta(item);
 
     // Play effect and sound, then drop the item
     Location effectLocation = block.getLocation().add(0.5, 1, 0.5);
