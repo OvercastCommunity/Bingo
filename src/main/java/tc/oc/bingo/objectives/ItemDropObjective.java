@@ -76,6 +76,9 @@ public class ItemDropObjective extends ObjectiveTracker {
     // Check if block change possible
     if (!canPlayerPlaceBlock(player, block)) return;
 
+    // Don't replace non-air blocks
+    if (!block.isEmpty()) return;
+
     block.setType(TRANSFORM_BLOCK.get());
     droppedItem.remove();
     droppedItem
