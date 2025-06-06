@@ -120,6 +120,7 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
+    if (killRewardModule == null) return;
     if (!event.isChallengeKill()) return;
 
     MatchPlayer matchPlayer = getPlayer(event.getKiller());
@@ -267,6 +268,7 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
       chest = world.spawn(spawnAt, ArmorStand.class);
       chest.setVisible(false);
       chest.setBasePlate(false);
+      chest.setMarker(true);
       NMSHacks.NMS_HACKS.freezeEntity(chest);
       chest.getEquipment().setHelmet(new ItemStack(Material.CHEST));
       chest.setMetadata(EGG_META, eggMetaValue);
@@ -274,6 +276,7 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
       leasher = world.spawn(spawnAt, ArmorStand.class);
       leasher.setVisible(false);
       leasher.setBasePlate(false);
+      leasher.setMarker(true);
       NMSHacks.NMS_HACKS.freezeEntity(leasher);
       leasher.setMetadata(EGG_META, eggMetaValue);
 
@@ -331,7 +334,7 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
               Math.clamp(hangPoint.getZ() - loc.getZ(), -0.2d, 0.2d));
       // Leash relative offset for 1.8 players.
       // Newer versions will see it point to a wrong position, but we can't do much about it.
-      Location leashLoc = chest.getLocation().add(-0.7, 1, 0.5);
+      Location leashLoc = chest.getLocation().add(-0.7, 2, 0.5);
       leashLoc.setYaw(180f);
       leasher.teleport(leashLoc);
 

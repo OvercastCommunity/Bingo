@@ -10,6 +10,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.CarePackageModule;
@@ -42,7 +43,7 @@ public class LavaEntityObjective extends ObjectiveTracker {
     return itemStack;
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.HIGH)
   public void onPlayerBucketEmpty(PlayerBucketEmptyEvent event) {
     Player player = event.getPlayer();
 
@@ -57,7 +58,7 @@ public class LavaEntityObjective extends ObjectiveTracker {
     boolean isCustomLavaBucket = LAVA_BUCKET_ITEM.has(event.getPlayer().getItemInHand());
 
     // When using custom lava buckets prevent placing actual
-    if (isCustomLavaBucket) event.setCancelled(true); // TODO: when to remove item
+    if (isCustomLavaBucket) event.setCancelled(true);
 
     ItemStack itemStack = event.getItemStack();
     itemStack.setType(Material.BUCKET);
@@ -83,5 +84,15 @@ public class LavaEntityObjective extends ObjectiveTracker {
             reward(player);
           }
         });
+  }
+
+  @EventHandler(ignoreCancelled = true)
+  public void onDispenserActivate(BlockDispenseEvent event) {
+    if (event.getItem().getType() != Material.LAVA_BUCKET) return;
+
+    // Cancel the lava from dispensing, removing breaks things
+    if (LAVA_BUCKET_ITEM.has(event.getItem())) {
+      event.setCancelled(true);
+    }
   }
 }
