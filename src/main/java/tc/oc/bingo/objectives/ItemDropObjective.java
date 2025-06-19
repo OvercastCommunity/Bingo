@@ -18,6 +18,7 @@ import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.events.ParticipantBlockTransformEvent;
+import tc.oc.pgm.util.MatchPlayers;
 
 @Tracker("item-drop")
 public class ItemDropObjective extends ObjectiveTracker {
@@ -40,7 +41,7 @@ public class ItemDropObjective extends ObjectiveTracker {
     if (!stack.equals(THROWN_MATERIAL.get())) return;
 
     MatchPlayer player = getPlayer(event.getPlayer());
-    if (player == null) return;
+    if (!MatchPlayers.canInteract(player)) return;
 
     // When logic ends here reward after a short wait
     if (!TRANSFORM_ON_LAND.get()) {

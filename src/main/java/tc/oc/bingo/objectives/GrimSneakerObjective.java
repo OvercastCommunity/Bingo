@@ -28,6 +28,7 @@ public class GrimSneakerObjective extends ObjectiveTracker {
   private final Map<UUID, Long> lastSneaking = useState(Scope.LIFE);
 
   private final Supplier<Double> MIN_SNEAK_SECONDS = useConfig("min-sneak-seconds", 5d);
+  private final Supplier<Double> HIT_DROP_RATE = useConfig("hit-drop-rate", 0.05);
 
   private final Set<Material> HOE_MATERIALS =
       EnumSet.of(
@@ -73,8 +74,8 @@ public class GrimSneakerObjective extends ObjectiveTracker {
     Location location = victim.getLocation().add(0, 0.5, 0);
     location.getWorld().playEffect(location, Effect.STEP_SOUND, Material.REDSTONE_WIRE);
 
-    // Randomly 0.05% chance to drop a bone
-    if (Math.random() < 0.05) {
+    // Random chance to drop a bone
+    if (Math.random() < HIT_DROP_RATE.get()) {
       location.getWorld().dropItemNaturally(location, new ItemStack(Material.BONE));
     }
 

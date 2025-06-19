@@ -132,7 +132,8 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
 
     if (streak != REQUIRED_STREAK.get()) return;
 
-    // Give custom item with name and meta, sadly lost if inv is full.
+    // Give custom item with name and meta, sadly lost if inv is full or dead.
+    if (!MatchPlayers.canInteract(matchPlayer)) return;
     matchPlayer.getBukkit().getInventory().addItem(carePackageItem());
   }
 
@@ -206,7 +207,7 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
     event.setCancelled(true);
 
     MatchPlayer player = getPlayer(event.getPlayer());
-    if (player == null) return;
+    if (!MatchPlayers.canInteract(player)) return;
 
     // Check the player clicked the top face of a block
     if (!event.getBlockFace().equals(BlockFace.UP)) {
