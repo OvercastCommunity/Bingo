@@ -24,6 +24,7 @@ import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.bingo.listeners.ItemRemoveCanceller;
 import tc.oc.bingo.listeners.PlayerJoinListener;
+import tc.oc.bingo.modules.CustomItemModule;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
 import tc.oc.bingo.util.Exceptions;
@@ -70,6 +71,8 @@ public class Bingo extends JavaPlugin {
 
     this.playerJoinListener = new PlayerJoinListener(this);
     this.itemremoveCanceller = new ItemRemoveCanceller(this);
+    CustomItemModule.INSTANCE.enable();
+
     this.rewards = new RewardManager(this);
 
     // Set up the command manager and register all commands
@@ -87,6 +90,7 @@ public class Bingo extends JavaPlugin {
   public void reloadTrackerConfigs() {
     itemremoveCanceller.reloadConfig(getConfig());
     trackers.values().forEach(t -> t.reloadConfig(getConfig()));
+    CustomItemModule.INSTANCE.reloadConfig(getConfig());
   }
 
   @SneakyThrows
@@ -178,6 +182,8 @@ public class Bingo extends JavaPlugin {
             tracker.enable();
             trackers.put(fullSlug, tracker);
           });
+
+      CustomItemModule.INSTANCE.reloadConfig(getConfig());
     }
   }
 }

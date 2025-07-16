@@ -1,6 +1,7 @@
 package tc.oc.bingo.objectives;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Data;
 import lombok.Getter;
@@ -219,6 +221,61 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
     @Override
     public double progress(Integer data) {
       return (double) data / maxValue();
+    }
+  }
+
+  public abstract static class StatefulSet<T> extends Stateful<Set<T>> {
+
+    protected abstract int maxCount();
+
+    protected void trackProgress(Player player, T value) {
+      if (player == null || value == null) return;
+
+      Set<T> updated =
+          updateObjectiveData(
+              player.getUniqueId(),
+              current -> {
+                current.add(value);
+                return current;
+              });
+
+      if (updated.size() >= maxCount()) {
+        reward(player);
+      }
+    }
+
+    @Override
+    public @NotNull Set<T> initial() {
+      return new HashSet<>();
+    }
+
+    @Override
+    public @NotNull Set<T> deserialize(@NotNull String string) {
+      if (string.isEmpty()) return initial();
+      return Arrays.stream(string.split(","))
+          .map(this::deserializeElement)
+          .collect(Collectors.toSet());
+    }
+
+    @Override
+    public @NotNull String serialize(@NotNull Set<T> data) {
+      return data.stream().map(this::serializeElement).collect(Collectors.joining(","));
+    }
+
+    @Override
+    public double progress(Set<T> data) {
+      return (double) data.size() / maxCount();
+    }
+
+    // Should be overridden by subclasses to handle specific types
+    protected T deserializeElement(String string) {
+      @SuppressWarnings("unchecked")
+      T value = (T) string;
+      return value;
+    }
+
+    protected String serializeElement(T value) {
+      return value.toString();
     }
   }
 }

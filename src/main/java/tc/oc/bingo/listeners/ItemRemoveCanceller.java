@@ -52,7 +52,7 @@ public class ItemRemoveCanceller implements Listener, ConfigHandler.Extensions {
     }
   }
 
-  @EventHandler(ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onItemCraft(PrepareItemCraftEvent event) {
     // Check if any items in the ingredient list are cancelled drops
     boolean metaCrafted =
