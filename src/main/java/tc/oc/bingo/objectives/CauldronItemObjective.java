@@ -22,7 +22,7 @@ import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.material.Cauldron;
 import org.bukkit.material.Dye;
 import org.bukkit.material.MaterialData;
-import tc.oc.bingo.listeners.ItemRemoveCanceller;
+import tc.oc.bingo.modules.ItemRemoveCanceller;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.util.bukkit.BukkitUtils;
 

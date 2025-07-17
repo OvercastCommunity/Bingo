@@ -22,7 +22,8 @@ import tc.oc.pgm.util.material.Materials;
 public class FruitCraftingObjective extends ObjectiveTracker {
 
   private static final Supplier<CustomItem> STRAWBERRY_ITEM = CustomItem.of("strawberry");
-  private static final Supplier<CustomItem> STRAWBERRY_RESULT_ITEM = CustomItem.of("strawberries_and_cream");
+  private static final Supplier<CustomItem> STRAWBERRY_RESULT_ITEM =
+      CustomItem.of("strawberries_and_cream");
 
   ShapelessRecipe shapelessRecipe =
       new ShapelessRecipe(STRAWBERRY_RESULT_ITEM.get().toItemStack())
@@ -31,8 +32,7 @@ public class FruitCraftingObjective extends ObjectiveTracker {
           .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3));
 
   @Override
-  public void enable() {
-    super.enable();
+  public void setupDependencies() {
     Bukkit.getServer().addRecipe(shapelessRecipe);
   }
 
@@ -42,8 +42,7 @@ public class FruitCraftingObjective extends ObjectiveTracker {
   }
 
   @Override
-  public void disable() {
-    super.disable();
+  public void teardownDependencies() {
     Iterator<Recipe> recipeIterator = Bukkit.getServer().recipeIterator();
     // TODO: recipeIterator.
   }

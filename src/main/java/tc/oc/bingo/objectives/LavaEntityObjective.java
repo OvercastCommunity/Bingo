@@ -1,8 +1,9 @@
 package tc.oc.bingo.objectives;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -14,27 +15,31 @@ import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.CarePackageModule;
+import tc.oc.bingo.modules.DependsOn;
 import tc.oc.bingo.util.LocationUtils;
-import tc.oc.bingo.util.ManagedListener;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.util.inventory.tag.ItemTag;
 
 @Tracker("lava-entity")
+@DependsOn(CarePackageModule.class)
 public class LavaEntityObjective extends ObjectiveTracker {
 
-  private final Supplier<EntityType> ENTITY_TYPE = useConfig("entity-type", EntityType.CHICKEN);
-
   public static final ItemTag<Boolean> LAVA_BUCKET_ITEM = ItemTag.newBoolean("custom-lava-bucket");
+  private final Supplier<EntityType> ENTITY_TYPE = useConfig("entity-type", EntityType.CHICKEN);
+  private final List<Function<MatchPlayer, ItemStack>> loot =
+      List.of(
+          this::loot,
+          matchPlayer -> new ItemStack(Material.SADDLE),
+          matchPlayer -> new ItemStack(Material.SAPLING, 1, (short) 3));
 
   @Override
-  public Stream<ManagedListener> children() {
-    return Stream.concat(
-        super.children(),
-        Stream.of(
-            CarePackageModule.getInstance()
-                .addLoot(this::loot)
-                .addLoot(matchPlayer -> new ItemStack(Material.SADDLE))
-                .addLoot(matchPlayer -> new ItemStack(Material.SAPLING, 1, (short) 3))));
+  public void setupDependencies() {
+    CarePackageModule.INSTANCE.addLoot(loot);
+  }
+
+  @Override
+  public void teardownDependencies() {
+    CarePackageModule.INSTANCE.removeLoot(loot);
   }
 
   private ItemStack loot(MatchPlayer player) {

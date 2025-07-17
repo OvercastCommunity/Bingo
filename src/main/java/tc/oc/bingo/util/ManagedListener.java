@@ -7,18 +7,41 @@ import org.bukkit.Bukkit;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import tc.oc.bingo.Bingo;
+import tc.oc.bingo.modules.BingoModule;
+import tc.oc.bingo.modules.DependsOn;
 import tc.oc.pgm.api.PGM;
 
 public interface ManagedListener extends Listener {
 
+  default void setupDependencies() {}
+
+  default void teardownDependencies() {}
+
   default void enable() {
     Bukkit.getServer().getPluginManager().registerEvents(this, Bingo.get());
     children().forEach(ManagedListener::enable);
+    var dependants = getClass().getAnnotation(DependsOn.class);
+    if (dependants != null) {
+      var bingo = Bingo.get();
+      for (Class<? extends BingoModule> cls : dependants.value()) {
+        bingo.getModules().get(cls).addDependant(this);
+      }
+    }
+    setupDependencies();
   }
 
   default void disable() {
     HandlerList.unregisterAll(this);
     children().forEach(ManagedListener::disable);
+
+    var dependants = getClass().getAnnotation(DependsOn.class);
+    if (dependants != null) {
+      var bingo = Bingo.get();
+      for (Class<? extends BingoModule> cls : dependants.value()) {
+        bingo.getModules().get(cls).removeDependant(this);
+      }
+    }
+    teardownDependencies();
   }
 
   default Stream<ManagedListener> children() {

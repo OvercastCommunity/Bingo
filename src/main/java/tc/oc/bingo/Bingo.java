@@ -3,6 +3,7 @@ package tc.oc.bingo;
 import co.aikar.commands.BukkitCommandManager;
 import fr.minuskube.inv.InventoryManager;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -22,9 +23,12 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoDatabase;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
-import tc.oc.bingo.listeners.ItemRemoveCanceller;
 import tc.oc.bingo.listeners.PlayerJoinListener;
+import tc.oc.bingo.modules.BingoModule;
+import tc.oc.bingo.modules.CarePackageModule;
 import tc.oc.bingo.modules.CustomItemModule;
+import tc.oc.bingo.modules.FridgeModule;
+import tc.oc.bingo.modules.ItemRemoveCanceller;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
 import tc.oc.bingo.util.Exceptions;
@@ -40,6 +44,7 @@ public class Bingo extends JavaPlugin {
 
   // Plugin state
   private final Map<String, ObjectiveTracker> trackers = new HashMap<>(25);
+  private final Map<Class<? extends BingoModule>, BingoModule> modules = new HashMap<>();
   private final Map<UUID, BingoPlayerCard> cards = new HashMap<>();
   private BingoCard bingoCard = null;
 
@@ -48,7 +53,6 @@ public class Bingo extends JavaPlugin {
   private BingoDatabase database;
 
   private PlayerJoinListener playerJoinListener;
-  private ItemRemoveCanceller itemremoveCanceller;
   private RewardManager rewards;
   private BukkitCommandManager commands;
   private InventoryManager inventoryManager;
@@ -70,8 +74,12 @@ public class Bingo extends JavaPlugin {
     this.database = BingoDatabase.build(Config.get().getDatabase());
 
     this.playerJoinListener = new PlayerJoinListener(this);
-    this.itemremoveCanceller = new ItemRemoveCanceller(this);
-    CustomItemModule.INSTANCE.enable();
+    List.of(
+            CarePackageModule.INSTANCE,
+            CustomItemModule.INSTANCE,
+            FridgeModule.INSTANCE,
+            ItemRemoveCanceller.INSTANCE)
+        .forEach(m -> modules.put(m.getClass(), m));
 
     this.rewards = new RewardManager(this);
 
@@ -88,9 +96,8 @@ public class Bingo extends JavaPlugin {
   }
 
   public void reloadTrackerConfigs() {
-    itemremoveCanceller.reloadConfig(getConfig());
     trackers.values().forEach(t -> t.reloadConfig(getConfig()));
-    CustomItemModule.INSTANCE.reloadConfig(getConfig());
+    modules.values().forEach(m -> m.reloadConfig(getConfig()));
   }
 
   @SneakyThrows
@@ -182,8 +189,7 @@ public class Bingo extends JavaPlugin {
             tracker.enable();
             trackers.put(fullSlug, tracker);
           });
-
-      CustomItemModule.INSTANCE.reloadConfig(getConfig());
+      modules.values().forEach(m -> m.reloadConfig(getConfig()));
     }
   }
 }

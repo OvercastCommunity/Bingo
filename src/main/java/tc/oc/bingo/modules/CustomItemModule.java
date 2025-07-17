@@ -6,7 +6,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.function.Supplier;
-import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -19,20 +18,17 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import tc.oc.bingo.Bingo;
-import tc.oc.bingo.config.ConfigHandler;
 import tc.oc.bingo.config.ConfigReader;
 import tc.oc.bingo.util.CustomItem;
-import tc.oc.bingo.util.ManagedListener;
 import tc.oc.pgm.api.event.BlockTransformEvent;
 import tc.oc.pgm.util.inventory.tag.ItemTag;
 import tc.oc.pgm.util.material.MaterialData;
 
-public class CustomItemModule implements ManagedListener, ConfigHandler.Extensions {
-
+@BingoModule.Config("custom-items")
+@BingoModule.AlwaysOn
+public class CustomItemModule extends BingoModule {
   public static final CustomItemModule INSTANCE = new CustomItemModule();
-
   private static final CustomItem UNKNOWN_ITEM = new CustomItem("unknown", "Unknown", null, "");
-
   private static final ConfigReader<CustomItem> CUSTOM_ITEM_READER =
       (cfg, key, def) -> {
         ConfigurationSection configurationSection = cfg.getConfigurationSection(key);
@@ -47,11 +43,7 @@ public class CustomItemModule implements ManagedListener, ConfigHandler.Extensio
 
   private final Map<String, Supplier<CustomItem>> customItems = new HashMap<>();
 
-  @Getter private final ConfigHandler config = new ConfigHandler();
-
   private final Random random = new Random();
-
-  private CustomItemModule() {}
 
   public Supplier<CustomItem> getItem(String id) {
     return customItems.computeIfAbsent(
@@ -80,7 +72,7 @@ public class CustomItemModule implements ManagedListener, ConfigHandler.Extensio
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onBlockBreak(BlockTransformEvent event) {
-    if (!event.getOldState().getType().equals(Material.SKULL)) return;
+    if (!event.changedFrom(Material.SKULL)) return;
 
     Block block = event.getBlock();
     if (block.getType() != Material.SKULL) return;
@@ -100,10 +92,5 @@ public class CustomItemModule implements ManagedListener, ConfigHandler.Extensio
     dropLocation.setY(dropLocation.getBlockY() + random.nextDouble() * 0.5 + 0.25);
     dropLocation.setZ(dropLocation.getBlockZ() + random.nextDouble() * 0.5 + 0.25);
     dropLocation.getWorld().dropItem(dropLocation, getItem(customItemId).get().toItemStack());
-  }
-
-  @Override
-  public String getConfigSection() {
-    return "custom-items";
   }
 }

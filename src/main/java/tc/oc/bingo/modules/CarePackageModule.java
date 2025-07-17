@@ -41,8 +41,6 @@ import org.bukkit.material.MaterialData;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.util.Vector;
 import tc.oc.bingo.Bingo;
-import tc.oc.bingo.config.ConfigHandler;
-import tc.oc.bingo.util.ManagedListener;
 import tc.oc.bingo.util.PGMUtils;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
@@ -57,9 +55,9 @@ import tc.oc.pgm.util.inventory.tag.ItemTag;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.nms.NMSHacks;
 
-public class CarePackageModule implements ManagedListener, ConfigHandler.Extensions, PGMUtils {
-
-  @Getter private final ConfigHandler config = new ConfigHandler();
+@BingoModule.Config("care-package-module")
+public class CarePackageModule extends BingoModule implements PGMUtils {
+  public static final CarePackageModule INSTANCE = new CarePackageModule();
 
   private static final ItemTag<Boolean> EGG_ITEM = ItemTag.newBoolean("custom-egg-item");
   private static final String EGG_META = "care-package-egg";
@@ -81,22 +79,6 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
   private KillRewardMatchModule killRewardModule;
 
   private final List<Function<MatchPlayer, ItemStack>> lootFunctions = new ArrayList<>();
-
-  // Allow for singleton instantiation
-  // TODO: singleton listener?
-  private static CarePackageModule instance;
-
-  public static CarePackageModule getInstance() {
-    if (instance == null) {
-      instance = new CarePackageModule();
-    }
-    return instance;
-  }
-
-  @Override
-  public String getConfigSection() {
-    return "care-package-module";
-  }
 
   private final List<CarePackage> liveCarePackages = new ArrayList<>();
 
@@ -404,12 +386,12 @@ public class CarePackageModule implements ManagedListener, ConfigHandler.Extensi
     }
   }
 
-  public CarePackageModule addLoot(Function<MatchPlayer, ItemStack> lootFunction) {
-    if (lootFunction != null) {
-      lootFunctions.add(lootFunction);
-    }
+  public void addLoot(List<Function<MatchPlayer, ItemStack>> lootFunction) {
+    lootFunctions.addAll(lootFunction);
+  }
 
-    return this;
+  public void removeLoot(List<Function<MatchPlayer, ItemStack>> lootFunction) {
+    lootFunctions.removeAll(lootFunction);
   }
 
   private ItemStack calculateLoot(MatchPlayer player) {
