@@ -8,6 +8,7 @@ import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
+import tc.oc.bingo.modules.CustomItemModule;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
@@ -20,6 +21,12 @@ public class AnvilSmasher extends ObjectiveTracker {
   private TrackerMatchModule tracker;
 
   private final Supplier<Material> BLOCK_REQUIRED = useConfig("falling-block-name", Material.ANVIL);
+
+  // TODO: do?
+  private final Supplier<Boolean> REMOVE_ITEM = useConfig("remove-item-block-name", false);
+
+  private final Supplier<String> SQUASHED_ITEM =
+      useConfig("squashed-item-key", null, (cfg, key, def) -> cfg.getString(key));
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchLoadEvent event) { // TODO: switch to match after load event
@@ -48,6 +55,17 @@ public class AnvilSmasher extends ObjectiveTracker {
 
     MatchPlayer matchPlayer = owner.getPlayer().orElse(null);
     if (matchPlayer == null) return;
+
+    String customItemId = SQUASHED_ITEM.get();
+    if (customItemId != null) {
+
+      boolean matches =
+          nearbyEntitiesByType.stream()
+              .anyMatch(
+                  item -> CustomItemModule.getItemId(item.getItemStack()).equals(customItemId));
+
+      if (!matches) return;
+    }
 
     reward(matchPlayer.getBukkit());
   }

@@ -1,7 +1,8 @@
 package tc.oc.bingo.objectives;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.bukkit.Bukkit;
@@ -51,35 +52,51 @@ public class FruitCraftingObjective extends ObjectiveTracker {
     return CustomItemModule.isCustomItem(item, STRAWBERRY_ITEM);
   }
 
-  @EventHandler(ignoreCancelled = false)
+  @EventHandler(ignoreCancelled = true)
   public void onItemCraft(PrepareItemCraftEvent event) {
     ItemStack[] contents = event.getInventory().getContents();
 
-    Map<Function<ItemStack, Boolean>, Boolean> conditions =
-        Map.of(
-            FruitCraftingObjective::fruitCheck,
-            false,
-            FruitCraftingObjective::fruitCheck,
-            false,
-            item -> item != null && item.getType().equals(Material.MILK_BUCKET),
-            false);
+    List<PredicateState> conditions = new ArrayList<>();
+    PredicateState fruitCheck = new PredicateState(FruitCraftingObjective::fruitCheck);
+    conditions.add(fruitCheck);
+    conditions.add(new PredicateState(FruitCraftingObjective::fruitCheck));
+    conditions.add(
+        new PredicateState(item -> item != null && item.getType() == Material.MILK_BUCKET));
 
     for (ItemStack content : contents) {
       if (content == null || content.getType() == Material.AIR) continue;
-      for (Map.Entry<Function<ItemStack, Boolean>, Boolean> entry : conditions.entrySet()) {
-        // If already met, skip to next condition
-        if (entry.getValue()) continue;
-        Function<ItemStack, Boolean> condition = entry.getKey();
-        if (condition.apply(content)) {
-          entry.setValue(true);
+      for (PredicateState entry : conditions) {
+        if (entry.passes) continue; // Skip if already passed
+        if (entry.condition.apply(content)) {
+          entry.passes = true;
           break;
         }
       }
     }
 
-    boolean allConditionsMet = conditions.values().stream().allMatch(Boolean::booleanValue);
-    if (!allConditionsMet) return;
+    boolean allConditionsMet = conditions.stream().allMatch(check -> check.passes);
 
+    if (!allConditionsMet) {
+      // When the craft has fruit but not all conditions are met
+      if (fruitCheck.passes) {
+        event.getInventory().setResult(null); // TODO: not working
+      }
+      return;
+    }
+
+    event
+        .getInventory()
+        .setResult(STRAWBERRY_RESULT_ITEM.get().toItemStack()); // TODO: also not working
     reward(event.getActor());
+  }
+
+  private static class PredicateState {
+
+    public final Function<ItemStack, Boolean> condition;
+    public boolean passes = false;
+
+    public PredicateState(Function<ItemStack, Boolean> condition) {
+      this.condition = condition;
+    }
   }
 }
