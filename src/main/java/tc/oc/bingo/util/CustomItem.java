@@ -22,6 +22,10 @@ public record CustomItem(String id, String name, List<String> lore, String textu
     ItemStack playerHead = createPlayerHead(name, UUID.nameUUIDFromBytes(name.getBytes()), texture);
     ItemMeta itemMeta = playerHead.getItemMeta();
     itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.WHITE + name);
+    if (lore != null && !lore.isEmpty()) {
+      itemMeta.setLore(
+          lore.stream().map(line -> ChatColor.RESET + "" + ChatColor.GRAY + line).toList());
+    }
     playerHead.setItemMeta(itemMeta);
     CUSTOM_ITEM_META.set(playerHead, id);
     ItemRemoveCanceller.applyCustomMeta(playerHead);

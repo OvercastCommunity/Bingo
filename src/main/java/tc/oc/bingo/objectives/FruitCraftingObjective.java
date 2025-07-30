@@ -28,7 +28,7 @@ public class FruitCraftingObjective extends ObjectiveTracker {
 
   ShapelessRecipe shapelessRecipe =
       new ShapelessRecipe(STRAWBERRY_RESULT_ITEM.get().toItemStack())
-          .addIngredient(Material.MILK_BUCKET)
+          .addIngredient(Material.CARROT)
           .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3))
           .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3));
 
@@ -79,14 +79,14 @@ public class FruitCraftingObjective extends ObjectiveTracker {
     if (!allConditionsMet) {
       // When the craft has fruit but not all conditions are met
       if (fruitCheck.passes) {
-        event.getInventory().setResult(null); // TODO: not working
+        event.getInventory().setResult(new ItemStack(Material.CACTUS)); // TODO: not working
       }
       return;
     }
 
-    event
-        .getInventory()
-        .setResult(STRAWBERRY_RESULT_ITEM.get().toItemStack()); // TODO: also not working
+    event.getInventory().setResult(new ItemStack(Material.BONE, 1));
+    // event.getInventory().setResult(STRAWBERRY_RESULT_ITEM.get().toItemStack());
+    // TODO: also not working
     reward(event.getActor());
   }
 

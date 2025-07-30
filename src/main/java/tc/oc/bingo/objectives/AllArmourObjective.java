@@ -1,8 +1,9 @@
 package tc.oc.bingo.objectives;
 
-import com.google.common.collect.Iterables;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -12,6 +13,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -19,41 +22,53 @@ import tc.oc.pgm.spawns.events.ParticipantKitApplyEvent;
 import tc.oc.pgm.util.event.PlayerItemTransferEvent;
 
 @Tracker("all-armour")
-public class AllArmourObjective extends ObjectiveTracker.Stateful<Set<Character>> {
+public class AllArmourObjective
+    extends ObjectiveTracker.Stateful<AllArmourObjective.ArmourProgress> {
 
-  private final Supplier<Integer> SETS_REQUIRED = useConfig("sets-required", 4);
+  private final Supplier<Integer> COUNT_REQUIRED = useConfig("count-required", 4);
+
+  private final Supplier<Boolean> PARTIAL_SETS = useConfig("partial-sets", false);
+  private final Supplier<Boolean> COUNT_UNIQUE = useConfig("count-unique", false);
+
+  private static final Set<EquipmentSlot> ARMOR_SLOTS =
+      EnumSet.of(EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET);
 
   private final ArmourSet[] VALID_SETS = {
     new ArmourSet(
         'l',
-        Material.LEATHER_HELMET,
-        Material.LEATHER_CHESTPLATE,
-        Material.LEATHER_LEGGINGS,
-        Material.LEATHER_BOOTS),
+        Set.of(
+            Material.LEATHER_HELMET,
+            Material.LEATHER_CHESTPLATE,
+            Material.LEATHER_LEGGINGS,
+            Material.LEATHER_BOOTS)),
     new ArmourSet(
         'g',
-        Material.GOLD_HELMET,
-        Material.GOLD_CHESTPLATE,
-        Material.GOLD_LEGGINGS,
-        Material.GOLD_BOOTS),
+        Set.of(
+            Material.GOLD_HELMET,
+            Material.GOLD_CHESTPLATE,
+            Material.GOLD_LEGGINGS,
+            Material.GOLD_BOOTS)),
     new ArmourSet(
         'c',
-        Material.CHAINMAIL_HELMET,
-        Material.CHAINMAIL_CHESTPLATE,
-        Material.CHAINMAIL_LEGGINGS,
-        Material.CHAINMAIL_BOOTS),
+        Set.of(
+            Material.CHAINMAIL_HELMET,
+            Material.CHAINMAIL_CHESTPLATE,
+            Material.CHAINMAIL_LEGGINGS,
+            Material.CHAINMAIL_BOOTS)),
     new ArmourSet(
         'i',
-        Material.IRON_HELMET,
-        Material.IRON_CHESTPLATE,
-        Material.IRON_LEGGINGS,
-        Material.IRON_BOOTS),
+        Set.of(
+            Material.IRON_HELMET,
+            Material.IRON_CHESTPLATE,
+            Material.IRON_LEGGINGS,
+            Material.IRON_BOOTS)),
     new ArmourSet(
         'd',
-        Material.DIAMOND_HELMET,
-        Material.DIAMOND_CHESTPLATE,
-        Material.DIAMOND_LEGGINGS,
-        Material.DIAMOND_BOOTS)
+        Set.of(
+            Material.DIAMOND_HELMET,
+            Material.DIAMOND_CHESTPLATE,
+            Material.DIAMOND_LEGGINGS,
+            Material.DIAMOND_BOOTS))
   };
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -67,91 +82,132 @@ public class AllArmourObjective extends ObjectiveTracker.Stateful<Set<Character>
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onPlayerItemTransfer(InventoryClickEvent event) {
+  public void onInventoryClick(InventoryClickEvent event) {
     checkArmourStatus(getPlayer(event.getActor()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onPlayerItemTransfer(PlayerInteractEvent event) {
-    if (event.getAction().equals(Action.RIGHT_CLICK_BLOCK)
-        || event.getAction().equals(Action.RIGHT_CLICK_AIR)) {
+  public void onPlayerInteract(PlayerInteractEvent event) {
+    if (event.getAction() == Action.RIGHT_CLICK_AIR
+        || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
       checkArmourStatus(getPlayer(event.getActor()));
     }
   }
 
   private void checkArmourStatus(MatchPlayer player) {
     if (player == null || !player.isParticipating()) return;
-    PlayerInventory inventory = player.getInventory();
-    if (inventory == null) return;
 
-    if (inventory.getHelmet() == null
-        || inventory.getChestplate() == null
-        || inventory.getLeggings() == null
-        || inventory.getBoots() == null) {
-      return;
-    }
+    PlayerInventory inv = player.getInventory();
+    if (inv == null) return;
 
-    Set<Character> sets = getObjectiveData(player.getId());
+    ArmourProgress armourProgress =
+        updateObjectiveData(
+            player.getId(),
+            progress -> {
+              for (ArmourSet set : VALID_SETS) {
+                EnumSet<EquipmentSlot> worn = set.getWornPieces(inv);
+                if (worn.isEmpty()) continue;
 
-    for (ArmourSet set : VALID_SETS) {
-      if (sets.contains(set.code) || !set.isFullSet(inventory)) continue;
-      updateObjectiveData(
-          player.getId(),
-          s -> {
-            s.add(set.code);
-            return s;
-          });
+                // Skip if not all pieces are worn at same time and is required
+                if (!PARTIAL_SETS.get() && !worn.containsAll(ARMOR_SLOTS)) continue;
 
-      break;
-    }
+                Set<EquipmentSlot> current =
+                    progress.piecesBySet.computeIfAbsent(
+                        set.code, k -> EnumSet.noneOf(EquipmentSlot.class));
+                current.addAll(worn);
+              }
+              return progress;
+            });
 
-    if (sets.size() >= SETS_REQUIRED.get()) {
+    // Check if reward threshold met
+    long completed = getCompletionAmount(armourProgress);
+
+    if (completed >= COUNT_REQUIRED.get()) {
       reward(player.getBukkit());
     }
   }
 
-  @Override
-  public @NotNull Set<Character> initial() {
-    return new HashSet<>();
+  private int getCompletionAmount(ArmourProgress armourProgress) {
+    return armourProgress.piecesBySet.values().stream()
+        .mapToInt(
+            slots -> {
+              // If counting unique pieces
+              if (COUNT_UNIQUE.get()) return slots.size();
+              // If full sets are required
+              if (slots.containsAll(ARMOR_SLOTS)) return 1;
+              return 0;
+            })
+        .sum();
   }
 
   @Override
-  public @NotNull Set<Character> deserialize(@NotNull String string) {
-    if (string.isEmpty()) return initial();
-    return Arrays.stream(string.split(",")).map(s -> s.charAt(0)).collect(Collectors.toSet());
+  public @NotNull ArmourProgress initial() {
+    return new ArmourProgress();
   }
 
   @Override
-  public @NotNull String serialize(@NotNull Set<Character> data) {
-    return String.join(",", Iterables.transform(data, Object::toString));
+  public @NotNull ArmourProgress deserialize(@NotNull String string) {
+    // Stored as "l:HEAD,CHEST,LEGS,FEET;g:CHEST,FEET;..." etc
+    ArmourProgress progress = new ArmourProgress();
+    if (string.isEmpty()) return progress;
+
+    for (String entry : string.split(";")) {
+      String[] parts = entry.split(":");
+      if (parts.length != 2) continue;
+
+      char code = parts[0].charAt(0);
+      Set<EquipmentSlot> slots =
+          Arrays.stream(parts[1].split(","))
+              .map(EquipmentSlot::valueOf)
+              .collect(Collectors.toCollection(() -> EnumSet.noneOf(EquipmentSlot.class)));
+
+      progress.piecesBySet.put(code, slots);
+    }
+    return progress;
   }
 
   @Override
-  public double progress(Set<Character> data) {
-    return (double) data.size() / SETS_REQUIRED.get();
+  public @NotNull String serialize(@NotNull ArmourProgress data) {
+    return data.piecesBySet.entrySet().stream()
+        .map(
+            e ->
+                e.getKey()
+                    + ":"
+                    + e.getValue().stream().map(Enum::name).collect(Collectors.joining(",")))
+        .collect(Collectors.joining(";"));
+  }
+
+  @Override
+  public double progress(ArmourProgress data) {
+    long completed = getCompletionAmount(data);
+    return (double) completed / COUNT_REQUIRED.get();
+  }
+
+  public static class ArmourProgress {
+    public final Map<Character, Set<EquipmentSlot>> piecesBySet = new HashMap<>();
   }
 
   static class ArmourSet {
     char code;
-    private final Material helmet;
-    private final Material chestplate;
-    private final Material leggings;
-    private final Material boots;
+    private final Set<Material> items;
 
-    public ArmourSet(
-        char code, Material helmet, Material chestplate, Material leggings, Material boots) {
+    public ArmourSet(char code, Set<Material> items) {
       this.code = code;
-      this.helmet = helmet;
-      this.chestplate = chestplate;
-      this.leggings = leggings;
-      this.boots = boots;
+      this.items = items;
     }
 
-    public boolean isFullSet(PlayerInventory inv) {
-      return inv.getHelmet().getType() == helmet
-          && inv.getChestplate().getType() == chestplate
-          && inv.getLeggings().getType() == leggings
-          && inv.getBoots().getType() == boots;
+    public EnumSet<EquipmentSlot> getWornPieces(PlayerInventory inv) {
+      EnumSet<EquipmentSlot> worn = EnumSet.noneOf(EquipmentSlot.class);
+
+      ARMOR_SLOTS.forEach(
+          slot -> {
+            ItemStack item = inv.getItem(slot);
+            if (item != null && items.contains(item.getType())) {
+              worn.add(slot);
+            }
+          });
+
+      return worn;
     }
   }
 }

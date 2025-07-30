@@ -24,7 +24,7 @@ public class CiderSlurperObjective extends ObjectiveTracker {
 
   public static final ItemTag<Boolean> POTION_META = ItemTag.newBoolean("cider-slurper");
 
-  private final Supplier<Integer> CONVERT_SECONDS = useConfig("convert-seconds", 10);
+  private final Supplier<Integer> CONVERT_SECONDS = useConfig("convert-seconds", 60);
 
   @EventHandler
   public void onPlayerDropItem(PlayerDropItemEvent event) {
@@ -41,9 +41,9 @@ public class CiderSlurperObjective extends ObjectiveTracker {
   private void transformItem(Item itemDrop) {
     // Create a potion that gives nausea for 10 seconds
     ItemStack potionItem = new ItemStack(Material.POTION);
-    Potion potion = new Potion(PotionType.WATER);
+    Potion potion = new Potion(PotionType.INSTANT_DAMAGE);
     potion.setSplash(false);
-    potion.setType(PotionType.WEAKNESS);
+    potion.setType(PotionType.INSTANT_DAMAGE);
     potion.apply(potionItem);
 
     potionItem.setItemMeta(potionItem.getItemMeta());

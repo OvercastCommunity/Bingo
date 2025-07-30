@@ -1,5 +1,6 @@
 package tc.oc.bingo.objectives;
 
+import java.util.EnumSet;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.bukkit.Material;
@@ -27,14 +28,21 @@ public class FruitFallObjective extends ObjectiveTracker.StatefulSet<String> {
   private static final Set<Supplier<CustomItem>> GROUND_FRUITS =
       Set.of(CHERRY_ITEM, STRAWBERRY_ITEM);
 
+  private final Set<Material> SWORD_MATERIALS =
+      EnumSet.of(
+          Material.WOOD_SWORD,
+          Material.STONE_SWORD,
+          Material.GOLD_SWORD,
+          Material.IRON_SWORD,
+          Material.DIAMOND_SWORD);
+
   private static final Set<Material> LEAVES = Set.of(Material.LEAVES, Material.LEAVES_2);
 
+  private final Supplier<Boolean> REQUIRE_SWORD = useConfig("require-sword", true);
   private final Supplier<Integer> DROPS_REQUIRED = useConfig("drops-required", 5);
-
   private final Supplier<Double> DROP_CHANCE = useConfig("drop-chance", 1d); // 0.1d
 
   // When a player breaks a leaf block, they have a chance to drop a fruit.
-
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
     Block block = event.getBlock();
@@ -42,6 +50,9 @@ public class FruitFallObjective extends ObjectiveTracker.StatefulSet<String> {
     // Check that the block is a leaf
     Material type = block.getType();
     if (!LEAVES.contains(type)) return;
+
+    if (REQUIRE_SWORD.get()
+        && !SWORD_MATERIALS.contains(event.getPlayer().getItemInHand().getType())) return;
 
     // Require no drops from block (i.e sheared)
     if (!block.getDrops().isEmpty()) return;

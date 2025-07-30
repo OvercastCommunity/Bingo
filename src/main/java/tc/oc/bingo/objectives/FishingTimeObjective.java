@@ -5,7 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerFishEvent;
 import tc.oc.pgm.api.map.GameRule;
-import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
+import tc.oc.pgm.api.match.event.MatchStartEvent;
 
 @Tracker("fishing-time")
 public class FishingTimeObjective extends ObjectiveTracker.StatefulInt {
@@ -17,8 +17,8 @@ public class FishingTimeObjective extends ObjectiveTracker.StatefulInt {
 
   private boolean isEnabled = false;
 
-  @EventHandler
-  public void onMatchLoad(MatchAfterLoadEvent event) {
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onMatchStartEvent(MatchStartEvent event) {
     String gameRuleValue = event.getWorld().getGameRuleValue(GameRule.DO_DAYLIGHT_CYCLE.getId());
     isEnabled = Boolean.parseBoolean(gameRuleValue);
   }

@@ -68,7 +68,7 @@ public class SlotsObjective extends ObjectiveTracker {
     return world.getNearbyEntities(vec.toLocation(world), 0.5, 0.5, 0.5).stream()
         .filter(entity -> entity instanceof ItemFrame)
         .map(entity -> (ItemFrame) entity)
-        .filter(frame -> frame.getFacing() == facing.getOppositeFace())
+        .filter(frame -> frame.getFacing() == facing)
         .findFirst()
         .orElse(null);
   }
@@ -76,18 +76,20 @@ public class SlotsObjective extends ObjectiveTracker {
   private BlockFace getLeverFacing(Block block) {
     byte data = block.getData();
     return switch (data) {
-      case 1 -> BlockFace.WEST;
-      case 2 -> BlockFace.EAST;
-      case 3 -> BlockFace.NORTH;
-      case 4 -> BlockFace.SOUTH;
+      case 1 -> BlockFace.EAST;
+      case 2 -> BlockFace.WEST;
+      case 3 -> BlockFace.SOUTH;
+      case 4 -> BlockFace.NORTH;
       default -> null;
     };
   }
 
   private BlockFace getHorizontalPerpendicular(BlockFace face) {
     return switch (face) {
-      case NORTH, SOUTH -> BlockFace.EAST;
-      case EAST, WEST -> BlockFace.NORTH;
+      case NORTH -> BlockFace.EAST;
+      case EAST -> BlockFace.SOUTH;
+      case SOUTH -> BlockFace.WEST;
+      case WEST -> BlockFace.NORTH;
       default -> null;
     };
   }
