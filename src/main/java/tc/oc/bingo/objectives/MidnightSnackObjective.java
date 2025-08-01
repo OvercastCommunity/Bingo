@@ -14,6 +14,7 @@ import tc.oc.pgm.api.match.event.MatchStartEvent;
 public class MidnightSnackObjective extends ObjectiveTracker {
 
   private final Supplier<Double> CYCLE_CHANCE = useConfig("cycle-chance", 0.2);
+  private final Supplier<Integer> LENIENCY_TICKS = useConfig("ticks-leniency", 500);
 
   private boolean isEnabled = false;
 
@@ -42,6 +43,6 @@ public class MidnightSnackObjective extends ObjectiveTracker {
 
   private boolean isMidnight(World world) {
     long time = world.getTime();
-    return time >= 17000 && time <= 19000;
+    return time >= (18000 - LENIENCY_TICKS.get()) && time <= (18000 + LENIENCY_TICKS.get());
   }
 }

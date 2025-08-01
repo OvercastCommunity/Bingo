@@ -1,8 +1,13 @@
 package tc.oc.bingo.objectives;
 
+import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Material;
+import org.bukkit.Skin;
+import org.bukkit.SkullType;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Skull;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -64,8 +69,23 @@ public class CastleBuilderObjective extends ObjectiveTracker {
     Block block = event.getBlockPlaced();
     Player player = event.getPlayer();
 
-    ItemStack sandCastle = SAND_CASTLE.get().toItemStack();
-    block.setType(Material.SANDSTONE); // Or any block you want to represent the sand castle
+    CustomItem sandCastle = SAND_CASTLE.get();
+
+    BlockFace rotation = null;
+    if (event.getBlock().getState() instanceof Skull skull) {
+      rotation = skull.getRotation();
+    }
+
+    block.setType(Material.SKULL);
+    if (block.getState() instanceof Skull skull) {
+      skull.setSkullType(SkullType.PLAYER);
+      Skin skin = new Skin(sandCastle.texture(), null);
+      skull.setOwner("Sand Castle", UUID.nameUUIDFromBytes(sandCastle.name().getBytes()), skin);
+      if (rotation != null) skull.setRotation(rotation);
+      skull.update();
+    }
+
+    // TODO: update the meta to be sand castle? or just turn to sand on pick up?
 
     // Reward the player
     reward(player);

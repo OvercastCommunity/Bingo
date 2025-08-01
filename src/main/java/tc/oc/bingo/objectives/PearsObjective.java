@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -18,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.CustomItemModule;
 import tc.oc.bingo.util.CustomItem;
 import tc.oc.bingo.util.ManagedListener;
-import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.api.PGM;
 
 @Tracker("pears-pair")
 public class PearsObjective extends ObjectiveTracker {
@@ -37,57 +38,64 @@ public class PearsObjective extends ObjectiveTracker {
   }
 
   private void checkPairs() {
-    pearWearers.forEach(
-        playerId -> {
-          MatchPlayer matchPlayer = getPlayer(playerId);
-          if (matchPlayer == null) return;
-          checkPairs(matchPlayer.getBukkit());
-        });
+    pearWearers.forEach(this::checkPairs);
+  }
+
+  private void checkPairs(UUID uuid) {
+    Player player = Bukkit.getPlayer(uuid);
+    if (player == null || !player.isOnline()) {
+      pearWearers.remove(uuid);
+      return;
+    }
+
+    checkPairs(player);
   }
 
   private void checkPairs(Player player) {
-    if (!isWearingPear(player)) return;
+    if (!passesVibeCheck(player)) return;
 
     Set<Player> rewardingPlayers =
         player.getNearbyEntities(PAIR_RANGE.get(), PAIR_RANGE.get(), PAIR_RANGE.get()).stream()
             .filter(entity -> entity instanceof Player)
             .map(entity -> (Player) entity)
             .filter(neighbor -> !neighbor.getUniqueId().equals(player.getUniqueId()))
-            .filter(this::isWearingPear)
+            .filter(this::passesVibeCheck)
             .collect(Collectors.toSet());
+
+    if (rewardingPlayers.isEmpty()) return;
 
     reward(rewardingPlayers);
   }
 
-  public boolean isWearingPear(Player player) {
+  public boolean passesVibeCheck(Player player) {
     if (!pearWearers.contains(player.getUniqueId())) return false;
-    ItemStack helmet = player.getInventory().getHelmet();
 
-    boolean isWearingPear =
-        helmet != null
-            && helmet.getType() == Material.SKULL
-            && CustomItemModule.isCustomItem(helmet, PEAR_ITEM);
-
-    // TODO: will cause issues with stream?
+    boolean isWearingPear = isPearItem(player.getInventory().getHelmet());
     if (!isWearingPear) pearWearers.remove(player.getUniqueId());
 
     return isWearingPear;
   }
 
+  public boolean isPearItem(ItemStack itemStack) {
+    return itemStack != null
+        && (itemStack.getType() == Material.SKULL || itemStack.getType() == Material.SKULL_ITEM)
+        && CustomItemModule.isCustomItem(itemStack, PEAR_ITEM);
+  }
+
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onWearSkull(InventoryClickEvent event) {
     if (notParticipating(event.getWhoClicked())) return;
-
-    if (!event.getSlotType().equals(InventoryType.SlotType.ARMOR)) return;
-    if (!event.getAction().equals(InventoryAction.PLACE_ALL)) return;
     if (event.getRawSlot() != 5) return;
 
-    // Detect player putting on a custom skill
-    if (event.getCursor() != null || event.getCursor().getType() != Material.SKULL) {
-      if (CustomItemModule.isCustomItem(event.getCursor(), PEAR_ITEM)) {
-        pearWearers.add(event.getWhoClicked().getUniqueId());
-        checkPairs(event.getActor());
-      }
+    if (!event.getSlotType().equals(InventoryType.SlotType.ARMOR)) return;
+    InventoryAction action = event.getAction();
+    if (!(action.equals(InventoryAction.PLACE_ALL)
+        || action.equals(InventoryAction.SWAP_WITH_CURSOR))) return;
+
+    // Detect player putting on a custom skull
+    if (isPearItem(event.getCursor())) {
+      pearWearers.add(event.getWhoClicked().getUniqueId());
+      PGM.get().getExecutor().schedule(() -> checkPairs(event.getActor()), 1, TimeUnit.SECONDS);
     }
   }
 }

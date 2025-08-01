@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -102,8 +101,7 @@ public class PetGrowerObjective extends ObjectiveTracker {
     UUID entityId = entity.getUniqueId();
     droppedLoot.put(entityId, List.copyOf(event.getDrops()));
 
-    PGM.get().getExecutor().schedule(
-            () -> droppedLoot.remove(entityId), 5L, TimeUnit.SECONDS);
+    PGM.get().getExecutor().schedule(() -> droppedLoot.remove(entityId), 5L, TimeUnit.SECONDS);
 
     // Sorry Ember, but we need to keep the loot
     // You can have your metadata back now sorry :(

@@ -1,6 +1,8 @@
 package tc.oc.bingo.objectives;
 
 import java.util.Iterator;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Animals;
@@ -25,9 +27,8 @@ public class CowlectionObjective extends ObjectiveTracker {
 
   ShapedRecipe recipe =
       new ShapedRecipe(new ItemStack(Material.LEASH))
-          .shape("SSX", "SSX", "XXS")
-          .setIngredient('S', Material.STRING)
-          .setIngredient('X', Material.AIR);
+          .shape("SS ", "SS ", "  S")
+          .setIngredient('S', Material.STRING);
 
   @Override
   public void enable() {
@@ -54,22 +55,19 @@ public class CowlectionObjective extends ObjectiveTracker {
     if (matchPlayer == null || !matchPlayer.isParticipating()) return;
 
     if (!(event.getEntity() instanceof Animals actionEntity)) return;
-
     if (actionEntity.isLeashed()) return;
+    if (!event.getPlayer().isSneaking()) return;
 
-    Animals otherEntity =
+    Set<Cow> otherEntity =
         player.getWorld().getNearbyEntitiesByType(Cow.class, player.getLocation(), 8).stream()
-            .filter(entity -> entity.getLeashHolder().equals(player))
-            .findFirst()
-            .orElse(null);
+            .filter(
+                entity -> !entity.equals(actionEntity) && entity.getLeashHolder().equals(player))
+            .collect(Collectors.toSet());
 
-    if (otherEntity == null) return;
+    if (otherEntity.isEmpty()) return;
 
-    otherEntity.setLeashHolder(actionEntity);
-
+    otherEntity.forEach(cow -> cow.setLeashHolder(actionEntity));
     event.setCancelled(true);
-
-    // TODO: take the leash from the players inventory
     InventoryUtils.consumeItem(event, player);
 
     reward(player);

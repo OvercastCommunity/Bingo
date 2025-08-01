@@ -1,6 +1,7 @@
 package tc.oc.bingo.objectives;
 
 import java.util.function.Supplier;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -8,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.Potion;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -45,8 +47,9 @@ public class CiderSlurperObjective extends ObjectiveTracker {
     potion.setSplash(false);
     potion.setType(PotionType.INSTANT_DAMAGE);
     potion.apply(potionItem);
-
-    potionItem.setItemMeta(potionItem.getItemMeta());
+    ItemMeta itemMeta = potionItem.getItemMeta();
+    itemMeta.setDisplayName(ChatColor.RESET + "" + ChatColor.WHITE + "Apple Cider");
+    potionItem.setItemMeta(itemMeta);
 
     POTION_META.set(potionItem, true);
     itemDrop.setItemStack(potionItem);

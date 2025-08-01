@@ -13,7 +13,7 @@ public class FishingTimeObjective extends ObjectiveTracker.StatefulInt {
   private final Supplier<Integer> REQUIRED_CATCHES = useConfig("required-catches", 5);
 
   private final Supplier<Integer> MIN_TIME = useConfig("min-time", 13000);
-  private final Supplier<Integer> MAX_TIME = useConfig("max-time", 18000);
+  private final Supplier<Integer> MAX_TIME = useConfig("max-time", 23000);
 
   private boolean isEnabled = false;
 
@@ -27,10 +27,12 @@ public class FishingTimeObjective extends ObjectiveTracker.StatefulInt {
   public void onPlayerFish(PlayerFishEvent event) {
     if (!isEnabled) return;
 
+    if (!event.getState().equals(PlayerFishEvent.State.CAUGHT_FISH)) return;
+
     long time = event.getWorld().getTime();
     if (time < MIN_TIME.get() || time > MAX_TIME.get()) return;
 
-    reward(event.getPlayer());
+    trackProgress(event.getPlayer());
   }
 
   @Override
