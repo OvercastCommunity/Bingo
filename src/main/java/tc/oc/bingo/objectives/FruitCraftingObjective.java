@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.inventory.CraftingInventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.ShapelessRecipe;
@@ -26,26 +27,29 @@ public class FruitCraftingObjective extends ObjectiveTracker {
   private static final Supplier<CustomItem> STRAWBERRY_RESULT_ITEM =
       CustomItem.of("strawberries_and_cream");
 
-  ShapelessRecipe shapelessRecipe =
-      new ShapelessRecipe(STRAWBERRY_RESULT_ITEM.get().toItemStack())
-          .addIngredient(Material.CARROT)
-          .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3))
-          .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3));
-
-  @Override
-  public void setupDependencies() {
-    Bukkit.getServer().addRecipe(shapelessRecipe);
-  }
+  private ShapelessRecipe shapelessRecipe = null;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
+    shapelessRecipe =
+        new ShapelessRecipe(STRAWBERRY_RESULT_ITEM.get().toItemStack())
+            .addIngredient(Material.MILK_BUCKET)
+            .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3))
+            .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3));
+
     event.getWorld().addRecipe(shapelessRecipe);
   }
 
   @Override
   public void teardownDependencies() {
+    if (shapelessRecipe == null) return;
     Iterator<Recipe> recipeIterator = Bukkit.getServer().recipeIterator();
-    // TODO: recipeIterator.
+    while (Bukkit.getServer().recipeIterator().hasNext()) {
+      if (recipeIterator.next().equals(shapelessRecipe)) {
+        recipeIterator.remove();
+        break;
+      }
+    }
   }
 
   private static Boolean fruitCheck(ItemStack item) {
@@ -54,7 +58,10 @@ public class FruitCraftingObjective extends ObjectiveTracker {
 
   @EventHandler(ignoreCancelled = true)
   public void onItemCraft(PrepareItemCraftEvent event) {
-    ItemStack[] contents = event.getInventory().getContents();
+    if (shapelessRecipe == null) return;
+
+    CraftingInventory inventory = event.getInventory();
+    ItemStack[] contents = inventory.getMatrix();
 
     List<PredicateState> conditions = new ArrayList<>();
     PredicateState fruitCheck = new PredicateState(FruitCraftingObjective::fruitCheck);
@@ -74,19 +81,18 @@ public class FruitCraftingObjective extends ObjectiveTracker {
       }
     }
 
+    if (!event.getRecipe().getResult().equals(shapelessRecipe.getResult())) return;
+
     boolean allConditionsMet = conditions.stream().allMatch(check -> check.passes);
 
     if (!allConditionsMet) {
-      // When the craft has fruit but not all conditions are met
+      // When the craft has fruit but not the required type
       if (fruitCheck.passes) {
-        event.getInventory().setResult(new ItemStack(Material.CACTUS)); // TODO: not working
+        inventory.setResult(null);
       }
       return;
     }
 
-    event.getInventory().setResult(new ItemStack(Material.BONE, 1));
-    // event.getInventory().setResult(STRAWBERRY_RESULT_ITEM.get().toItemStack());
-    // TODO: also not working
     reward(event.getActor());
   }
 
