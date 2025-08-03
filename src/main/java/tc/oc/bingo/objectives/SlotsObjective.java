@@ -1,8 +1,9 @@
 package tc.oc.bingo.objectives;
 
+import static tc.oc.bingo.modules.CustomItemModule.CUSTOM_ITEM_META;
+
 import java.util.Arrays;
 import java.util.Objects;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,7 +14,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 @Tracker("slot-machine")
@@ -48,19 +48,14 @@ public class SlotsObjective extends ObjectiveTracker {
 
     if (Arrays.stream(frames).anyMatch(Objects::isNull)) return;
 
-    // Ensure all item frames contain all fruit items (currently only checks for same type)
-    ItemStack first = frames[0].getItem();
-    if (first == null || first.getType() == Material.AIR) return;
-
+    // Ensure all item frames contain all fruit items
     boolean allMatch =
         Arrays.stream(frames)
             .map(ItemFrame::getItem)
-            .allMatch(item -> item != null && item.getType() == first.getType());
+            .allMatch(item -> item != null && CUSTOM_ITEM_META.has(item));
 
     if (!allMatch) return;
 
-    // Success!
-    player.sendMessage(ChatColor.GOLD + "You activated the slot machine!");
     reward(player);
   }
 

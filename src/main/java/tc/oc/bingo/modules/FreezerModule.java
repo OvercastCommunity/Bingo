@@ -32,7 +32,7 @@ public class FreezerModule extends BingoModule implements PGMUtils {
   private final Map<UUID, Freezer> freezers = useState(Scope.PARTICIPATION);
 
   @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-  public void openFridge(PlayerInteractEvent event) {
+  public void onPlayerInteract(PlayerInteractEvent event) {
     if (event.getAction() != Action.RIGHT_CLICK_BLOCK || notParticipating(event.getPlayer()))
       return;
 
@@ -47,7 +47,7 @@ public class FreezerModule extends BingoModule implements PGMUtils {
             pl.getUniqueId(),
             (k, f) -> {
               if (f == null)
-                return new Freezer(block, Bukkit.createInventory(pl, 9, "Fridge"), null);
+                return new Freezer(block, Bukkit.createInventory(pl, 9, "Freezer"), null);
 
               if (f.freezingSeconds() > FREEZE_SECONDS.get()) freezeItems(f.inventory());
               return f.withBlock(block);
