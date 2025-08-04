@@ -57,6 +57,10 @@ public class ItemRemoveCanceller extends BingoModule {
       }
     }
 
+    // Do not apply meta or restore if result is empty
+    ItemStack resultSlot = event.getInventory().getResult();
+    if (resultSlot == null || resultSlot.getType().equals(Material.AIR)) return;
+
     ITEM_META.set(result, true);
     event.getInventory().setResult(result);
   }

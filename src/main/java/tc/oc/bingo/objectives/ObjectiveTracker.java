@@ -40,6 +40,8 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
   private final ConfigHandler config = new ConfigHandler();
 
   public ObjectiveTracker() {
+    // Objective slug is replaced by tracker slug on creation
+    // This can be the same if no variant is used or a colon split value if a variant.
     this.objectiveSlug = getClass().getDeclaredAnnotation(Tracker.class).value();
   }
 

@@ -21,21 +21,20 @@ import tc.oc.bingo.util.CustomItem;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 import tc.oc.pgm.util.material.Materials;
 
-@Tracker("fruit-crafting")
-public class FruitCraftingObjective extends ObjectiveTracker {
+@Tracker("fruit-ice-crafting")
+public class FruitIceCraftingObjective extends ObjectiveTracker {
 
-  private static final Supplier<CustomItem> STRAWBERRY_ITEM = CustomItem.of("strawberry");
-  private static final Supplier<CustomItem> STRAWBERRY_RESULT_ITEM =
+  private static final Supplier<CustomItem> STRAWBERRY_ITEM =
       CustomItem.of("strawberries_and_cream");
+  private static final Supplier<CustomItem> ICE_CREAM_ITEM = CustomItem.of("strawberry_ice_cream");
 
   private ShapelessRecipe shapelessRecipe = null;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchLoad(MatchAfterLoadEvent event) {
     shapelessRecipe =
-        new ShapelessRecipe(STRAWBERRY_RESULT_ITEM.get().toItemStack())
-            .addIngredient(Material.MILK_BUCKET)
-            .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3))
+        new ShapelessRecipe(ICE_CREAM_ITEM.get().toItemStack())
+            .addIngredient(Material.ICE)
             .addIngredient(new MaterialData(Materials.PLAYER_HEAD, (byte) 3));
 
     event.getWorld().addRecipe(shapelessRecipe);
@@ -65,11 +64,8 @@ public class FruitCraftingObjective extends ObjectiveTracker {
     ItemStack[] contents = inventory.getMatrix();
 
     List<PredicateState> conditions = new ArrayList<>();
-    PredicateState fruitCheck = new PredicateState(FruitCraftingObjective::fruitCheck);
-    conditions.add(fruitCheck);
-    conditions.add(new PredicateState(FruitCraftingObjective::fruitCheck));
-    conditions.add(
-        new PredicateState(item -> item != null && item.getType() == Material.MILK_BUCKET));
+    conditions.add(new PredicateState(FruitIceCraftingObjective::fruitCheck));
+    conditions.add(new PredicateState(item -> item != null && item.getType() == Material.ICE));
 
     for (ItemStack content : contents) {
       if (content == null || content.getType() == Material.AIR) continue;
@@ -87,7 +83,6 @@ public class FruitCraftingObjective extends ObjectiveTracker {
     boolean allConditionsMet = conditions.stream().allMatch(check -> check.passes);
 
     if (!allConditionsMet) {
-      // When the craft has fruit but not the required type
       inventory.setResult(null);
     }
   }
@@ -95,7 +90,7 @@ public class FruitCraftingObjective extends ObjectiveTracker {
   @EventHandler(ignoreCancelled = true)
   public void onItemCraft(CraftItemEvent event) {
     ItemStack currentItem = event.getCurrentItem();
-    if (!CustomItemModule.isCustomItem(currentItem, STRAWBERRY_RESULT_ITEM)) return;
+    if (!CustomItemModule.isCustomItem(currentItem, ICE_CREAM_ITEM)) return;
 
     reward(event.getActor());
   }

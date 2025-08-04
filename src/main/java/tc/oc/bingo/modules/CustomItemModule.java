@@ -58,6 +58,13 @@ public class CustomItemModule extends BingoModule {
     return Objects.equals(CUSTOM_ITEM_META.get(item), customItemSupplier.get().id());
   }
 
+  public static boolean isCustomBlock(Block block, Supplier<CustomItem> customItemSupplier) {
+    if (block == null || !block.hasMetadata("custom-item-id")) return false;
+    MetadataValue metadata = block.getMetadata("custom-item-id", Bingo.get());
+
+    return Objects.equals(metadata.asString(), customItemSupplier.get().id());
+  }
+
   @EventHandler
   public void onBlockPlace(BlockPlaceEvent event) {
     Block block = event.getBlock();
@@ -70,7 +77,7 @@ public class CustomItemModule extends BingoModule {
     block.setMetadata("custom-item-id", new FixedMetadataValue(Bingo.get(), itemId));
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.HIGHEST)
   public void onBlockBreak(BlockTransformEvent event) {
     if (!event.changedFrom(Material.SKULL)) return;
 

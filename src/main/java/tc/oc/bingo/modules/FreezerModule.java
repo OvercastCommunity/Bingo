@@ -24,7 +24,6 @@ import tc.oc.bingo.objectives.Scope;
 import tc.oc.bingo.util.PGMUtils;
 
 @BingoModule.Config("fridge-recipes")
-@BingoModule.AlwaysOn
 public class FreezerModule extends BingoModule implements PGMUtils {
   public static final FreezerModule INSTANCE = new FreezerModule();
 
@@ -46,12 +45,19 @@ public class FreezerModule extends BingoModule implements PGMUtils {
         freezers.compute(
             pl.getUniqueId(),
             (k, f) -> {
-              if (f == null)
+              if (f == null) {
                 return new Freezer(block, Bukkit.createInventory(pl, 9, "Freezer"), null);
+              }
+
+              // Clear the inventory if the block is too far away from the origin
+              if (!f.block().getLocation().equals(block.getLocation())) {
+                f.inventory().clear();
+              }
 
               if (f.freezingSeconds() > FREEZE_SECONDS.get()) freezeItems(f.inventory());
               return f.withBlock(block);
             });
+
     pl.openInventory(freezer.inventory());
     pl.playSound(block.getLocation(), Sound.DOOR_OPEN, 1f, 2f);
   }
