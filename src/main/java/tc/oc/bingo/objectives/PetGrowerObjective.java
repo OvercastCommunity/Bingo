@@ -2,8 +2,10 @@ package tc.oc.bingo.objectives;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Effect;
 import org.bukkit.Location;
@@ -14,8 +16,10 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.SheepDyeWoolEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerShearEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.Plugin;
@@ -117,7 +121,26 @@ public class PetGrowerObjective extends ObjectiveTracker {
     List<ItemStack> loot = droppedLoot.remove(event.getEntity().getUniqueId());
     if (loot == null || loot.isEmpty()) return;
 
-    event.getDrops().addAll(loot);
+    Set<ItemStack> filteredLoot =
+        loot.stream()
+            .filter(item -> item != null && item.getType() != Material.WOOL)
+            .collect(Collectors.toSet());
+
+    event.getDrops().addAll(filteredLoot);
+  }
+
+  @EventHandler
+  public void onSheepDyeWool(SheepDyeWoolEvent event) {
+    if (event.getEntity().hasMetadata(NEW_PET_META)) {
+      event.setCancelled(true);
+    }
+  }
+
+  @EventHandler
+  public void onPlayerShearEntity(PlayerShearEntityEvent event) {
+    if (event.getEntity().hasMetadata(NEW_PET_META)) {
+      event.setCancelled(true);
+    }
   }
 
   private static void spawnGrowingParticles(Location location, int count) {

@@ -45,6 +45,8 @@ public class FruitPlacerObjective extends ObjectiveTracker {
 
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
   public void onBlockBreak(PlayerBlockTransformEvent event) {
+    if (!event.isBreak()) return;
+
     Block block = event.getBlock();
     MatchPlayer matchPlayer = event.getPlayer();
     if (matchPlayer == null) return;
