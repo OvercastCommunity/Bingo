@@ -1,12 +1,15 @@
 package tc.oc.bingo.objectives;
 
+import java.util.Random;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Skin;
 import org.bukkit.SkullType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,17 +17,19 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.MetadataValue;
-import tc.oc.bingo.Bingo;
 import tc.oc.bingo.modules.CustomItemModule;
 import tc.oc.bingo.util.CustomItem;
 import tc.oc.pgm.api.event.BlockTransformEvent;
+import tc.oc.pgm.util.inventory.InventoryUtils;
+import tc.oc.pgm.util.material.MaterialData;
 
 @Tracker("castle-builder")
 public class CastleBuilderObjective extends ObjectiveTracker {
 
   private static final Supplier<CustomItem> SAND_BUCKET = CustomItem.of("sand_bucket");
   private static final Supplier<CustomItem> SAND_CASTLE = CustomItem.of("sand_castle");
+
+  private final Random random = new Random();
 
   @EventHandler(ignoreCancelled = true)
   public void onPlayerBreak(BlockBreakEvent event) {
@@ -44,21 +49,31 @@ public class CastleBuilderObjective extends ObjectiveTracker {
     event.setCancelled(true);
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-  public void onBlockPlace(BlockTransformEvent event) {
-    if (!event.getNewState().getType().equals(Material.SKULL)) return;
+  @EventHandler(ignoreCancelled = true)
+  public void onCastleBreak(BlockTransformEvent event) {
+    Block block = event.getBlock();
+    if (!event.isBreak()) return;
+    if (!CustomItemModule.isCustomBlock(block, SAND_BUCKET)) return;
 
-    MetadataValue metadata =
-        event.getNewState().getBlock().getMetadata("custom-item-id", Bingo.get());
-    if (metadata == null || !metadata.asString().equals(SAND_BUCKET.get().id())) return;
+    // If block broken by player holding a bucket allow drop
+    if (event.getActor() instanceof Player player) {
+      ItemStack itemInHand = player.getInventory().getItemInHand();
+      if (itemInHand != null && itemInHand.getType().equals(Material.BUCKET)) {
+        InventoryUtils.consumeItem(event, player);
+        return;
+      }
+    }
 
-    // event.getNewState().set
+    event.setCancelled(true);
+    final BlockState newState = event.getNewState();
 
-    // CUSTOM_ITEM_META.has(event.getBlock()
+    MaterialData.block(newState).applyTo(block, true);
 
-    // if (!CustomItemModule.isCustomBlock(event.getBlock(), SAND_BUCKET)) return;
-
-    // event.getActor()
+    Location dropLocation = block.getLocation().clone();
+    dropLocation.setX(dropLocation.getBlockX() + random.nextDouble() * 0.5 + 0.25);
+    dropLocation.setY(dropLocation.getBlockY() + random.nextDouble() * 0.5 + 0.25);
+    dropLocation.setZ(dropLocation.getBlockZ() + random.nextDouble() * 0.5 + 0.25);
+    dropLocation.getWorld().dropItem(dropLocation, new ItemStack(Material.SAND));
   }
 
   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -84,8 +99,6 @@ public class CastleBuilderObjective extends ObjectiveTracker {
       if (rotation != null) skull.setRotation(rotation);
       skull.update();
     }
-
-    // TODO: update the meta to be sand castle? or just turn to sand on pick up?
 
     // Reward the player
     reward(player);

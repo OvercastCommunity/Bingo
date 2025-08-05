@@ -77,7 +77,7 @@ public class CustomItemModule extends BingoModule {
     block.setMetadata("custom-item-id", new FixedMetadataValue(Bingo.get(), itemId));
   }
 
-  @EventHandler(priority = EventPriority.HIGHEST)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onBlockBreak(BlockTransformEvent event) {
     if (!event.changedFrom(Material.SKULL)) return;
 
