@@ -29,6 +29,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.Bingo;
+import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
@@ -168,10 +169,11 @@ public class BingoCardMenu implements InventoryProvider {
       addSpaced(loreList, GRAY + "Discovered by: " + by);
     }
 
+    boolean showCoordinate = hints.unlocked <= 0 || Config.get().isShowObjectiveCoords();
+
     String name =
-        hints.unlocked > 0
-            ? objective.getName()
-            : MAGIC + "NiceTry" + AQUA + " (" + objective.getGridPosition() + ")";
+        (hints.unlocked > 0 ? objective.getName() : MAGIC + "NiceTry")
+            + (showCoordinate ? AQUA + " (" + objective.getGridPosition() + ")" : "");
 
     return createIconItem(
         objective.getIndex(),

@@ -2,6 +2,7 @@
 grid-width: 5
 season-id: 1
 advent: false
+show-objective-coords: true
 
 # Rewards based on unlock type
 rewards:
