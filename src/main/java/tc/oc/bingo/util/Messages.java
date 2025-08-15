@@ -52,18 +52,18 @@ public class Messages {
     long hours = remaining.toHours();
     long minutes = remaining.toMinutes() % 60;
 
-    // When over 6 days just include days
-    if (days > 6) {
+    // When over 7 days just include days
+    if (days >= 7) {
       return days + " days";
     }
 
-    // If over a day include the days and hours
-    if (days > 1) {
+    // If over 2 days include the days and hours
+    if (days >= 2) {
       return days + " days" + spacedTimeString(hours % 24, "hour", "hours");
     }
 
     // Cutoff after 6 hours when only hours are shown
-    if (hours >= 6 && hours < 24) {
+    if (hours >= 6) {
       return hours + " hours";
     }
 
