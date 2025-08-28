@@ -3,6 +3,7 @@ package tc.oc.bingo.objectives;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -17,10 +18,11 @@ import org.bukkit.map.MapPalette;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
+import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.match.event.MatchAfterLoadEvent;
 
 @Tracker("map-making")
-public class MapMakingObjective extends ObjectiveTracker {
+public class MapMakingObjective extends ObjectiveTracker.Stateful<Integer> {
 
   private static final Random RANDOM = new Random();
 
@@ -43,6 +45,12 @@ public class MapMakingObjective extends ObjectiveTracker {
     // Roll: 1 = 1st, 2 = 2nd, 3 = 3rd
     int roll = RANDOM.nextInt(100);
     int place = (roll < 20) ? 1 : (roll < 55) ? 2 : 3;
+    Player player = event.getActor();
+
+    // Every 3rd crafted map is a 1st place map guaranteed
+    if ((updateObjectiveData(player.getUniqueId(), integer -> integer + 1) % 3) == 0) {
+      place = 1;
+    }
 
     String title =
         switch (place) {
@@ -51,8 +59,6 @@ public class MapMakingObjective extends ObjectiveTracker {
           case 3 -> ChatColor.DARK_RED + "3rd Place Map";
           default -> ChatColor.WHITE + "Unknown Map";
         };
-
-    Player player = event.getActor();
 
     // Create a custom map render for the item
     short positionMap = getMapId(player, place);
@@ -126,5 +132,31 @@ public class MapMakingObjective extends ObjectiveTracker {
 
     mapCrafts.put(place, id);
     return id;
+  }
+
+  @Override
+  public @NotNull Integer initial() {
+    return 0;
+  }
+
+  @Override
+  public @NotNull Integer deserialize(@NotNull String string) {
+    if (string.isEmpty()) return initial();
+    return Integer.valueOf(string);
+  }
+
+  @Override
+  public @NotNull String serialize(@NotNull Integer data) {
+    return String.valueOf(data);
+  }
+
+  @Override
+  public double progress(Integer data) {
+    return 0;
+  }
+
+  @Override
+  public Double getProgress(UUID uuid) {
+    return null;
   }
 }

@@ -15,12 +15,16 @@ public class FishingTimeObjective extends ObjectiveTracker.StatefulInt {
   private final Supplier<Integer> MIN_TIME = useConfig("min-time", 13000);
   private final Supplier<Integer> MAX_TIME = useConfig("max-time", 23000);
 
+  private final Supplier<Boolean> REQUIRE_DAY_CYCLE = useConfig("require-day-cycle", true);
+
   private boolean isEnabled = false;
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMatchStartEvent(MatchStartEvent event) {
     String gameRuleValue = event.getWorld().getGameRuleValue(GameRule.DO_DAYLIGHT_CYCLE.getId());
-    isEnabled = Boolean.parseBoolean(gameRuleValue);
+
+    // Only allow if the game rule is enabled, or we don't care about it
+    isEnabled = (!REQUIRE_DAY_CYCLE.get() || Boolean.parseBoolean(gameRuleValue));
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

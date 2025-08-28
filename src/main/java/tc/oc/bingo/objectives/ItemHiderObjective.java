@@ -9,17 +9,16 @@ import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
-import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.util.event.PlayerItemTransferEvent;
 
 @Tracker("item-hider")
 public class ItemHiderObjective extends ObjectiveTracker {
@@ -28,34 +27,29 @@ public class ItemHiderObjective extends ObjectiveTracker {
 
   private final Map<UUID, Vector> storedLocations = useState(Scope.MATCH);
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onInventoryClick(InventoryClickEvent event) {
-    HumanEntity clicker = event.getWhoClicked();
-    if (!(clicker instanceof Player player)) return;
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onInventoryClick(PlayerItemTransferEvent event) {
+    Inventory targetInventory = event.getTo();
+    if (targetInventory == null) return;
 
-    Inventory clickedInventory = event.getClickedInventory();
-    if (clickedInventory == null) return;
-
-    // Prevent non-block inventories and chests from being tracked
-    InventoryHolder holder = clickedInventory.getHolder();
+    InventoryHolder holder = targetInventory.getHolder();
     if (!(holder instanceof BlockState container)) return;
-    if (clickedInventory.getType().equals(CHEST)) return;
+    if (targetInventory.getType().equals(CHEST)) return;
 
     Location location = container.getLocation();
     if (location == null) return;
     Vector vector = location.toVector();
 
-    ItemStack currentItem = event.getCurrentItem();
-    ItemStack cursorItem = event.getCursor();
+    ItemStack movedItem = event.getItem();
     Material tracked = TRACKED_ITEM.get();
 
     // Player places tracked item into block inventory
-    if (cursorItem != null && cursorItem.getType() == tracked) {
-      storedLocations.put(player.getUniqueId(), vector);
+    if (movedItem != null && movedItem.getType() == tracked) {
+      storedLocations.put(event.getPlayer().getUniqueId(), vector);
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.MONITOR)
   public void onInventoryOpenEvent(InventoryOpenEvent event) {
     Inventory inventory = event.getInventory();
     if (!inventory.contains(TRACKED_ITEM.get())) return;
