@@ -38,10 +38,4 @@ public class ProgressItem {
   public void setComplete() {
     this.completed = true;
   }
-
-  public Double getCompletion() {
-    ObjectiveTracker tracker = Bingo.get().getTrackers().get(objectiveSlug);
-    if (tracker == null) log.warning("No tracker found for " + objectiveSlug);
-    return tracker == null ? null : tracker.getProgress(card.getPlayerUUID());
-  }
 }

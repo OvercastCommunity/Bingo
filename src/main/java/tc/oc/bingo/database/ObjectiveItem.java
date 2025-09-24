@@ -4,9 +4,13 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Data;
+import lombok.extern.java.Log;
 import org.jetbrains.annotations.Nullable;
+import tc.oc.bingo.Bingo;
 import tc.oc.bingo.config.Config;
+import tc.oc.bingo.objectives.ObjectiveTracker;
 
+@Log
 @Data
 public class ObjectiveItem {
 
@@ -86,5 +90,11 @@ public class ObjectiveItem {
 
   public @Nullable LocalDateTime getDiscoveryTime() {
     return discoveryTime;
+  }
+
+  public Double getCompletion(UUID playerUUID) {
+    ObjectiveTracker tracker = Bingo.get().getTrackers().get(slug);
+    if (tracker == null) log.warning("No tracker found for " + slug);
+    return tracker == null ? null : tracker.getProgress(playerUUID);
   }
 }

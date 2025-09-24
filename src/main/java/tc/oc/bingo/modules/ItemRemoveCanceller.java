@@ -21,7 +21,7 @@ import tc.oc.pgm.wool.WoolMatchModule;
 @BingoModule.AlwaysOn
 public class ItemRemoveCanceller extends BingoModule {
   public static final ItemRemoveCanceller INSTANCE = new ItemRemoveCanceller();
-  private static final ItemTag<Boolean> ITEM_META = ItemTag.newBoolean("cancelled-drop");
+  public static final ItemTag<Boolean> ITEM_META = ItemTag.newBoolean("cancelled-drop");
 
   private final Supplier<Set<Material>> MATERIAL_LIST =
       useConfig("material-list", Set.of(), MATERIAL_SET_READER);

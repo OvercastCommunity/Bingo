@@ -27,7 +27,9 @@ import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.modules.BingoModule;
 import tc.oc.bingo.modules.CarePackageModule;
 import tc.oc.bingo.modules.CustomItemModule;
+import tc.oc.bingo.modules.CustomPotionsModule;
 import tc.oc.bingo.modules.FreezerModule;
+import tc.oc.bingo.modules.GravesModule;
 import tc.oc.bingo.modules.ItemRemoveCanceller;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
@@ -77,7 +79,9 @@ public class Bingo extends JavaPlugin {
     List.of(
             CarePackageModule.INSTANCE,
             CustomItemModule.INSTANCE,
+            CustomPotionsModule.INSTANCE,
             FreezerModule.INSTANCE,
+            GravesModule.INSTANCE,
             ItemRemoveCanceller.INSTANCE)
         .forEach(m -> modules.put(m.getClass(), m));
 

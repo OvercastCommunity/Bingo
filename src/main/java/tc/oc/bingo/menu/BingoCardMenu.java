@@ -158,7 +158,7 @@ public class BingoCardMenu implements InventoryProvider {
     if (hints.hasHidden) addNextClueUnlock(objective.getNextClueUnlock(), loreList);
 
     // Add "You placed #x", or "Progress: X%" (for stateful objectives)
-    addProgress(progressItem, loreList);
+    addProgress(playerCard.getPlayerUUID(), objective, progressItem, loreList);
 
     // Add "Discovered by: X"
     if (objective.getDiscoveryTime() != null) {
@@ -207,17 +207,15 @@ public class BingoCardMenu implements InventoryProvider {
     return itemStack;
   }
 
-  private static void addProgress(ProgressItem progress, List<String> loreList) {
-    if (progress == null) return;
-
-    if (progress.isCompleted()) {
+  private static void addProgress(UUID uuid, ObjectiveItem objective, ProgressItem progress, List<String> loreList) {
+    if (progress != null && progress.isCompleted()) {
       Integer placed = progress.getPlacedPosition();
       if (placed != null) addSpaced(loreList, GRAY + "Your position: " + GOLD + "#" + placed);
       return;
     }
 
-    Double cmp = progress.getCompletion();
-    if (cmp == null) return;
+    Double cmp = objective.getCompletion(uuid);
+    if (cmp == null || (cmp == 0 && progress == null)) return;
 
     String pct =
         cmp <= 0 ? "0%" : cmp >= 1 ? "~99%" : "~" + (int) ((Math.floor(cmp * 10) * 10) + 5) + "%";

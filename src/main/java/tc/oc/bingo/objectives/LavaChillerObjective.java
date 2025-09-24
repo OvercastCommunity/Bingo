@@ -1,6 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -10,20 +9,24 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.scheduler.BukkitTask;
+import tc.oc.bingo.util.LocationUtils;
 import tc.oc.bingo.util.RepeatCheckTask;
+import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.util.event.PlayerCoarseMoveEvent;
 
-@Tracker("skinny-dipping")
-public class SkinnyDippingObjective extends ObjectiveTracker {
+@Tracker("lava-chiller")
+public class LavaChillerObjective extends ObjectiveTracker {
 
   private final Supplier<Integer> REQUIRED_SECONDS = useConfig("required-seconds", 10);
 
-  private final Map<UUID, BukkitTask> swimTasks = new HashMap<>(); // To track tasks for players
+  private final Map<UUID, BukkitTask> swimTasks = new HashMap<>();
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(PlayerCoarseMoveEvent event) {
     Player player = event.getPlayer();
-    if (notParticipating(player)) return;
+    MatchPlayer matchPlayer = getPlayer(player);
+    if (matchPlayer == null || !matchPlayer.isParticipating()) return;
 
     if (swimTasks.containsKey(player.getUniqueId())) return;
 
@@ -31,7 +34,10 @@ public class SkinnyDippingObjective extends ObjectiveTracker {
 
       RepeatCheckTask repeatCheckTask =
           new RepeatCheckTask(
-              () -> passesVibeCheck(player), () -> reward(player), () -> cancelSwimTask(player));
+              RepeatCheckTask.CheckMode.CONTINUOUS,
+              () -> passesVibeCheck(player),
+              () -> reward(player),
+              () -> cancelSwimTask(player));
       swimTasks.put(player.getUniqueId(), repeatCheckTask.start(REQUIRED_SECONDS.get(), 20));
 
     } else {
@@ -39,7 +45,11 @@ public class SkinnyDippingObjective extends ObjectiveTracker {
     }
   }
 
-  // Cancel the swimming task if the player leaves the water
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onPlayerDeath(MatchPlayerDeathEvent event) {
+    cancelSwimTask(event.getPlayer().getBukkit());
+  }
+
   private void cancelSwimTask(Player player) {
     BukkitTask task = swimTasks.remove(player.getUniqueId());
     if (task != null) {
@@ -48,12 +58,6 @@ public class SkinnyDippingObjective extends ObjectiveTracker {
   }
 
   private boolean passesVibeCheck(Player player) {
-    Material type = player.getLocation().getBlock().getType();
-    return ((type == Material.WATER || type == Material.STATIONARY_WATER) && isNaked(player));
-  }
-
-  public boolean isNaked(Player player) {
-    return Arrays.stream(player.getInventory().getArmorContents())
-        .allMatch(item -> item == null || item.getType() == Material.AIR);
+    return LocationUtils.stoodInMaterial(player.getLocation(), Material.STATIONARY_LAVA);
   }
 }

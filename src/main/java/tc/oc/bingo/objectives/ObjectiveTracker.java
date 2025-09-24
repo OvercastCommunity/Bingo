@@ -77,6 +77,18 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
     return null;
   }
 
+  public boolean hasCompleted(Player player) {
+    if (player == null) return false;
+
+    BingoPlayerCard card = Bingo.get().getCards().get(player.getUniqueId());
+    if (card == null) return false;
+
+    ProgressItem progress = card.getProgressMap().get(getObjectiveSlug());
+    if (progress == null) return false;
+
+    return progress.isCompleted();
+  }
+
   @Getter
   public abstract static class Stateful<T> extends ObjectiveTracker {
     private final Map<UUID, T> progress = new HashMap<>();
