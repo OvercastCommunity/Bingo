@@ -1,7 +1,5 @@
 package tc.oc.bingo.objectives;
 
-import static tc.oc.pgm.util.bukkit.InventoryViewUtil.INVENTORY_VIEW;
-
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.bukkit.Bukkit;
@@ -44,7 +42,7 @@ public class ObjectiveClickedObjective extends ObjectiveTracker {
     reward(event.getPlayer());
 
     // Take item from the player
-    INVENTORY_VIEW.setCursor(event.getInventoryClickEvent().getView(), null);
+    event.getInventoryClickEvent().getView().setCursor(null);
 
     // Force card fresh with a command (easier this way)
     Bukkit.dispatchCommand(player, "bingo " + objectiveItem.getIndex());
