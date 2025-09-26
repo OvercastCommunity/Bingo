@@ -8,8 +8,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import tc.oc.bingo.listeners.DispenseListener;
 import tc.oc.bingo.modules.ItemRemoveCanceller;
+import tc.oc.bingo.util.Raindrops;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("rain-dropper")
@@ -19,7 +19,7 @@ public class RainDropperObjective extends ObjectiveTracker.StatefulInt {
   private final Supplier<Double> DROP_CHANCE = useConfig("drop-chance", 0.1d);
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void onPlayerEarnCurrency(DispenseListener.PlayerRaindropEvent event) {
+  public void onPlayerEarnCurrency(Raindrops.PlayerRaindropEvent event) {
     // Skip these as all players will be out of the match
     if (event.isPostMatch()) return;
 

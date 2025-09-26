@@ -23,7 +23,6 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoDatabase;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
-import tc.oc.bingo.listeners.DispenseListener;
 import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.modules.BingoModule;
 import tc.oc.bingo.modules.CarePackageModule;
@@ -35,6 +34,7 @@ import tc.oc.bingo.modules.ItemRemoveCanceller;
 import tc.oc.bingo.objectives.ObjectiveTracker;
 import tc.oc.bingo.objectives.Tracker;
 import tc.oc.bingo.util.Exceptions;
+import tc.oc.bingo.util.Raindrops;
 import tc.oc.bingo.util.Reflections;
 import tc.oc.bingo.util.StringUtils;
 import tc.oc.pgm.api.PGM;
@@ -60,7 +60,6 @@ public class Bingo extends JavaPlugin {
   private BukkitCommandManager commands;
   private InventoryManager inventoryManager;
   private CardRefresher cardRefresher;
-  private DispenseListener dispenseListener;
 
   public Bingo() {
     INSTANCE = this;
@@ -78,7 +77,7 @@ public class Bingo extends JavaPlugin {
     this.database = BingoDatabase.build(Config.get().getDatabase());
 
     this.playerJoinListener = new PlayerJoinListener(this);
-    DispenseListener.Factory.create(this);
+    Raindrops.setupListener(this);
 
     List.of(
             CarePackageModule.INSTANCE,
