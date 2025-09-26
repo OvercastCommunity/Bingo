@@ -16,8 +16,8 @@ import tc.oc.pgm.api.tracker.info.FallInfo;
 @Tracker("cobweb-fall")
 public class CobwebFallObjective extends ObjectiveTracker {
 
-  private final Supplier<Double> maxVelocity = useConfig("max-velocity", 0.1);
-  private final Supplier<Integer> gracePeriodSeconds = useConfig("grace-period-seconds", 8);
+  private final Supplier<Integer> GRACE_PERIOD = useConfig("grace-period-seconds", 8);
+
   private final Map<UUID, Long> slowFallers = useState(Scope.MATCH);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -45,7 +45,7 @@ public class CobwebFallObjective extends ObjectiveTracker {
 
     if (slowFallers.containsKey(playerId)) {
       long lastCobwebTime = slowFallers.get(playerId);
-      long gracePeriodMillis = gracePeriodSeconds.get() * 1000L;
+      long gracePeriodMillis = GRACE_PERIOD.get() * 1000L;
 
       if (System.currentTimeMillis() - lastCobwebTime <= gracePeriodMillis) {
         reward(player.getBukkit());

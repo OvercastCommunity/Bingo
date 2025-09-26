@@ -1,37 +1,38 @@
 package tc.oc.bingo.objectives;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.util.Vector;
 import tc.oc.bingo.config.ConfigReader;
 
 @Tracker("place-blocks-nearby")
 public class PlaceBlocksNearbyObjective extends ObjectiveTracker {
-
-  // TODO: track just latest block of each type
-  private record PlacedBlock(Material type, Location loc) {}
 
   private final Supplier<Set<Material>> blocksAllowed =
       useConfig(
           "blocks-allowed",
           EnumSet.of(Material.CAULDRON, Material.BREWING_STAND),
           ConfigReader.MATERIAL_SET_READER);
-  private final Supplier<Integer> requiredBlocks = useConfig("required-blocks", 2);
-  private final Supplier<Integer> maxDistance = useConfig("max-distance", 5);
 
-  private final Map<UUID, List<PlacedBlock>> progress = useState(Scope.LIFE);
+  private final Supplier<Integer> REQUIRED_BLOCKS = useConfig("required-blocks", 2);
+  private final Supplier<Integer> MAX_DISTANCE = useConfig("max-distance", 5);
+
+  private final Supplier<Integer> MAX_DISTANCE_SQR =
+      useComputedConfig(() -> MAX_DISTANCE.get() * MAX_DISTANCE.get());
+
+  // Track last placed location and types placed in the current sequence
+  private final Map<UUID, Vector> lastPlacedLocation = useState(Scope.LIFE);
+  private final Map<UUID, Set<String>> placedBlocks = useState(Scope.LIFE);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockPlace(BlockPlaceEvent event) {
@@ -41,23 +42,27 @@ public class PlaceBlocksNearbyObjective extends ObjectiveTracker {
 
     if (!blocksAllowed.get().contains(newBlockType)) return;
 
-    List<PlacedBlock> placedByPlayer =
-        progress.computeIfAbsent(player.getUniqueId(), k -> new ArrayList<>());
-    placedByPlayer.add(new PlacedBlock(newBlockType, newBlock.getLocation()));
+    UUID playerId = player.getUniqueId();
+    Vector newLocation = newBlock.getLocation().toVector();
 
-    Set<Material> nearbyUniqueTypes = new HashSet<>();
-    nearbyUniqueTypes.add(newBlockType);
+    Vector lastLocation = lastPlacedLocation.get(playerId);
+    Set<String> blocksSoFar = placedBlocks.computeIfAbsent(playerId, k -> new HashSet<>());
 
-    double distanceSq = Math.pow(maxDistance.get(), 2);
-
-    for (PlacedBlock existingBlock : placedByPlayer) {
-      if (newBlock.getLocation().distanceSquared(existingBlock.loc()) <= distanceSq) {
-        nearbyUniqueTypes.add(existingBlock.type());
-      }
+    // If last location exists, check distance
+    if (lastLocation != null
+        && newLocation.distanceSquared(lastLocation) > MAX_DISTANCE_SQR.get()) {
+      blocksSoFar.clear();
     }
 
-    if (nearbyUniqueTypes.size() >= requiredBlocks.get()) {
+    // Record this block type and location
+    blocksSoFar.add(newBlockType.name());
+    lastPlacedLocation.put(playerId, newLocation);
+
+    // Check if objective is complete
+    if (blocksSoFar.size() >= REQUIRED_BLOCKS.get()) {
       reward(player);
+      blocksSoFar.clear();
+      lastPlacedLocation.remove(playerId);
     }
   }
 }

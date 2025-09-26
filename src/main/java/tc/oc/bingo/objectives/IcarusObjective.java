@@ -16,9 +16,10 @@ import tc.oc.pgm.api.player.MatchPlayer;
 @Tracker("icarus-height")
 public class IcarusObjective extends ObjectiveTracker {
 
-  private final Supplier<Double> minVerticalVelocity = useConfig("min-vertical-velocity", 6d);
+  private final Supplier<Double> MIN_VERTICAL_VELOCITY = useConfig("min-vertical-velocity", 6d);
+
   // This delay may be affected by ping, so keep configurable
-  private final Supplier<Integer> delayTicks = useConfig("delay-ticks", 2);
+  private final Supplier<Integer> DELAY_TICKS = useConfig("delay-ticks", 2);
 
   private Match match;
 
@@ -44,11 +45,11 @@ public class IcarusObjective extends ObjectiveTracker {
                 if (matchPlayer.isDead()) return;
 
                 Vector velocity = player.getVelocity();
-                if (velocity.getY() >= minVerticalVelocity.get()) {
+                if (velocity.getY() >= MIN_VERTICAL_VELOCITY.get()) {
                   reward(player);
                 }
               },
-              delayTicks.get());
+              DELAY_TICKS.get());
     }
   }
 }

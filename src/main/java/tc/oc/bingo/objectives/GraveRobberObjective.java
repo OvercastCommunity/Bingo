@@ -15,17 +15,17 @@ import tc.oc.bingo.objectives.ObjectiveTracker.StatefulInt;
 @Tracker("grave-robber")
 public class GraveRobberObjective extends StatefulInt {
 
-  private final Supplier<Integer> requiredItems = useConfig("required-items", 10);
-  private final Supplier<Integer> durationSeconds = useConfig("duration-seconds", 30);
-  private final Supplier<Double> radius = useConfig("radius", 5.0);
+  private final Supplier<Integer> REQUIRED_COUNT = useConfig("required-count", 10);
+  private final Supplier<Integer> MAX_DURATION = useConfig("duration-seconds", 30);
+  private final Supplier<Double> PICKUP_RADIUS = useConfig("radius", 5.0);
 
   // Using a Cache to store death locations and the UUID of the player who died there.
   private final Cache<Location, UUID> recentDeathLocations =
-      CacheBuilder.newBuilder().expireAfterWrite(durationSeconds.get(), TimeUnit.SECONDS).build();
+      CacheBuilder.newBuilder().expireAfterWrite(MAX_DURATION.get(), TimeUnit.SECONDS).build();
 
   @Override
   protected int maxValue() {
-    return requiredItems.get();
+    return REQUIRED_COUNT.get();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -37,7 +37,7 @@ public class GraveRobberObjective extends StatefulInt {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerPickupItem(PlayerPickupItemEvent event) {
     Location pickupLocation = event.getItem().getLocation();
-    double radiusSq = Math.pow(radius.get(), 2);
+    double radiusSq = Math.pow(PICKUP_RADIUS.get(), 2);
 
     for (Location deathLocation : recentDeathLocations.asMap().keySet()) {
       if (deathLocation.getWorld().equals(pickupLocation.getWorld())

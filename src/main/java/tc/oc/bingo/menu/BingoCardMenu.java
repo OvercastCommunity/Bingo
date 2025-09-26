@@ -207,7 +207,8 @@ public class BingoCardMenu implements InventoryProvider {
     return itemStack;
   }
 
-  private static void addProgress(UUID uuid, ObjectiveItem objective, ProgressItem progress, List<String> loreList) {
+  private static void addProgress(
+      UUID uuid, ObjectiveItem objective, ProgressItem progress, List<String> loreList) {
     if (progress != null && progress.isCompleted()) {
       Integer placed = progress.getPlacedPosition();
       if (placed != null) addSpaced(loreList, GRAY + "Your position: " + GOLD + "#" + placed);

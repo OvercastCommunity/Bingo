@@ -4,8 +4,6 @@ import java.util.UUID;
 import lombok.Data;
 import lombok.ToString;
 import lombok.extern.java.Log;
-import tc.oc.bingo.Bingo;
-import tc.oc.bingo.objectives.ObjectiveTracker;
 
 @Log
 @Data

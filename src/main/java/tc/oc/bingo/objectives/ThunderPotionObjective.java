@@ -11,7 +11,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.PotionMeta;
 import tc.oc.bingo.modules.CustomPotionsModule;
 
 @Tracker("thunder-potion-task")
@@ -43,7 +42,7 @@ public class ThunderPotionObjective extends ObjectiveTracker {
 
   private ItemStack createPotion() {
     return CustomPotionsModule.createPotion(
-            "§ePotion of Thunder", List.of("§cInstant Thunder", "§7Unleash the storm..."), (short) 9);
+        "§ePotion of Thunder", List.of("§cInstant Thunder", "§7Unleash the storm..."), (short) 9);
   }
 
   @EventHandler(priority = EventPriority.MONITOR)

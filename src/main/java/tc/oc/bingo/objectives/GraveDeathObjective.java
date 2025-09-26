@@ -15,7 +15,8 @@ public class GraveDeathObjective extends ObjectiveTracker {
 
   private static final EnumSet<Material> GRAVE_BLOCKS =
       EnumSet.of(Material.DIRT, Material.STONE, Material.GRASS);
-  private final Supplier<Double> requiredPercentage = useConfig("required-percentage", 0.5);
+
+  private final Supplier<Double> REQUIRED_PERCENTAGE = useConfig("required-percentage", 0.5);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(PlayerDeathEvent event) {
@@ -58,6 +59,6 @@ public class GraveDeathObjective extends ObjectiveTracker {
 
     if (totalBlocks == 0) return false;
 
-    return (double) graveBlocks / totalBlocks >= requiredPercentage.get();
+    return (double) graveBlocks / totalBlocks >= REQUIRED_PERCENTAGE.get();
   }
 }
