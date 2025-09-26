@@ -4,8 +4,11 @@ import static tc.oc.bingo.modules.ItemRemoveCanceller.ITEM_META;
 
 import java.util.List;
 import java.util.function.Supplier;
+import net.minecraft.server.v1_8_R3.Entity;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -60,15 +63,24 @@ public class ThunderPotionObjective extends ObjectiveTracker {
 
     // Skeleton horse spawn chance
     if (Math.random() <= SPAWN_CHANCE.get()) {
-      Horse horse = world.spawn(player.getLocation(), Horse.class);
-      horse.setVariant(Horse.Variant.SKELETON_HORSE);
-      horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
-      horse.setAdult();
-      horse.setTamed(true);
-      horse.setOwner(player);
+      spawnHorse(player.getLocation(), player);
 
       // Reward the player only if skeleton horse spawns
       reward(player);
     }
+  }
+
+  public void spawnHorse(Location loc, Player player) {
+    CraftWorld craftWorld = (CraftWorld) loc.getWorld();
+    Entity nmsHorse = craftWorld.createEntity(loc, Horse.class);
+    Horse horse = (Horse) nmsHorse.getBukkitEntity();
+    horse.setVariant(Horse.Variant.SKELETON_HORSE);
+    horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+    horse.setAdult();
+    horse.setTamed(true);
+    horse.setMaxHealth(20);
+    horse.setOwner(player);
+
+    craftWorld.addEntity(nmsHorse, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM);
   }
 }

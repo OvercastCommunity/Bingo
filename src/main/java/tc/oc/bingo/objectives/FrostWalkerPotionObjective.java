@@ -27,7 +27,7 @@ import tc.oc.bingo.util.LocationUtils;
 import tc.oc.bingo.util.ManagedListener;
 import tc.oc.pgm.util.event.PlayerCoarseMoveEvent;
 
-@Tracker("frost-walker-potion")
+@Tracker("frost-walker-potion-task")
 @DependsOn(FreezerModule.class)
 public class FrostWalkerPotionObjective extends ObjectiveTracker {
 
@@ -66,7 +66,7 @@ public class FrostWalkerPotionObjective extends ObjectiveTracker {
 
   private ItemStack createPotion() {
     return CustomPotionsModule.createPotion(
-        "§bPotion of Frost", List.of("§9Frost (00:30)"), (short) 8194);
+        "§bPotion of Frost", List.of("§9Frost (00:30)"), (short) 2);
   }
 
   private void convertIceBlocks() {

@@ -60,6 +60,8 @@ public class CustomPotionsModule extends BingoModule {
   private final Map<Vector, PotionBrewTask> activeStands = new HashMap<>();
 
   private static final ItemTag<String> CUSTOM_POTION = ItemTag.newString("custom-potion");
+  private static final ItemTag<String> CUSTOM_POTION_LENGTH =
+      ItemTag.newString("custom-potion-length");
 
   @Override
   public Stream<ManagedListener> children() {
@@ -80,9 +82,29 @@ public class CustomPotionsModule extends BingoModule {
 
   private void tickPotions() {
     Instant now = Instant.now();
-    for (Map<String, Instant> effects : activeEffects.values()) {
-      effects.entrySet().removeIf(entry -> now.isAfter(entry.getValue()));
-    }
+    activeEffects.forEach(
+        (playerId, effects) -> {
+
+          // Stream the expired effects
+          List<String> expired =
+              effects.entrySet().stream()
+                  .filter(e -> now.isAfter(e.getValue()))
+                  .map(Map.Entry::getKey)
+                  .toList();
+
+          if (expired.isEmpty()) return;
+
+          Player player = Bukkit.getPlayer(playerId);
+          if (player != null && player.isOnline()) {
+            expired.forEach(
+                effect ->
+                    Bukkit.getPluginManager()
+                        .callEvent(new CustomPotionExpireEvent(player, effect)));
+          }
+
+          // Remove expired
+          expired.forEach(effects::remove);
+        });
   }
 
   public static boolean hasEffect(Player player, String potionSlug) {
@@ -149,10 +171,12 @@ public class CustomPotionsModule extends BingoModule {
                   + event.getItem().getItemMeta().getDisplayName()
                   + "§7!");
 
-      // Apply effect for 30 seconds
+      // Apply effect for 30 seconds or custom length
+      long potionDuration = getPotionDuration(event.getItem());
+
       activeEffects
           .computeIfAbsent(event.getPlayer().getUniqueId(), k -> new java.util.HashMap<>())
-          .put(potionType, Instant.now().plusSeconds(30));
+          .put(potionType, Instant.now().plusSeconds(potionDuration));
 
       Bukkit.getPluginManager()
           .callEvent(new CustomPotionDrinkEvent(event.getPlayer(), event.getItem(), potionType));
@@ -278,6 +302,18 @@ public class CustomPotionsModule extends BingoModule {
     return false;
   }
 
+  private long getPotionDuration(ItemStack item) {
+    String customLength = CUSTOM_POTION_LENGTH.get(item);
+    if (customLength != null) {
+      try {
+        return Long.parseLong(customLength);
+      } catch (NumberFormatException ignored) {
+      }
+    }
+
+    return 30;
+  }
+
   public static class CustomPotionBrewEvent extends Event {
 
     private final Player player;
@@ -326,15 +362,43 @@ public class CustomPotionsModule extends BingoModule {
     }
   }
 
+  public static class CustomPotionExpireEvent extends Event {
+
+    private final Player player;
+    private final String slug;
+
+    private static final HandlerList handlers = new HandlerList();
+
+    public CustomPotionExpireEvent(Player player, String slug) {
+      this.player = player;
+      this.slug = slug;
+    }
+
+    public Player getPlayer() {
+      return player;
+    }
+
+    public String getSlug() {
+      return slug;
+    }
+  }
+
   public static ItemStack createPotion(String name, List<String> lore, short durability) {
+    return createPotion(name, lore, durability, 30);
+  }
+
+  public static ItemStack createPotion(
+      String name, List<String> lore, short durability, int lengthSeconds) {
     ItemStack potion = new ItemStack(Material.POTION, 1, durability);
     PotionMeta meta = (PotionMeta) potion.getItemMeta();
     meta.setDisplayName(name);
     meta.setLore(lore);
     meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
     CustomPotionsModule.setEmptyEffects(meta);
-
     potion.setItemMeta(meta);
+
+    CUSTOM_POTION_LENGTH.set(potion, Integer.toString(lengthSeconds));
+
     return potion;
   }
 

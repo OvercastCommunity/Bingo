@@ -1,17 +1,15 @@
 package tc.oc.bingo.objectives;
 
-import java.util.EnumSet;
-import java.util.Set;
 import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import tc.oc.bingo.listeners.DispenseListener;
 import tc.oc.bingo.modules.ItemRemoveCanceller;
-import tc.oc.occ.dispense.events.currency.CurrencyType;
-import tc.oc.occ.dispense.events.currency.PlayerEarnCurrencyEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 @Tracker("rain-dropper")
@@ -20,23 +18,13 @@ public class RainDropperObjective extends ObjectiveTracker.StatefulInt {
   private final Supplier<Integer> REQUIRED_DROPS = useConfig("required-drops", 50);
   private final Supplier<Double> DROP_CHANCE = useConfig("drop-chance", 0.1d);
 
-  private final Set<CurrencyType> IGNORE_REASONS =
-      EnumSet.of(
-          CurrencyType.WIN,
-          CurrencyType.PARTICIPATE,
-          CurrencyType.MAP_VOTE,
-          CurrencyType.SPORTSMANSHIP,
-          CurrencyType.SPORTSMANSHIP_LOSER,
-          CurrencyType.SPORTSMANSHIP_OBS);
-
   @EventHandler(priority = EventPriority.MONITOR)
-  public void onPlayerEarnCurrency(PlayerEarnCurrencyEvent event) {
+  public void onPlayerEarnCurrency(DispenseListener.PlayerRaindropEvent event) {
     // Skip these as all players will be out of the match
-    if (IGNORE_REASONS.contains(event.getType())) return;
+    if (event.isPostMatch()) return;
 
     MatchPlayer matchPlayer = getPlayer(event.getPlayer());
     if (matchPlayer == null || !matchPlayer.isParticipating()) return;
-    if (!event.isSoundPlayed()) return;
 
     if (Math.random() <= DROP_CHANCE.get()) {
 
@@ -49,7 +37,8 @@ public class RainDropperObjective extends ObjectiveTracker.StatefulInt {
       raindrop.setItemMeta(itemMeta);
       ItemRemoveCanceller.applyCustomMeta(raindrop);
 
-      location.getWorld().dropItemNaturally(location, raindrop);
+      Item item = location.getWorld().dropItemNaturally(location, raindrop);
+      item.setPickupDelay(60); // 1 second pickup delay
 
       trackProgress(event.getPlayer());
     }

@@ -7,16 +7,20 @@ import java.util.function.Supplier;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import tc.oc.bingo.modules.CustomPotionsModule;
 
 @Tracker("greed-potion-task")
 public class GreedPotionObjective extends ObjectiveTracker.StatefulInt {
 
   private final Supplier<Integer> REQUIRED_AMOUNT = useConfig("required-amount", 10);
+  private final Supplier<Boolean> PUNISH_ON_USE = useConfig("punish-on-use", true);
 
   private final Set<Material> EXTRA_LOOT_BLOCKS =
       EnumSet.of(Material.GOLD_BLOCK, Material.IRON_BLOCK, Material.GOLD_ORE, Material.IRON_ORE);
@@ -50,13 +54,25 @@ public class GreedPotionObjective extends ObjectiveTracker.StatefulInt {
     Block block = event.getBlock();
     if (!EXTRA_LOOT_BLOCKS.contains(block.getType())) return;
 
-    if (!CustomPotionsModule.hasEffect(event.getPlayer(), "greed")) return;
+    Player player = event.getPlayer();
+    if (!CustomPotionsModule.hasEffect(player, "greed")) return;
 
     // Make the block drop extra loot
     Location dropLocation = block.getLocation().add(0, 0.5, 0);
     block.getWorld().dropItemNaturally(dropLocation, new ItemStack(event.getBlock().getType(), 1));
 
-    trackProgress(event.getPlayer());
+    if (PUNISH_ON_USE.get()) {
+      // Punish player by lowering their max health by 2-4 hearts
+      player.addPotionEffect(new PotionEffect(PotionEffectType.HARM, 1, 0));
+
+      // Reduce by 2 full hearts until left on 1 heart
+      double maxHealth = player.getMaxHealth();
+      if (maxHealth >= 1) {
+        player.setMaxHealth(Math.max(1, maxHealth - 4));
+      }
+    }
+
+    trackProgress(player);
   }
 
   @Override

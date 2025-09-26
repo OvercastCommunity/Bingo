@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -14,8 +15,10 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Slime;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -124,7 +127,7 @@ public class GravesModule extends BingoModule {
     if (!event.getEntity().hasMetadata(GRAVE_META)) return;
     event.setCancelled(true);
 
-    if (!(event.getDamager() instanceof Player)) return;
+    if (!(event.getDamager() instanceof Player player)) return;
 
     MetadataValue metadata = event.getEntity().getMetadata(GRAVE_META, Bingo.get());
     if (metadata == null) return;
@@ -142,6 +145,9 @@ public class GravesModule extends BingoModule {
       head.getWorld().dropItemNaturally(head.getLocation(), head.getEquipment().getHelmet());
       targetGrave.remove();
       activeGraves.remove(targetGrave.getOwner());
+
+      GraveBreakEvent graveBreakEvent = new GraveBreakEvent(player, targetGrave);
+      Bukkit.getPluginManager().callEvent(graveBreakEvent);
     }
   }
 
@@ -245,6 +251,27 @@ public class GravesModule extends BingoModule {
       skullMeta.setOwner(player.getName());
       skull.setItemMeta(skullMeta);
       return skull;
+    }
+  }
+
+  public static class GraveBreakEvent extends Event {
+
+    private final Player player;
+    private final Grave grave;
+
+    private static final HandlerList handlers = new HandlerList();
+
+    public GraveBreakEvent(Player player, Grave grave) {
+      this.player = player;
+      this.grave = grave;
+    }
+
+    public Player getPlayer() {
+      return player;
+    }
+
+    public Grave getGrave() {
+      return grave;
     }
   }
 }

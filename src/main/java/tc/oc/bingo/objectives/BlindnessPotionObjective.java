@@ -1,5 +1,7 @@
 package tc.oc.bingo.objectives;
 
+import static tc.oc.bingo.modules.ItemRemoveCanceller.ITEM_META;
+
 import java.util.List;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -31,14 +33,18 @@ public class BlindnessPotionObjective extends ObjectiveTracker {
   }
 
   private Boolean checkIngredient(ItemStack itemStack) {
-    return (itemStack.getType().equals(Material.GHAST_TEAR));
+    // Require blaze powder to brew
+    if (!itemStack.getType().equals(Material.GHAST_TEAR)) return false;
+
+    // Require item to be a custom item
+    return ITEM_META.has(itemStack);
   }
 
   private ItemStack createPotion() {
     return CustomPotionsModule.createPotion(
         "§8Potion of Sightlessness",
         List.of("§cBlindness (00:30)", "§7I senses something wrong..."),
-        (short) 8262);
+        (short) 14);
   }
 
   @EventHandler(priority = EventPriority.MONITOR)

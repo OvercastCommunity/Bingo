@@ -84,18 +84,10 @@ public class GhostingObjective extends ObjectiveTracker.StatefulSet<UUID> {
         .put(receiverId, System.currentTimeMillis());
 
     // If receiver had a pending ghost on sender, it's now void
-    if (pendingGhosts.containsKey(receiverId)) {
-      pendingGhosts.get(receiverId).remove(senderId);
+    Map<UUID, Long> ghosts = pendingGhosts.get(receiverId);
+    if (ghosts != null) {
+      ghosts.remove(senderId);
     }
-
-    // If receiver had a confirmed ghost on sender, remove it
-    // TODO: maybe remove this
-    updateObjectiveData(
-        receiverId,
-        confirmed -> {
-          confirmed.remove(senderId);
-          return confirmed;
-        });
   }
 
   @Override

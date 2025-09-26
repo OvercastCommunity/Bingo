@@ -23,6 +23,7 @@ import tc.oc.bingo.database.BingoCard;
 import tc.oc.bingo.database.BingoDatabase;
 import tc.oc.bingo.database.BingoPlayerCard;
 import tc.oc.bingo.database.ObjectiveItem;
+import tc.oc.bingo.listeners.DispenseListener;
 import tc.oc.bingo.listeners.PlayerJoinListener;
 import tc.oc.bingo.modules.BingoModule;
 import tc.oc.bingo.modules.CarePackageModule;
@@ -59,6 +60,7 @@ public class Bingo extends JavaPlugin {
   private BukkitCommandManager commands;
   private InventoryManager inventoryManager;
   private CardRefresher cardRefresher;
+  private DispenseListener dispenseListener;
 
   public Bingo() {
     INSTANCE = this;
@@ -76,6 +78,8 @@ public class Bingo extends JavaPlugin {
     this.database = BingoDatabase.build(Config.get().getDatabase());
 
     this.playerJoinListener = new PlayerJoinListener(this);
+    DispenseListener.Factory.create(this);
+
     List.of(
             CarePackageModule.INSTANCE,
             CustomItemModule.INSTANCE,
