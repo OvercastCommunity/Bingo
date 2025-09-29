@@ -62,7 +62,7 @@ public class Messages {
       return days + " days" + spacedTimeString(hours % 24, "hour", "hours");
     }
 
-    // Cutoff after 6 hours when only hours are shown
+    // Cutoff after 12 hours when only hours are shown
     if (hours >= 12) {
       return hours + " hours";
     }
