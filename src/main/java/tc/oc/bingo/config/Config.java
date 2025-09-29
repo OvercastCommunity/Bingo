@@ -16,6 +16,7 @@ public class Config {
   private int gridWidth;
   private int seasonId;
   private boolean advent;
+  private boolean showObjectiveCoords;
 
   // Rewards
   private int rewardSingle;
@@ -43,7 +44,7 @@ public class Config {
                             (String)
                                 Objects.requireNonNullElse(map.get("description"), map.get("slug")),
                             (int) map.get("idx"),
-                            10,
+                            (int) Objects.requireNonNullElse(map.get("hintLevel"), 10),
                             null,
                             null,
                             null,
@@ -72,7 +73,7 @@ public class Config {
     this.gridWidth = config.getInt("grid-width", 5);
 
     this.seasonId = config.getInt("season-id", 1);
-
+    this.showObjectiveCoords = config.getBoolean("show-objective-coords", true);
     this.advent = config.getBoolean("advent", false);
 
     this.rewardSingle = config.getInt("rewards.single", 100);

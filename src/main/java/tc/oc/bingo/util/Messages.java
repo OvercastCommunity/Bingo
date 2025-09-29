@@ -14,6 +14,7 @@ import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.card.RewardManager;
+import tc.oc.bingo.config.Config;
 import tc.oc.bingo.database.ObjectiveItem;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.player.PlayerComponent;
@@ -119,19 +120,23 @@ public class Messages {
   }
 
   public static Component goalCompleted(Component completer, ObjectiveItem objectiveItem) {
+    boolean showCoordinate =
+        !objectiveItem.shouldShowName() || Config.get().isShowObjectiveCoords();
+
     TextComponent objectiveName =
         objectiveItem.shouldShowName()
             ? text(objectiveItem.getName(), NamedTextColor.AQUA)
-            : text("")
-                .append(text("NiceTry", NamedTextColor.AQUA, TextDecoration.OBFUSCATED))
-                .append(text(" (" + objectiveItem.getGridPosition() + ")", NamedTextColor.AQUA));
+            : text("").append(text("NiceTry", NamedTextColor.AQUA, TextDecoration.OBFUSCATED));
 
     return Messages.getBingoPrefix()
         .append(completer)
         .append(text(" completed the goal", NamedTextColor.GRAY))
         .append(space())
         .append(
-            objectiveName
+            (showCoordinate
+                    ? objectiveName.append(
+                        text(" (" + objectiveItem.getGridPosition() + ")", NamedTextColor.AQUA))
+                    : objectiveName)
                 .hoverEvent(
                     showText(
                         text("Click to see your progress using ", NamedTextColor.GRAY)
