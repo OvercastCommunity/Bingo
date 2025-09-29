@@ -63,7 +63,7 @@ public class Messages {
     }
 
     // Cutoff after 6 hours when only hours are shown
-    if (hours >= 6) {
+    if (hours >= 12) {
       return hours + " hours";
     }
 
