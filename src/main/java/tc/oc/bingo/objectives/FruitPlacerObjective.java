@@ -1,7 +1,6 @@
 package tc.oc.bingo.objectives;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.block.Block;
@@ -9,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockPlaceEvent;
-import tc.oc.bingo.Bingo;
 import tc.oc.bingo.modules.CustomItemModule;
 import tc.oc.bingo.util.CustomItem;
 import tc.oc.pgm.api.player.MatchPlayer;
@@ -34,9 +32,6 @@ public class FruitPlacerObjective extends ObjectiveTracker {
 
     Integer placedCount =
         placedItems.compute(player.getUniqueId(), (uuid, count) -> (count == null) ? 1 : count + 1);
-
-    Optional.of(Bingo.get().getCards().get(player.getUniqueId()))
-        .ifPresent(playerProgress -> playerProgress.getProgress(getObjectiveSlug()));
 
     if (placedCount >= REQUIRED_PLACE.get()) {
       reward(player);

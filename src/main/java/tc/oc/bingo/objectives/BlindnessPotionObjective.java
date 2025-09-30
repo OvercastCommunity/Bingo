@@ -12,7 +12,6 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import tc.oc.bingo.modules.CustomPotionsModule;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("blindness-potion-task")
@@ -61,9 +60,9 @@ public class BlindnessPotionObjective extends ObjectiveTracker {
   public void onMatchPlayerDeath(MatchPlayerDeathEvent event) {
     if (!event.isChallengeKill()) return;
 
-    ParticipantState killer = event.getKiller();
-    MatchPlayer matchPlayer = getPlayer(killer);
+    MatchPlayer matchPlayer = getStatePlayer(event.getKiller());
     if (matchPlayer == null) return;
+
     Player player = matchPlayer.getBukkit();
 
     if (!CustomPotionsModule.hasEffect(player, "blindness")) return;

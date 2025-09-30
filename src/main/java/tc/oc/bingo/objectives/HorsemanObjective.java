@@ -17,7 +17,7 @@ public class HorsemanObjective extends ObjectiveTracker {
   private final Supplier<Material> HEAD_MATERIAL = useConfig("head-material", Material.PUMPKIN);
   private final Supplier<EntityType> ENTITY_TYPE = useConfig("entity-type", EntityType.HORSE);
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onRideEntity(EntityMountEvent event) {
     if (!(event.getEntity() instanceof Player player)) return;
 

@@ -37,14 +37,14 @@ public class DoorSalesmanObjective extends ObjectiveTracker {
   private final Map<UUID, Long> doorOpened = useState(Scope.LIFE);
   private final Map<UUID, UUID> droppedProducts = useState(Scope.LIFE);
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public final void onDoorOpen(PlayerInteractEvent event) {
     if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
     if (isDoorOpen(event.getClickedBlock())) return;
     doorOpened.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public final void onItemDrop(PlayerDropItemEvent event) {
     if (event.getItemDrop().getItemStack().getType() != PRODUCT.get()) return;
     if (passesVibeCheck(event.getPlayer().getUniqueId())) {
@@ -52,7 +52,7 @@ public class DoorSalesmanObjective extends ObjectiveTracker {
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public final void onItemPickup(PlayerPickupItemEvent event) {
     if (event.getItem().getItemStack().getType() != PRODUCT.get()) return;
     droppedProducts.forEach(

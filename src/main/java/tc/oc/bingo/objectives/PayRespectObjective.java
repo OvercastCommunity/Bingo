@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.DependsOn;
@@ -22,7 +23,7 @@ public class PayRespectObjective extends ObjectiveTracker {
       useConfig(
           "material-list", Set.of(Material.RED_ROSE, Material.YELLOW_FLOWER), MATERIAL_SET_READER);
 
-  @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onEntityInteractEvent(PlayerInteractEntityEvent event) {
     ItemStack itemInHand = event.getPlayer().getInventory().getItemInHand();
     if (itemInHand == null) return;

@@ -46,7 +46,7 @@ public class MatchSticksObjective extends ObjectiveTracker {
     // TODO: recipeIterator.
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onItemTransfer(PlayerItemTransferEvent event) {
     // Check that the player put a stick in to the furnace
     if (event.getTo() instanceof FurnaceInventory && event.isRelinquishing()) {
@@ -56,7 +56,7 @@ public class MatchSticksObjective extends ObjectiveTracker {
     }
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onFurnaceExtract(FurnaceExtractEvent event) {
     if (!smelters.contains(event.getPlayer().getUniqueId())) return;
     if (!event.getItemType().equals(Material.BLAZE_ROD)) return;

@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -58,7 +59,7 @@ public class GravesModule extends BingoModule {
     activeGraves.clear();
   }
 
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerQuit(PlayerQuitEvent event) {
     Grave grave = activeGraves.remove(event.getPlayer().getUniqueId());
     if (grave != null) {
@@ -122,7 +123,7 @@ public class GravesModule extends BingoModule {
     }
   }
 
-  @EventHandler(ignoreCancelled = true)
+  @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
   public void onGravePunch(EntityDamageByEntityEvent event) {
     if (!event.getEntity().hasMetadata(GRAVE_META)) return;
     event.setCancelled(true);
@@ -140,6 +141,7 @@ public class GravesModule extends BingoModule {
     ArmorStand head = targetGrave.getHead();
     EulerAngle currentPose = head.getHeadPose();
     head.setHeadPose(currentPose.add(Math.random() / 5, 0.2, Math.random() / 5));
+    event.getWorld().playSound(targetGrave.getHead().getLocation(), Sound.DIG_STONE, 1.0f, 1.0f);
 
     if (punchCount >= 3) {
       head.getWorld().dropItemNaturally(head.getLocation(), head.getEquipment().getHelmet());

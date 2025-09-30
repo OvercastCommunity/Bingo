@@ -12,21 +12,19 @@ import tc.oc.pgm.api.event.ChannelMessageEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.channels.GlobalChannel;
 import tc.oc.pgm.channels.TeamChannel;
+import tc.oc.pgm.util.MatchPlayers;
 
 @Tracker("chat-blocker")
 public class ChatBlockerObjective extends ObjectiveTracker {
 
   private final Supplier<String> REQUIRED_TEXT = useConfig("required-text", "trick or treat");
-  // private final Supplier<String> REQUIRED_BLOCK = useConfig("required-block", DOOR);
-
-  private final Supplier<Integer> MAX_RANGE = useConfig("max-range", 3);
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMessageSent(ChannelMessageEvent<?> event) {
     MatchPlayer player = event.getSender();
     String message = event.getMessage();
 
-    if (player == null) return;
+    if (!MatchPlayers.canInteract(player)) return;
     if (message == null || message.isEmpty()) return;
     Channel<?> channel = event.getChannel();
 

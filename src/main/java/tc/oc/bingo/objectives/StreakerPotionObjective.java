@@ -1,7 +1,9 @@
 package tc.oc.bingo.objectives;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.bukkit.Material;
@@ -26,6 +28,14 @@ public class StreakerPotionObjective extends ObjectiveTracker {
 
   private final Supplier<Boolean> RESET_ON_CONSUME = useConfig("reset-on-consume", false);
 
+  private final Set<Material> SWORD_MATERIALS =
+      EnumSet.of(
+          Material.WOOD_SWORD,
+          Material.STONE_SWORD,
+          Material.GOLD_SWORD,
+          Material.IRON_SWORD,
+          Material.DIAMOND_SWORD);
+
   @Override
   public void setupDependencies() {
     CustomPotionsModule.CustomPotionType customPotionType =
@@ -41,7 +51,7 @@ public class StreakerPotionObjective extends ObjectiveTracker {
   }
 
   private Boolean checkIngredient(ItemStack itemStack) {
-    return (itemStack.getType().equals(Material.RAW_FISH));
+    return SWORD_MATERIALS.contains(itemStack.getType());
   }
 
   private ItemStack createPotion() {
@@ -115,10 +125,6 @@ public class StreakerPotionObjective extends ObjectiveTracker {
 
   @Override
   public Double getProgress(UUID uuid) {
-    // TODO: test
-    Integer streak = playerStreak.get(uuid);
-    if (streak == null) return null;
-
-    return (double) (streak / KILLS_REQUIRED.get());
+    return computeProgress(playerStreak.get(uuid), KILLS_REQUIRED.get());
   }
 }

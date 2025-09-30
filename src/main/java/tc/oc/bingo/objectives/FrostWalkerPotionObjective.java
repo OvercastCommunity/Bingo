@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -19,7 +18,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.inventory.ItemStack;
-import tc.oc.bingo.Bingo;
 import tc.oc.bingo.modules.CustomPotionsModule;
 import tc.oc.bingo.modules.DependsOn;
 import tc.oc.bingo.modules.FreezerModule;
@@ -91,8 +89,6 @@ public class FrostWalkerPotionObjective extends ObjectiveTracker {
 
     if (LocationUtils.stoodInMaterial(event.getTo(), Material.STATIONARY_WATER)) return;
 
-    // TODO: Grounded check?
-
     Player player = event.getPlayer();
     if (!player.isOnGround()) return;
 
@@ -124,9 +120,6 @@ public class FrostWalkerPotionObjective extends ObjectiveTracker {
           playerIceBlocks.compute(
               player.getUniqueId(), (k, v) -> v == null ? newBlocks : v + newBlocks);
 
-      Optional.ofNullable(Bingo.get().getCards().get(player.getUniqueId()))
-          .ifPresent(playerProgress -> playerProgress.getProgress(getObjectiveSlug()));
-
       if (count >= REQUIRED_BLOCKS.get()) {
         reward(player);
       }
@@ -144,7 +137,6 @@ public class FrostWalkerPotionObjective extends ObjectiveTracker {
 
   @Override
   public Double getProgress(UUID uuid) {
-    // Requires setting Bingo progress manually (like above) to be used
-    return (double) playerIceBlocks.getOrDefault(uuid, 0) / REQUIRED_BLOCKS.get();
+    return computeProgress(playerIceBlocks.get(uuid), REQUIRED_BLOCKS.get());
   }
 }

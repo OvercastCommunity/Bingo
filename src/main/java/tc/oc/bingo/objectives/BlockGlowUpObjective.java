@@ -28,7 +28,7 @@ public class BlockGlowUpObjective extends ObjectiveTracker {
 
   private final Supplier<Boolean> REQUIRE_DIRECTIONAL = useConfig("require-directional", true);
 
-  @EventHandler(priority = EventPriority.HIGHEST)
+  @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
   public void onPlayerInteract(PlayerInteractEvent event) {
     if (!event.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;
 

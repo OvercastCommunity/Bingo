@@ -48,7 +48,7 @@ public class GreedPotionObjective extends ObjectiveTracker.StatefulInt {
         "§6Potion of Greed", List.of("§9Greed (00:30)", "§7Makes you rich… maybe."), (short) 3);
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onBlockBreak(BlockBreakEvent event) {
     // Check player is playing
     Block block = event.getBlock();

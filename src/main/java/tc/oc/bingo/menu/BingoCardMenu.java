@@ -216,7 +216,7 @@ public class BingoCardMenu implements InventoryProvider {
     }
 
     Double cmp = objective.getCompletion(uuid);
-    if (cmp == null || (cmp == 0 && progress == null)) return;
+    if (cmp == null) return;
 
     String pct =
         cmp <= 0 ? "0%" : cmp >= 1 ? "~99%" : "~" + (int) ((Math.floor(cmp * 10) * 10) + 5) + "%";

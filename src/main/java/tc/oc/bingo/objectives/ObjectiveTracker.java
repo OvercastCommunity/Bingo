@@ -77,6 +77,11 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
     return null;
   }
 
+  public Double computeProgress(Number value, int max) {
+    if (value == null) return null;
+    return value.doubleValue() / max;
+  }
+
   public boolean hasCompleted(Player player) {
     if (player == null) return false;
 
@@ -104,11 +109,15 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
 
     @Override
     public Double getProgress(UUID uuid) {
-      T state = getObjectiveData(uuid);
+      T state = getObjectiveData(uuid, true);
       return state == null ? null : progress(state);
     }
 
     public T getObjectiveData(UUID playerId) {
+      return getObjectiveData(playerId, false);
+    }
+
+    public T getObjectiveData(UUID playerId, boolean avoidCreation) {
       T data =
           progress.computeIfAbsent(
               playerId,
@@ -123,7 +132,13 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
                   return null;
                 }
 
-                ProgressItem pi = bingoPlayerCard.getProgress(getObjectiveSlug());
+                // If avoidCreation is true, we don't want to create a new ProgressItem
+                ProgressItem pi =
+                    avoidCreation
+                        ? bingoPlayerCard.getProgressMap().get(getObjectiveSlug())
+                        : bingoPlayerCard.getProgress(getObjectiveSlug());
+
+                if (pi == null) return null;
                 if (pi.getData() == null) return initial();
                 return deserialize(pi.getData());
               });
@@ -131,7 +146,7 @@ public class ObjectiveTracker implements ManagedListener, ConfigHandler.Extensio
       // If player card failed loading, avoid saving this as valid.
       if (data == null) {
         progress.remove(playerId);
-        return initial();
+        return avoidCreation ? null : initial();
       }
 
       return data;

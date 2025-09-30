@@ -13,6 +13,7 @@ import tc.oc.bingo.util.LocationUtils;
 import tc.oc.bingo.util.RepeatCheckTask;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
+import tc.oc.pgm.util.MatchPlayers;
 import tc.oc.pgm.util.event.PlayerCoarseMoveEvent;
 
 @Tracker("lava-chiller")
@@ -25,8 +26,8 @@ public class LavaChillerObjective extends ObjectiveTracker {
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(PlayerCoarseMoveEvent event) {
     Player player = event.getPlayer();
-    MatchPlayer matchPlayer = getPlayer(player);
-    if (matchPlayer == null || !matchPlayer.isParticipating()) return;
+    MatchPlayer matchPlayer = getParticipant(player);
+    if (!MatchPlayers.canInteract(matchPlayer)) return;
 
     if (swimTasks.containsKey(player.getUniqueId())) return;
 

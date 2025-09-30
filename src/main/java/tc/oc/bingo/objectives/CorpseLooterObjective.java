@@ -2,6 +2,7 @@ package tc.oc.bingo.objectives;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -23,9 +24,14 @@ public class CorpseLooterObjective extends StatefulInt {
   private final Supplier<Double> PICKUP_RADIUS_SQR =
       useComputedConfig(() -> PICKUP_RADIUS.get() * PICKUP_RADIUS.get());
 
+  private final Supplier<Integer> COOLDOWN_MS =
+      useComputedConfig(() -> (MAX_DURATION.get() + 1) * 1000);
+
   // Using a Cache to store death locations and the UUID of the player who died there.
   private final Cache<Location, UUID> recentDeathLocations =
       CacheBuilder.newBuilder().expireAfterWrite(MAX_DURATION.get(), TimeUnit.SECONDS).build();
+
+  private final Map<UUID, Long> playerCooldown = useState(Scope.LIFE);
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchLoad(MatchAfterLoadEvent event) {
@@ -34,12 +40,20 @@ public class CorpseLooterObjective extends StatefulInt {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerDeath(PlayerDeathEvent event) {
-    if (event.getKeepInventory()) return;
+    // Uses actual death event thrown by PGM to check drops
+    if (event.getKeepInventory() || event.getDrops().isEmpty()) return;
+
     recentDeathLocations.put(event.getEntity().getLocation(), event.getEntity().getUniqueId());
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
+  @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
   public void onPlayerPickupItem(PlayerPickupItemEvent event) {
+    long now = System.currentTimeMillis();
+    Long cooldown = playerCooldown.get(event.getPlayer().getUniqueId());
+    if (cooldown != null && (now - cooldown) < (COOLDOWN_MS.get())) {
+      return;
+    }
+
     Location pickupLocation = event.getItem().getLocation();
     for (Location deathLocation : recentDeathLocations.asMap().keySet()) {
       if (deathLocation.distanceSquared(pickupLocation) <= PICKUP_RADIUS_SQR.get()) {
@@ -50,7 +64,9 @@ public class CorpseLooterObjective extends StatefulInt {
           continue;
         }
 
+        playerCooldown.put(event.getPlayer().getUniqueId(), now);
         trackProgress(event.getPlayer());
+
         return;
       }
     }
