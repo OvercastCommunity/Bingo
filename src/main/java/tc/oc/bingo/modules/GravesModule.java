@@ -1,11 +1,17 @@
 package tc.oc.bingo.modules;
 
+import static tc.oc.pgm.util.nms.NMSHacks.NMS_HACKS;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import lombok.Getter;
+import net.minecraft.server.v1_8_R3.EntityPlayer;
+import net.minecraft.server.v1_8_R3.EntitySlime;
+import net.minecraft.server.v1_8_R3.EntityTypes;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,13 +19,15 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Slime;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -27,10 +35,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.EulerAngle;
-import org.bukkit.util.Vector;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.bingo.Bingo;
 import tc.oc.bingo.objectives.Scope;
@@ -39,7 +44,8 @@ import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.events.PlayerPartyChangeEvent;
-import tc.oc.pgm.util.nms.NMSHacks;
+import tc.oc.pgm.util.material.Materials;
+import tc.oc.pgm.util.reflect.ReflectionUtils;
 
 @BingoModule.Config("graves")
 public class GravesModule extends BingoModule {
@@ -117,7 +123,7 @@ public class GravesModule extends BingoModule {
     MetadataValue metadata = event.getEntity().getMetadata(GRAVE_META, Bingo.get());
     if (metadata == null) return;
 
-    Grave targetGrave = activeGraves.get(UUID.fromString(metadata.asString()));
+    Grave targetGrave = activeGraves.remove(UUID.fromString(metadata.asString()));
     if (targetGrave != null) {
       targetGrave.remove();
     }
@@ -144,9 +150,10 @@ public class GravesModule extends BingoModule {
     event.getWorld().playSound(targetGrave.getHead().getLocation(), Sound.DIG_STONE, 1.0f, 1.0f);
 
     if (punchCount >= 3) {
-      head.getWorld().dropItemNaturally(head.getLocation(), head.getEquipment().getHelmet());
+      head.getWorld()
+          .dropItemNaturally(head.getLocation().add(0, 0.5, 0), head.getEquipment().getHelmet());
       targetGrave.remove();
-      activeGraves.remove(targetGrave.getOwner());
+      activeGraves.remove(targetGrave.getOwner(), targetGrave);
 
       GraveBreakEvent graveBreakEvent = new GraveBreakEvent(player, targetGrave);
       Bukkit.getPluginManager().callEvent(graveBreakEvent);
@@ -154,88 +161,56 @@ public class GravesModule extends BingoModule {
   }
 
   private @Nullable Grave tryCreateGrave(Player player) {
-    Location location = player.getLocation().clone();
+    Location location = player.getLocation();
 
     // Try to find solid block beneath
-    Block base = location.getBlock();
-    boolean foundGround = false;
-
-    if (base.getType().isSolid()) {
-      foundGround = true;
-    } else {
-      for (int i = 1; i <= DOWNWARDS_ALLOWANCE.get(); i++) {
-        Block below = base.getRelative(BlockFace.DOWN, i);
-        if (below.getType().isSolid()) {
-          location.setY(below.getY() + 1);
-          foundGround = true;
-          break;
-        }
-      }
+    Block curr = location.getBlock();
+    for (int i = 0; i <= DOWNWARDS_ALLOWANCE.get(); i++) {
+      if (Materials.isSolid(curr.getType())) return new Grave(player, location);
+      curr = curr.getRelative(BlockFace.DOWN);
+      location.setY(curr.getY() + 1);
     }
-
-    if (!foundGround) return null;
-
-    return new Grave(player, location);
+    return null;
   }
 
   public static class Grave {
-
-    private final UUID owner;
-    private final List<ArmorStand> armorStands = new ArrayList<>();
-    private final Slime slime;
-    private final ArmorStand head;
+    @Getter private final UUID owner;
+    @Getter private final ArmorStand head;
+    private final List<Entity> entities = new ArrayList<>(3);
     private int punchCount = 0;
 
     public Grave(Player victim, Location location) {
       this.owner = victim.getUniqueId();
+      location.setPitch(0);
+
       World world = location.getWorld();
 
-      Vector direction = location.getDirection().setY(0).normalize();
-
       // Grave stone
-      Location graveLocation = location.clone().subtract(0, 1.4, 0);
-      ArmorStand grave = world.spawn(graveLocation, ArmorStand.class);
+      ArmorStand grave = world.spawn(location.clone().subtract(0, 1.4, 0), ArmorStand.class);
       grave.setMarker(true);
       grave.setVisible(false);
       grave.setBasePlate(false);
-      NMSHacks.NMS_HACKS.freezeEntity(grave);
       grave.getEquipment().setHelmet(new ItemStack(Material.BRICK_STAIRS, 1));
-      armorStands.add(grave);
+      NMS_HACKS.freezeEntity(grave);
+      entities.add(grave);
 
       // Player head
-      Location headLocation = location.clone().add(direction.multiply(0)).add(0, -0.42, 0);
-      head = world.spawn(headLocation, ArmorStand.class);
+      head = world.spawn(location.clone().add(0, -0.42, 0), ArmorStand.class);
       head.setMarker(true);
       head.setSmall(true);
       head.setVisible(false);
       head.setBasePlate(false);
-      NMSHacks.NMS_HACKS.freezeEntity(head);
       head.setHelmet(getPlayerHead(victim));
-      armorStands.add(head);
+      NMS_HACKS.freezeEntity(head);
+      entities.add(head);
 
-      // Slime hitbox
-      slime = world.spawn(location.clone(), Slime.class);
-      slime.setSize(1);
+      // Interaction hitbox
+      var interaction = new InteractionEntity(location.clone().add(0, 0.05, 0));
+      entities.add(interaction.getBukkitEntity());
 
-      slime.addPotionEffect(
-          new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false),
-          true);
-
-      // No invulnerable/AI flags in 1.8, so freeze using NMS hacks if available
-      NMSHacks.NMS_HACKS.freezeEntity(slime);
-      slime.setMetadata(GRAVE_META, new FixedMetadataValue(Bingo.get(), owner));
-
-      // Armor stand metadata
-      grave.setMetadata(GRAVE_META, new FixedMetadataValue(Bingo.get(), owner));
-      head.setMetadata(GRAVE_META, new FixedMetadataValue(Bingo.get(), owner));
-    }
-
-    public UUID getOwner() {
-      return owner;
-    }
-
-    public ArmorStand getHead() {
-      return head;
+      // Set metadata
+      for (Entity entity : entities)
+        entity.setMetadata(GRAVE_META, new FixedMetadataValue(Bingo.get(), owner));
     }
 
     public int incrementAndGetPunchCount() {
@@ -243,8 +218,7 @@ public class GravesModule extends BingoModule {
     }
 
     public void remove() {
-      armorStands.forEach(ArmorStand::remove);
-      if (slime != null && !slime.isDead()) slime.remove();
+      entities.forEach(Entity::remove);
     }
 
     private static ItemStack getPlayerHead(Player player) {
@@ -256,8 +230,8 @@ public class GravesModule extends BingoModule {
     }
   }
 
+  @Getter
   public static class GraveBreakEvent extends Event {
-
     private final Player player;
     private final Grave grave;
 
@@ -267,13 +241,36 @@ public class GravesModule extends BingoModule {
       this.player = player;
       this.grave = grave;
     }
+  }
 
-    public Player getPlayer() {
-      return player;
+  public static class InteractionEntity extends EntitySlime {
+    static {
+      // Register FakeSlime as the same as EntitySlime in entity types
+      var a = ReflectionUtils.readStaticField(EntityTypes.class, Map.class, "d");
+      var b = ReflectionUtils.readStaticField(EntityTypes.class, Map.class, "f");
+      a.put(InteractionEntity.class, a.get(EntitySlime.class));
+      b.put(InteractionEntity.class, b.get(EntitySlime.class));
     }
 
-    public Grave getGrave() {
-      return grave;
+    public InteractionEntity(Location loc) {
+      super(((CraftWorld) loc.getWorld()).getHandle());
+      setLocation(loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(), loc.getPitch());
+      setSize(1);
+      setInvisible(true);
+      k(true); // NoAI = true
+
+      world.addEntity(this, CreatureSpawnEvent.SpawnReason.CUSTOM);
+    }
+
+    @Override
+    public boolean a(EntityPlayer entityplayer) {
+      // Only show the entity to players that cannot see invisible entities (ie: joined players)
+      return !entityplayer.getBukkitEntity().canSeeInvisibles();
+    }
+
+    @Override
+    protected void B() {
+      // No ticking effects: usually toggles invisibility
     }
   }
 }

@@ -4,7 +4,9 @@ import static tc.oc.bingo.modules.ItemRemoveCanceller.ITEM_META;
 
 import java.util.List;
 import java.util.function.Supplier;
+import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.Entity;
+import net.minecraft.server.v1_8_R3.EntityInsentient;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -13,6 +15,7 @@ import org.bukkit.entity.Horse;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.CustomPotionsModule;
 
@@ -73,6 +76,9 @@ public class ThunderPotionObjective extends ObjectiveTracker {
   public void spawnHorse(Location loc, Player player) {
     CraftWorld craftWorld = (CraftWorld) loc.getWorld();
     Entity nmsHorse = craftWorld.createEntity(loc, Horse.class);
+    if (nmsHorse instanceof EntityInsentient ei)
+      ei.prepare(craftWorld.getHandle().E(new BlockPosition(ei)), null);
+
     Horse horse = (Horse) nmsHorse.getBukkitEntity();
     horse.setVariant(Horse.Variant.SKELETON_HORSE);
     horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
@@ -81,6 +87,6 @@ public class ThunderPotionObjective extends ObjectiveTracker {
     horse.setMaxHealth(20);
     horse.setOwner(player);
 
-    craftWorld.addEntity(nmsHorse, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM);
+    craftWorld.addEntity(nmsHorse, CreatureSpawnEvent.SpawnReason.CUSTOM);
   }
 }

@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import lombok.extern.java.Log;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.TileEntityBrewingStand;
 import org.bukkit.Bukkit;
@@ -44,6 +45,7 @@ import tc.oc.pgm.util.event.ItemTransferEvent;
 import tc.oc.pgm.util.inventory.tag.ItemTag;
 import tc.oc.pgm.util.reflect.ReflectionUtils;
 
+@Log
 @BingoModule.Config("custom-items")
 public class CustomPotionsModule extends BingoModule {
 
@@ -70,14 +72,14 @@ public class CustomPotionsModule extends BingoModule {
         Stream.of(new ManagedListener.Ticker(this::tickPotions, 0, 500, TimeUnit.MILLISECONDS)));
   }
 
-  public boolean registerPotion(String name, CustomPotionType potionType) {
-    if (registeredPotions.containsKey(name)) return false;
-    registeredPotions.put(name, potionType);
-    return true;
+  public void registerPotion(String name, CustomPotionType potionType) {
+    var old = registeredPotions.put(name, potionType);
+    if (old != null) log.warning("Duplicate potion registration: " + name);
   }
 
-  public boolean removePotion(String name) {
-    return registeredPotions.remove(name) != null;
+  public void removePotion(String name) {
+    var old = registeredPotions.remove(name);
+    if (old == null) log.warning("Attempted to remove unknown potion: " + name);
   }
 
   private void tickPotions() {
@@ -151,8 +153,8 @@ public class CustomPotionsModule extends BingoModule {
     ItemStack ingredient = contents.getIngredient();
     if (ingredient == null) return;
 
-    // Cancel the brew if the ingredient is a custom item
-    if (ITEM_META.has(ingredient)) {
+    // Cancel the brew if the ingredient is a custom item, our task will take over
+    if (ITEM_META.has(ingredient) && hasAnyAwkwardPotions(event.getContents())) {
       event.setCancelled(true);
     }
   }
@@ -204,8 +206,6 @@ public class CustomPotionsModule extends BingoModule {
             .orElse(null);
 
     if (customPotion == null) return;
-
-    // TODO: tidy up checks and reuse here and in run tick
 
     // Verify that the bottles are all valid awkward potions
     if (!hasAnyAwkwardPotions(inventory)) return;
@@ -285,10 +285,6 @@ public class CustomPotionsModule extends BingoModule {
     event.setCancelled(true);
 
     tryStartBrewing(inventory, event.getActor());
-
-    // At this point, we can start brewing
-
-    // TODO: event.getActor();
   }
 
   private boolean hasAnyAwkwardPotions(BrewerInventory inv) {
