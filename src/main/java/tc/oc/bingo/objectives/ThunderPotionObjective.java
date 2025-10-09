@@ -18,8 +18,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.CustomPotionsModule;
+import tc.oc.bingo.modules.DependsOn;
 
 @Tracker("thunder-potion-task")
+@DependsOn(CustomPotionsModule.class)
 public class ThunderPotionObjective extends ObjectiveTracker {
 
   private final Supplier<Double> SPAWN_CHANCE = useConfig("skeleton-horse-chance", 0.35d);

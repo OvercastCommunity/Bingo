@@ -11,10 +11,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import tc.oc.bingo.modules.CustomPotionsModule;
+import tc.oc.bingo.modules.DependsOn;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("blindness-potion-task")
+@DependsOn(CustomPotionsModule.class)
 public class BlindnessPotionObjective extends ObjectiveTracker {
 
   @Override

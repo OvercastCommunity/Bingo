@@ -26,7 +26,7 @@ import tc.oc.bingo.util.ManagedListener;
 import tc.oc.pgm.util.event.PlayerCoarseMoveEvent;
 
 @Tracker("frost-walker-potion-task")
-@DependsOn(FreezerModule.class)
+@DependsOn({FreezerModule.class, CustomPotionsModule.class})
 public class FrostWalkerPotionObjective extends ObjectiveTracker {
 
   private final Supplier<Integer> REQUIRED_BLOCKS = useConfig("required-blocks", 100);

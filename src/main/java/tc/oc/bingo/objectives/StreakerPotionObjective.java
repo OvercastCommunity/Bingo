@@ -12,10 +12,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.bingo.modules.CustomPotionsModule;
+import tc.oc.bingo.modules.DependsOn;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 
 @Tracker("streaker-potion-task")
+@DependsOn(CustomPotionsModule.class)
 public class StreakerPotionObjective extends ObjectiveTracker {
 
   private final Map<UUID, Double> playerMaxHealths = useState(Scope.LIFE);

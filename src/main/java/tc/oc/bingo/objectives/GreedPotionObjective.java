@@ -15,8 +15,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import tc.oc.bingo.modules.CustomPotionsModule;
+import tc.oc.bingo.modules.DependsOn;
 
 @Tracker("greed-potion-task")
+@DependsOn(CustomPotionsModule.class)
 public class GreedPotionObjective extends ObjectiveTracker.StatefulInt {
 
   private final Supplier<Integer> REQUIRED_AMOUNT = useConfig("required-amount", 10);
